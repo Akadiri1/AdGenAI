@@ -1,0 +1,298 @@
+// AdGenAI Prisma schema (SQLite for local dev — switch provider to postgresql for prod)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Note: SQLite doesn't support enums natively, so we store them as strings.
+// Valid values documented below; runtime validation is done via Zod in API layer.
+
+// Plan: "FREE" | "STARTER" | "PRO" | "BUSINESS" | "ENTERPRISE"
+// AdType: "IMAGE" | "VIDEO" | "CAROUSEL" | "STORY" | "REEL" | "WHATSAPP_STATUS"
+// Platform: "FACEBOOK" | "INSTAGRAM" | "TIKTOK" | "YOUTUBE" | "X_TWITTER"
+//           | "LINKEDIN" | "SNAPCHAT" | "WHATSAPP" | "PINTEREST" | "GOOGLE_ADS"
+// AdStatus: "DRAFT" | "GENERATING" | "READY" | "SCHEDULED" | "POSTING"
+//           | "POSTED" | "FAILED" | "PAUSED"
+
+model User {
+  id             String    @id @default(cuid())
+  email          String?   @unique
+  phone          String?   @unique
+  emailVerified  DateTime?
+  name           String?
+  image          String?
+  avatar         String?
+  plan           String    @default("FREE")
+  credits        Int       @default(3)
+  creditsExpiry  DateTime?
+  businessName   String?
+  businessType   String?
+  businessUrl    String?
+  businessDescription String?
+  businessIndustry String?
+  targetAudience String?
+  brandTagline   String?
+  brandVoice     String?
+  brandColors    String?
+  brandLogo      String?
+  country        String?
+  language       String    @default("en")
+  currency       String    @default("USD")
+  referredBy     String?
+  stripeConnectAccountId String? @unique
+  stripeConnectPayoutsEnabled Boolean @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  ads            Ad[]
+  campaigns      Campaign[]
+  socialAccounts SocialAccount[]
+  templates      Template[]
+  transactions   Transaction[]
+  referrals      Referral[]
+  accounts       Account[]
+  sessions       Session[]
+  teamMemberships TeamMember[]
+  ownedTeams     Team[]
+  apiKeys        ApiKey[]
+  accountManagerId String?
+
+  @@index([email])
+  @@index([phone])
+  @@index([referredBy])
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member") // owner, admin, member, viewer
+  inviteEmail String?
+  inviteStatus String @default("accepted") // pending, accepted, declined
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String   @default("Default")
+  key         String   @unique
+  prefix      String   // first 8 chars for display (adg_xxxx...)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  permissions String   @default("all") // all, read, write
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([key])
+}
+
+model Ad {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String    // AdType
+  platform        String    // comma-separated Platform values (e.g. "INSTAGRAM,FACEBOOK")
+  status          String    @default("DRAFT") // AdStatus
+
+  headline        String?
+  bodyText        String?
+  callToAction    String?
+  script          String?
+  scriptFramework String?
+
+  images          String?   // JSON array as string
+  videoUrl        String?
+  thumbnailUrl    String?
+  musicTrack      String?
+  musicGenre      String?
+  voiceoverUrl    String?
+
+  aspectRatio     String    @default("1:1")
+  duration        Int?
+  language        String    @default("en")
+  score           Float?
+
+  scheduledAt     DateTime?
+  postedAt        DateTime?
+
+  impressions     Int       @default(0)
+  clicks          Int       @default(0)
+  conversions     Int       @default(0)
+  spend           Float     @default(0)
+  revenue         Float     @default(0)
+
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([scheduledAt])
+  @@index([campaignId])
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  objective   String?
+  budget      Float?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String    @default("draft")
+  ads         Ad[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model SocialAccount {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     String    // Platform
+  accountId    String
+  accountName  String?
+  accessToken  String
+  refreshToken String?
+  tokenExpiry  DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, platform, accountId])
+  @@index([userId])
+}
+
+model Template {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  category     String
+  platform     String    // comma-separated
+  adType       String
+  thumbnailUrl String?
+  config       String    // JSON string
+  isPublic     Boolean   @default(false)
+  isPremium    Boolean   @default(false)
+  price        Float?
+  usageCount   Int       @default(0)
+  rating       Float     @default(0)
+  creatorId    String?
+  creator      User?     @relation(fields: [creatorId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([category])
+  @@index([creatorId])
+  @@index([isPublic])
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  amount     Float
+  currency   String
+  status     String
+  provider   String
+  providerId String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([providerId])
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String
+  referrer      User     @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  referredEmail String?
+  referredPhone String?
+  status        String   @default("pending")
+  commission    Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([referrerId])
+}
+
+model MusicTrack {
+  id            String   @id @default(cuid())
+  title         String
+  artist        String?
+  genre         String
+  mood          String
+  duration      Int
+  url           String
+  region        String?
+  isRoyaltyFree Boolean  @default(true)
+  usageCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([genre])
+  @@index([region])
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

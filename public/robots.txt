@@ -1,0 +1,23 @@
+# AdGenAI — AI Ad Creation Platform
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /ads/
+Disallow: /create/
+Disallow: /settings/
+Disallow: /campaigns/
+Disallow: /schedule/
+Disallow: /analytics/
+Disallow: /connect/
+Disallow: /referral/
+Disallow: /auth/
+
+# Allow public pages
+Allow: /
+Allow: /tools/hook-generator
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+
+Sitemap: https://adgenai.com/sitemap.xml

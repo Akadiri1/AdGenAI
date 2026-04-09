@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+/* Tailwind v4: declare class-based dark variant (so `dark:` utilities and `.dark .x` selectors work) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #FAFAFA;
+  --foreground: #1A1A2E;
+
+  --primary: #FF6B35;
+  --primary-dark: #E55A2B;
+  --secondary: #004E89;
+  --accent: #2EC4B6;
+  --success: #2ECC71;
+  --warning: #F39C12;
+  --danger: #E74C3C;
+
+  --bg-primary: #FAFAFA;
+  --bg-secondary: #F0F4F8;
+  --bg-dark: #1A1A2E;
+
+  --text-primary: #1A1A2E;
+  --text-secondary: #6B7280;
+  --text-light: #F8F9FA;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-dark: var(--bg-dark);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-light: var(--text-light);
+
+  --font-sans: var(--font-dm-sans);
+  --font-heading: var(--font-plus-jakarta-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+.dark {
+  --background: #0F0F1E;
+  --foreground: #F8F9FA;
+  --bg-primary: #1A1A2E;
+  --bg-secondary: #24243E;
+  --text-primary: #F8F9FA;
+  --text-secondary: #9CA3AF;
+
+  /* Override Tailwind v4 token colors so bg-white, border-black/5, etc. swap automatically */
+  --color-white: #1A1A2E;
+  --color-black: #FFFFFF;
+  --color-gray-100: #24243E;
+  --color-gray-700: #E5E7EB;
+}
+
+/* Form controls and shadows */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #24243E;
+  color: #F8F9FA;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6B7280;
+}
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Native app safe areas */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Native Capacitor app styling */
+body.capacitor-app {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.capacitor-app input,
+body.capacitor-app textarea,
+body.capacitor-app [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Force-override literal utility classes inside .dark
+   (Tailwind v4 inlines `bg-white` etc. so we override at the utility layer) */
+@layer utilities {
+  .dark .bg-white { background-color: #1A1A2E; }
+  .dark .bg-white\/80 { background-color: rgba(26, 26, 46, 0.85); }
+  .dark .bg-white\/90 { background-color: rgba(26, 26, 46, 0.92); }
+  .dark .bg-white\/70 { background-color: rgba(26, 26, 46, 0.7); }
+  .dark .bg-white\/20 { background-color: rgba(255, 255, 255, 0.08); }
+
+  .dark .border-black\/5 { border-color: rgba(255, 255, 255, 0.08); }
+  .dark .border-black\/10 { border-color: rgba(255, 255, 255, 0.14); }
+  .dark .border-black\/20 { border-color: rgba(255, 255, 255, 0.22); }
+
+  .dark .bg-black\/\[\.04\] { background-color: rgba(255, 255, 255, 0.04); }
+  .dark .bg-black\/5 { background-color: rgba(255, 255, 255, 0.05); }
+  .dark .bg-black\/10 { background-color: rgba(255, 255, 255, 0.08); }
+  .dark .bg-black\/60 { background-color: rgba(0, 0, 0, 0.7); }
+
+  .dark .hover\:bg-bg-secondary:hover { background-color: #2A2A44; }
+  .dark .hover\:bg-black\/5:hover { background-color: rgba(255, 255, 255, 0.05); }
+  .dark .hover\:border-black\/20:hover { border-color: rgba(255, 255, 255, 0.22); }
+
+  /* Gray utilities used by status badges */
+  .dark .bg-gray-100 { background-color: #24243E; }
+  .dark .text-gray-700 { color: #E5E7EB; }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-plus-jakarta-sans), -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Hide scrollbars globally but keep scroll functionality */
+*,
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.animate-fade-in { animation: fadeIn 0.6s ease-out; }
+.animate-slide-up { animation: slideUp 0.8s ease-out; }
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 8s ease infinite;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #FF6B35 0%, #F39C12 50%, #2EC4B6 100%);
+}
