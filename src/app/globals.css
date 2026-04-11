@@ -29,7 +29,7 @@
   --radius-xl: 24px;
 }
 
-@theme {
+@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
@@ -141,6 +141,23 @@ body.capacitor-app [contenteditable] {
   /* Gray utilities used by status badges */
   .dark .bg-gray-100 { background-color: #24243E; }
   .dark .text-gray-700 { color: #E5E7EB; }
+
+  /* Text colors — Tailwind v4 inlines text-text-primary at build time so we override at runtime */
+  .dark .text-text-primary { color: #F8F9FA; }
+  .dark .text-text-secondary { color: #9CA3AF; }
+  .dark .text-text-light { color: #F8F9FA; }
+
+  /* Hover variants */
+  .dark .hover\:text-text-primary:hover { color: #F8F9FA; }
+  .dark .hover\:text-text-secondary:hover { color: #9CA3AF; }
+
+  /* Group hover (used in nav items, cards) */
+  .dark .group:hover .group-hover\:text-text-primary { color: #F8F9FA; }
+
+  /* Bg secondary surface */
+  .dark .bg-bg-secondary { background-color: #24243E; }
+  .dark .bg-bg-secondary\/30 { background-color: rgba(36, 36, 62, 0.3); }
+  .dark .bg-bg-secondary\/20 { background-color: rgba(36, 36, 62, 0.2); }
 }
 
 body {
