@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { TikTokGallery } from "./TikTokGallery";
+import { TIKTOK_VIDEOS } from "@/lib/tiktokVideos";
 
 export function Hero() {
   return (
@@ -66,14 +67,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* TikTok gallery — real ads from real creators */}
+        {/* TikTok gallery — first half of the library (Showcase section shows the rest) */}
         <div className="mb-2">
           <div className="text-center mb-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
               Real ads from creators worldwide — click any to play
             </p>
           </div>
-          <TikTokGallery />
+          <TikTokGallery videos={TIKTOK_VIDEOS.slice(0, Math.floor(TIKTOK_VIDEOS.length / 2))} />
         </div>
 
         {/* Platform logos */}
