@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import { AdCard } from "@/components/ads/AdPreview";
 import { Trash2, CheckSquare, Square, X, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import type { Platform } from "@/lib/adHelpers";
-
 type Ad = {
   id: string;
   type: string;
@@ -15,7 +13,7 @@ type Ad = {
   headline: string | null;
   bodyText: string | null;
   callToAction: string | null;
-  platform: Platform[];
+  platform: string[];
   thumbnailUrl: string | null;
   videoUrl: string | null;
   images: string | null;
