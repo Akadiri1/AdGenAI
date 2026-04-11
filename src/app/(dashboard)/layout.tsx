@@ -16,22 +16,27 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  let credits = 0;
-  let plan = "FREE";
-  let userName = "User";
 
-  if (session?.user?.id) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { credits: true, plan: true, name: true, email: true, isSuspended: true },
-    });
-    if (user) {
-      if (user.isSuspended) redirect("/suspended");
-      credits = user.credits;
-      plan = user.plan;
-      userName = user.name ?? user.email?.split("@")[0] ?? "User";
-    }
+  // Require authentication for ALL dashboard routes
+  if (!session?.user?.id) {
+    redirect("/auth/login?callbackUrl=/dashboard");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { credits: true, plan: true, name: true, email: true, isSuspended: true },
+  });
+
+  // Session exists but DB record doesn't (deleted user) — sign them out
+  if (!user) {
+    redirect("/auth/login?error=AccountDeleted");
+  }
+
+  if (user.isSuspended) redirect("/suspended");
+
+  const credits = user.credits;
+  const plan = user.plan;
+  const userName = user.name ?? user.email?.split("@")[0] ?? "User";
 
   return (
     <CreditsProvider initialCredits={credits}>
