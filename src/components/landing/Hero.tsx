@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Sparkles, ArrowRight } from "lucide-react";
-import { VideoGallery } from "./VideoGallery";
-import { DEMO_VIDEOS } from "@/lib/demoVideos";
+import { TikTokGallery } from "./TikTokGallery";
 
 export function Hero() {
   return (
@@ -67,14 +66,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Video gallery — hover to play, click to fullscreen */}
+        {/* TikTok gallery — real ads from real creators */}
         <div className="mb-2">
           <div className="text-center mb-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-              Real ads made with Famousli — hover to preview, click to play
+              Real ads from creators worldwide — click any to play
             </p>
           </div>
-          <VideoGallery videos={DEMO_VIDEOS} />
+          <TikTokGallery />
         </div>
 
         {/* Platform logos */}

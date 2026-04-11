@@ -406,12 +406,12 @@ export function StudioClient({
                       <button
                         key={d.id}
                         onClick={() => setVideoDuration(d.id)}
-                        className={`rounded-lg border-2 p-1.5 text-center transition-all ${
-                          videoDuration === d.id ? "border-primary bg-primary/5" : "border-black/10"
+                        className={`rounded-lg border-2 p-2 text-center transition-all min-h-[52px] ${
+                          videoDuration === d.id ? "border-primary bg-primary/10" : "border-black/10 dark:border-white/15 bg-white dark:bg-white/5"
                         }`}
                       >
-                        <div className="text-xs font-bold text-text-primary">{d.label}</div>
-                        <div className="text-[8px] text-text-secondary">{d.sub}</div>
+                        <div className="text-xs font-bold text-text-primary dark:text-white">{d.label}</div>
+                        <div className="text-[10px] text-text-secondary dark:text-white/60">{d.sub}</div>
                       </button>
                     ))}
                   </div>
