@@ -296,7 +296,7 @@ export function Pricing() {
                   </div>
                 </div>
                 <a
-                  href="mailto:sales@adgenai.com?subject=Enterprise%20Plan"
+                  href="mailto:sales@famousli.com?subject=Enterprise%20Plan"
                   className="flex-shrink-0 flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-secondary to-primary px-5 text-sm font-semibold text-white hover:shadow-lg transition-all"
                 >
                   Contact sales

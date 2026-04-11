@@ -64,7 +64,7 @@ export async function POST(req: Request) {
           currency: "usd",
           unit_amount: CREDIT_PACK_PRICE_USD * 100,
           product_data: {
-            name: `AdGenAI Credit Pack (${CREDIT_PACK_AMOUNT} credits)`,
+            name: `Famousli Credit Pack (${CREDIT_PACK_AMOUNT} credits)`,
             description: `${CREDIT_PACK_AMOUNT} ad credits that never expire`,
           },
         },

@@ -120,14 +120,6 @@ export function FileUpload({
         <p className="text-[10px] text-text-secondary">
           Or drag & drop. PNG, JPG, WebP, SVG. Max {maxSizeMb}MB.
         </p>
-        {/* URL input as fallback */}
-        <input
-          type="url"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Or paste a URL"
-          className="w-full rounded-lg border-2 border-black/10 bg-white px-3 py-1.5 text-xs outline-none focus:border-primary"
-        />
       </div>
     </div>
   );

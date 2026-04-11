@@ -3,11 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateAvatarVideo, getVideoStatus, isHeyGenConfigured } from "@/lib/heygen";
-import { checkCredits, deductCredits, COSTS } from "@/lib/credits";
+import { generateTalkingActor, isReplicateConfigured } from "@/lib/sadtalker";
+import { AVATAR_LIBRARY } from "@/lib/avatars";
+import { checkCredits, deductCredits, addCredits, COSTS } from "@/lib/credits";
 import { platformsToString } from "@/lib/adHelpers";
 import { checkBrandKit } from "@/lib/brandCheck";
 import { uploadToStorage } from "@/lib/storage";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
+import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -48,50 +51,75 @@ export async function POST(req: Request) {
 
   const body = bodySchema.parse(await req.json());
 
-  const cost = COSTS.VIDEO_AD;
+  const cost = COSTS.TALKING_ACTOR;
   if (!(await checkCredits(userId, cost))) {
-    return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    return NextResponse.json({ error: "Insufficient credits", required: cost }, { status: 402 });
   }
 
+  // Deduct credits BEFORE the API call (atomic — refund on failure)
+  await deductCredits(userId, cost);
+
+  let videoUrl: string | undefined;
+
   try {
-    // Generate avatar video
-    const result = await generateAvatarVideo({
-      avatarId: body.avatarId,
-      script: body.script,
-      voiceId: body.voiceId,
-      voiceSettings: body.voiceSettings,
-      aspectRatio: body.aspectRatio,
-      speechToSpeechAudioUrl: body.speechToSpeechAudioUrl,
-    });
-
-    await deductCredits(userId, cost);
-
-    // Poll for completion (max 60 seconds)
-    let videoUrl = result.videoUrl;
-    if (!videoUrl && result.videoId) {
-      for (let i = 0; i < 12; i++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        const status = await getVideoStatus(result.videoId);
-        if (status.status === "completed" && status.videoUrl) {
-          // Rehost the video to our storage
-          try {
-            const videoRes = await fetch(status.videoUrl);
-            const buf = await videoRes.arrayBuffer();
-            videoUrl = await uploadToStorage({
-              bytes: Buffer.from(buf),
-              contentType: "video/mp4",
-              extension: "mp4",
-              folder: "ads/avatar-videos",
-            });
-          } catch {
-            videoUrl = status.videoUrl; // fallback to HeyGen URL
+    if (isHeyGenConfigured()) {
+      // ── PREMIUM PATH: HeyGen ──────────────────────────────
+      const result = await generateAvatarVideo({
+        avatarId: body.avatarId,
+        script: body.script,
+        voiceId: body.voiceId,
+        voiceSettings: body.voiceSettings,
+        aspectRatio: body.aspectRatio,
+        speechToSpeechAudioUrl: body.speechToSpeechAudioUrl,
+      });
+      videoUrl = result.videoUrl;
+      if (!videoUrl && result.videoId) {
+        for (let i = 0; i < 12; i++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          const status = await getVideoStatus(result.videoId);
+          if (status.status === "completed" && status.videoUrl) {
+            try {
+              const videoRes = await fetch(status.videoUrl);
+              const buf = await videoRes.arrayBuffer();
+              videoUrl = await uploadToStorage({
+                bytes: Buffer.from(buf),
+                contentType: "video/mp4",
+                extension: "mp4",
+                folder: "ads/avatar-videos",
+              });
+            } catch {
+              videoUrl = status.videoUrl;
+            }
+            break;
           }
-          break;
-        }
-        if (status.status === "failed") {
-          return NextResponse.json({ error: "Avatar video generation failed" }, { status: 500 });
+          if (status.status === "failed") {
+            await addCredits(userId, cost); // refund
+            return NextResponse.json({ error: "Avatar video generation failed" }, { status: 500 });
+          }
         }
       }
+    } else if (isReplicateConfigured()) {
+      // ── SCRAPPY PATH: Sadtalker via Replicate ──────────────
+      const actor = AVATAR_LIBRARY.find((a) => a.id === body.avatarId);
+      if (!actor || !actor.thumbnailUrl) {
+        await addCredits(userId, cost);
+        return NextResponse.json({ error: "Selected actor has no source image" }, { status: 400 });
+      }
+      videoUrl = await generateTalkingActor({
+        sourceImageUrl: actor.thumbnailUrl,
+        script: body.script,
+        voice: {
+          speed: body.voiceSettings?.speed,
+          presetVoice: actor.gender === "male" ? "male" : "female",
+        },
+      });
+    } else {
+      // No backend configured — refund and inform
+      await addCredits(userId, cost);
+      return NextResponse.json(
+        { error: "Talking actor generation is not yet enabled. Set REPLICATE_API_TOKEN or HEYGEN_API_KEY." },
+        { status: 503 },
+      );
     }
 
     // Create ad record
@@ -111,15 +139,30 @@ export async function POST(req: Request) {
       },
     });
 
+    await logAudit({
+      userId,
+      action: "ad_created",
+      resource: ad.id,
+      metadata: {
+        kind: "talking_actor",
+        backend: isHeyGenConfigured() ? "heygen" : "sadtalker",
+        avatarId: body.avatarId,
+        creditsSpent: cost,
+      },
+      ...getRequestContext(req),
+    });
+
     return NextResponse.json({
       success: true,
       adId: ad.id,
       videoUrl,
-      heygenConfigured: isHeyGenConfigured(),
+      backend: isHeyGenConfigured() ? "heygen" : "sadtalker",
     });
   } catch (err) {
+    // Refund credits on any uncaught failure
+    await addCredits(userId, cost);
     return NextResponse.json(
-      { error: "Avatar generation failed", details: (err as Error).message },
+      { error: "Talking actor generation failed", details: (err as Error).message },
       { status: 500 },
     );
   }

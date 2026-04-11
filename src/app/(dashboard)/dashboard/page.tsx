@@ -2,9 +2,11 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { checkBrandKit } from "@/lib/brandCheck";
+import { prisma } from "@/lib/prisma";
+import { LiveActivityFeed } from "@/components/LiveActivityFeed";
 import {
   Film, Megaphone, Eye, DollarSign, Sparkles, Sliders,
-  Link2, Palette, Gift, Paintbrush, ChevronRight, AlertTriangle,
+  Link2, Palette, Gift, Paintbrush, ChevronRight, AlertTriangle, ShieldCheck,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -14,23 +16,65 @@ export default async function DashboardPage() {
   let brandMissing: string[] = [];
   let brandPercentage = 100;
 
+  let isAdmin = false;
+  let totalAds = 0;
+  let activeCampaigns = 0;
+  let impressions = 0;
+  let revenueGenerated = 0;
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
     const check = await checkBrandKit(session.user.id);
     brandComplete = check.complete;
     brandMissing = check.missing;
     brandPercentage = check.percentage;
+
+    const [u, adsCount, campaignsCount, adAgg] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { isAdmin: true },
+      }),
+      prisma.ad.count({ where: { userId: session.user.id } }),
+      prisma.campaign.count({
+        where: { userId: session.user.id, status: { in: ["draft", "active", "scheduled"] } },
+      }),
+      prisma.ad.aggregate({
+        where: { userId: session.user.id },
+        _sum: { impressions: true, revenue: true },
+      }),
+    ]);
+    isAdmin = u?.isAdmin ?? false;
+    totalAds = adsCount;
+    activeCampaigns = campaignsCount;
+    impressions = adAgg._sum.impressions ?? 0;
+    revenueGenerated = adAgg._sum.revenue ?? 0;
   }
 
   const stats = [
-    { label: "Total Ads", value: "0", icon: Film, color: "text-primary bg-primary/10" },
-    { label: "Active Campaigns", value: "0", icon: Megaphone, color: "text-secondary bg-secondary/10" },
-    { label: "Impressions", value: "0", icon: Eye, color: "text-accent bg-accent/10" },
-    { label: "Revenue Generated", value: "$0", icon: DollarSign, color: "text-success bg-success/10" },
+    { label: "Total Ads", value: totalAds.toLocaleString(), icon: Film, color: "text-primary bg-primary/10" },
+    { label: "Active Campaigns", value: activeCampaigns.toLocaleString(), icon: Megaphone, color: "text-secondary bg-secondary/10" },
+    { label: "Impressions", value: impressions.toLocaleString(), icon: Eye, color: "text-accent bg-accent/10" },
+    { label: "Revenue Generated", value: `$${revenueGenerated.toFixed(2)}`, icon: DollarSign, color: "text-success bg-success/10" },
   ];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      {/* Admin shortcut */}
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className="flex items-center gap-3 rounded-2xl border-2 border-danger/30 bg-gradient-to-r from-danger/10 via-danger/5 to-transparent p-4 hover:border-danger/50 transition-colors"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger text-white">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-heading font-bold text-text-primary">Super Admin Dashboard</div>
+            <div className="text-xs text-text-secondary">Platform metrics, finance audit, live activity</div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-text-secondary" />
+        </Link>
+      )}
+
       {/* Brand Kit incomplete banner */}
       {!brandComplete && (
         <div className="rounded-2xl border-2 border-warning/30 bg-gradient-to-r from-warning/10 via-warning/5 to-transparent p-4 sm:p-5">
@@ -125,6 +169,9 @@ export default async function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Live activity feed — user's records as they happen */}
+      <LiveActivityFeed compact />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-black/5 bg-white p-6">

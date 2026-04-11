@@ -5,6 +5,7 @@ export const COSTS = {
   IMAGE_AD: 1,
   VIDEO_AD: 2,
   CAROUSEL: 2,
+  TALKING_ACTOR: 3,
 } as const;
 
 export type CostKey = keyof typeof COSTS;

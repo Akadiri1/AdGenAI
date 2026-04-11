@@ -286,7 +286,7 @@ export function BillingClient({
                       </div>
                     ) : (
                       <a
-                        href="mailto:sales@adgenai.com?subject=Enterprise%20Plan%20Inquiry"
+                        href="mailto:sales@famousli.com?subject=Enterprise%20Plan%20Inquiry"
                         className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-secondary to-primary text-sm font-semibold text-white transition-all hover:shadow-lg"
                       >
                         Contact sales

@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
 import { creditReferralCommission } from "@/lib/referrals";
+import { logAudit } from "@/lib/audit";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -46,6 +47,12 @@ export async function POST(req: Request) {
             providerId: s.id,
           },
         });
+        await logAudit({
+          userId,
+          action: "payment_received",
+          resource: s.id,
+          metadata: { type: "credit_purchase", amount: amountUsd, credits: creditsToAdd, provider: "stripe" },
+        });
         await creditReferralCommission(userId, amountUsd, s.id);
         break;
       }
@@ -73,6 +80,12 @@ export async function POST(req: Request) {
             provider: "stripe",
             providerId: s.id,
           },
+        });
+        await logAudit({
+          userId,
+          action: "plan_upgraded",
+          resource: s.id,
+          metadata: { type: "subscription", amount: amountUsd, provider: "stripe" },
         });
         // Credit the referrer 30% on this first payment
         await creditReferralCommission(userId, amountUsd, s.id);
@@ -106,6 +119,12 @@ export async function POST(req: Request) {
           provider: "stripe",
           providerId: inv.id,
         },
+      });
+      await logAudit({
+        userId,
+        action: "payment_received",
+        resource: inv.id ?? undefined,
+        metadata: { type: "subscription_renewal", amount: amountUsd, provider: "stripe" },
       });
       await creditReferralCommission(userId, amountUsd, inv.id);
       break;

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.adgenai.app",
-  appName: "AdGenAI",
+  appId: "com.famousli.app",
+  appName: "Famousli",
   webDir: "out", // Next.js static export output
   server: {
     // In dev, point to your local server instead of the bundled files
@@ -31,7 +31,7 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    scheme: "AdGenAI",
+    scheme: "Famousli",
     contentInset: "automatic",
   },
   android: {

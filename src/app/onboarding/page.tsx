@@ -12,7 +12,7 @@ import { Logo } from "@/components/Logo";
 
 const STEPS = [
   {
-    title: "Welcome to AdGenAI",
+    title: "Welcome to Famousli",
     subtitle: "Create professional ads in 30 seconds",
     description: "No marketing degree needed. Type your business in one sentence — our AI generates copy, images, video, music, and posts everything for you automatically.",
     icon: Sparkles,
@@ -51,7 +51,7 @@ const STEPS = [
           <div className="flex-1 rounded-lg bg-gradient-to-br from-secondary to-accent h-16" />
           <div className="flex-1 rounded-lg bg-gradient-to-br from-accent to-success h-16" />
         </div>
-        <div className="mt-2 text-xs text-text-secondary text-center">3 ad variants generated instantly</div>
+        <div className="mt-2 text-xs text-text-secondary text-center">Your ad generated instantly — fully editable after</div>
       </div>
     ),
   },

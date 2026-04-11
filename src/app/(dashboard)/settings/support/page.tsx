@@ -60,7 +60,7 @@ export default async function SupportPage() {
           <Mail className="h-6 w-6 text-primary mb-3" />
           <div className="font-heading font-bold text-text-primary mb-1">Direct Email</div>
           <p className="text-sm text-text-secondary mb-3">Skip the queue — your emails go straight to your success manager</p>
-          <a href="mailto:enterprise@adgenai.com" className="text-sm font-semibold text-primary hover:underline">enterprise@adgenai.com</a>
+          <a href="mailto:enterprise@famousli.com" className="text-sm font-semibold text-primary hover:underline">enterprise@famousli.com</a>
         </div>
         <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
           <MessageSquare className="h-6 w-6 text-accent mb-3" />

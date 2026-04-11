@@ -1,4 +1,4 @@
-// AdGenAI Prisma schema (SQLite for local dev — switch provider to postgresql for prod)
+// Famousli Prisma schema (PostgreSQL via Neon for prod and dev)
 generator client {
   provider = "prisma-client-js"
 }
@@ -45,6 +45,9 @@ model User {
   referredBy     String?
   stripeConnectAccountId String? @unique
   stripeConnectPayoutsEnabled Boolean @default(false)
+  isAdmin        Boolean   @default(false)
+  isSuspended    Boolean   @default(false)
+  lastLoginAt    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -59,11 +62,30 @@ model User {
   teamMemberships TeamMember[]
   ownedTeams     Team[]
   apiKeys        ApiKey[]
+  auditLogs      AuditLog[]
   accountManagerId String?
 
   @@index([email])
   @@index([phone])
   @@index([referredBy])
+  @@index([isAdmin])
+  @@index([plan])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // signup, login, ad_create, ad_publish, payment, plan_change, etc.
+  resource  String?  // ad_id, transaction_id, etc.
+  metadata  String?  // JSON string with additional context
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model Team {
@@ -230,6 +252,25 @@ model Transaction {
 
   @@index([userId])
   @@index([providerId])
+}
+
+model ApiExpense {
+  id          String   @id @default(cuid())
+  provider    String   // "groq", "gemini", "anthropic", "openai", "elevenlabs", "stripe", "vercel", "neon", "cloudflare-r2", etc.
+  category    String   @default("ai") // ai, hosting, storage, email, sms, domain, other
+  description String?
+  amount      Float    // in USD
+  currency    String   @default("USD")
+  purchasedAt DateTime @default(now())
+  invoiceUrl  String?
+  reference   String?  // external invoice id / receipt
+  createdBy   String?  // admin user id who logged it
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([provider])
+  @@index([category])
+  @@index([purchasedAt])
 }
 
 model Referral {

@@ -101,7 +101,7 @@ function ReferralClientInner({
   const link =
     typeof window !== "undefined"
       ? `${window.location.origin}/auth/signup?r=${referralCode}`
-      : `https://adgenai.com/auth/signup?r=${referralCode}`;
+      : `https://famousli.com/auth/signup?r=${referralCode}`;
 
   async function handleCopy() {
     await navigator.clipboard.writeText(link);
@@ -113,7 +113,7 @@ function ReferralClientInner({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Try AdGenAI",
+          title: "Try Famousli",
           text: "Create professional ads in 30 seconds with AI. Get 5 bonus credits on signup!",
           url: link,
         });

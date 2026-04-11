@@ -74,7 +74,7 @@ export default function ApiKeysPage() {
       </Link>
       <div>
         <h1 className="font-heading text-3xl font-bold text-text-primary">API Keys</h1>
-        <p className="text-text-secondary">Manage keys for the AdGenAI REST API</p>
+        <p className="text-text-secondary">Manage keys for the Famousli REST API</p>
       </div>
 
       {/* New key reveal */}

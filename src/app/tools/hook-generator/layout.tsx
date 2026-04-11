@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Free AI Hook Generator — Create Scroll-Stopping Ad Hooks",
   description:
-    "Generate 8 viral ad hooks in seconds with AI. Choose from question, story, pain point, social proof, and urgency styles. Free — no signup required. Powered by AdGenAI.",
+    "Generate 8 viral ad hooks in seconds with AI. Choose from question, story, pain point, social proof, and urgency styles. Free — no signup required. Powered by Famousli.",
   keywords: [
     "hook generator",
     "ad hook generator",
@@ -19,13 +19,13 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Free AI Hook Generator — Scroll-Stopping Ad Hooks in Seconds",
-    description: "Generate 8 viral ad hooks instantly. Question, story, pain point, social proof styles. Free, no signup. Powered by AdGenAI.",
+    description: "Generate 8 viral ad hooks instantly. Question, story, pain point, social proof styles. Free, no signup. Powered by Famousli.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Free AI Hook Generator",
-    description: "Generate scroll-stopping ad hooks in seconds. Free tool by AdGenAI.",
+    description: "Generate scroll-stopping ad hooks in seconds. Free tool by Famousli.",
   },
   alternates: {
     canonical: "/tools/hook-generator",

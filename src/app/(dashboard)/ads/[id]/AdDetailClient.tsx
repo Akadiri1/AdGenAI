@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Check, X, Lock, Sparkles, Film, Trash2, SlidersHorizontal, Download } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { Watermark } from "@/components/Logo";
+import { useAIRewrite } from "@/components/ui/AIRewriteOnly";
 
 type Ad = {
   id: string;
@@ -79,7 +80,7 @@ export function AdDetailClient({
     if (!url) { toastError("No media to download"); return; }
     const a = document.createElement("a");
     a.href = url;
-    a.download = `adgenai-${ad.id}.${ad.videoUrl ? "mp4" : "png"}`;
+    a.download = `famousli-${ad.id}.${ad.videoUrl ? "mp4" : "png"}`;
     a.click();
   }
 
@@ -400,36 +401,28 @@ export function AdDetailClient({
 
             {editingCopy && canEdit ? (
               <div className="space-y-3 text-sm">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">Headline</div>
-                  <input
-                    type="text"
-                    value={draft.headline}
-                    onChange={(e) => setDraft({ ...draft, headline: e.target.value })}
-                    maxLength={100}
-                    className="w-full rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">Body</div>
-                  <textarea
-                    value={draft.bodyText}
-                    onChange={(e) => setDraft({ ...draft, bodyText: e.target.value })}
-                    rows={3}
-                    maxLength={500}
-                    className="w-full resize-none rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">CTA</div>
-                  <input
-                    type="text"
-                    value={draft.callToAction}
-                    onChange={(e) => setDraft({ ...draft, callToAction: e.target.value })}
-                    maxLength={50}
-                    className="w-full rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                </div>
+                <PolishedField
+                  label="Headline"
+                  value={draft.headline}
+                  onChange={(v) => setDraft({ ...draft, headline: v })}
+                  fieldType="headline"
+                  maxLength={100}
+                />
+                <PolishedField
+                  label="Body"
+                  value={draft.bodyText}
+                  onChange={(v) => setDraft({ ...draft, bodyText: v })}
+                  fieldType="body"
+                  multiline rows={3}
+                  maxLength={500}
+                />
+                <PolishedField
+                  label="CTA"
+                  value={draft.callToAction}
+                  onChange={(v) => setDraft({ ...draft, callToAction: v })}
+                  fieldType="cta"
+                  maxLength={50}
+                />
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={saveCopy}
@@ -551,6 +544,46 @@ export function AdDetailClient({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PolishedField({
+  label, value, onChange, fieldType, maxLength, multiline = false, rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  fieldType: string;
+  maxLength: number;
+  multiline?: boolean;
+  rows?: number;
+}) {
+  const { button, panel } = useAIRewrite({ value, onChange, fieldType, maxLength });
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">{label}</span>
+        {button}
+      </div>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={rows}
+          maxLength={maxLength}
+          className="w-full resize-none rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={maxLength}
+          className="w-full rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      )}
+      {panel}
     </div>
   );
 }

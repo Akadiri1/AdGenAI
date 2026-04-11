@@ -13,7 +13,8 @@
     "src/app/api/ai/rephrase/route.ts": { "maxDuration": 30 },
     "src/app/api/ai/ugc-script/route.ts": { "maxDuration": 30 },
     "src/app/api/tools/hook-generator/route.ts": { "maxDuration": 30 },
-    "src/app/api/billing/webhook/route.ts": { "maxDuration": 60 }
+    "src/app/api/billing/webhook/route.ts": { "maxDuration": 60 },
+    "src/app/api/billing/paystack/webhook/route.ts": { "maxDuration": 60 }
   },
   "headers": [
     {

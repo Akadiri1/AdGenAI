@@ -36,12 +36,12 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://adgenai.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://famousli.com"),
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "AdGenAI" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Famousli" },
   title: {
-    default: "AdGenAI — Create Professional Ads in 30 Seconds with AI",
-    template: "%s | AdGenAI",
+    default: "Famousli — Create Professional Ads in 30 Seconds with AI",
+    template: "%s | Famousli",
   },
   description:
     "AI-powered ad creation, scheduling, and auto-posting. Type your business, get video ads, image ads, and copy. Post to Instagram, TikTok, Facebook, WhatsApp automatically. No marketing degree needed.",
@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     "AI video ads",
     "hook generator",
   ],
-  authors: [{ name: "AdGenAI" }],
-  creator: "AdGenAI",
-  publisher: "AdGenAI",
+  authors: [{ name: "Famousli" }],
+  creator: "Famousli",
+  publisher: "Famousli",
   robots: {
     index: true,
     follow: true,
@@ -85,17 +85,17 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "AdGenAI — Create Professional Ads in 30 Seconds with AI",
+    title: "Famousli — Create Professional Ads in 30 Seconds with AI",
     description:
       "AI-powered ad creation for businesses worldwide. Type your business → get video ads, image ads, and copy → auto-post everywhere. Start free.",
     type: "website",
     locale: "en_US",
-    siteName: "AdGenAI",
+    siteName: "Famousli",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AdGenAI — Create Professional Ads in 30 Seconds with AI",
+    title: "Famousli — Create Professional Ads in 30 Seconds with AI",
     description:
       "AI-powered ad creation for small businesses. No marketing degree needed.",
   },
@@ -109,6 +109,8 @@ export default async function RootLayout({
   // Resolve initial language: user's DB preference > cookie > "en"
   const cookieStore = await cookies();
   const cookieLang = cookieStore.get("lang")?.value as LangCode | undefined;
+  const cookieTheme = cookieStore.get("theme")?.value;
+  const isDark = cookieTheme === "dark";
   let initialLang: LangCode = cookieLang ?? "en";
   try {
     const session = await getServerSession(authOptions);
@@ -123,16 +125,9 @@ export default async function RootLayout({
   return (
     <html
       lang={initialLang}
-      className={`${plusJakartaSans.variable} ${dmSans.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${dmSans.variable} ${jetBrainsMono.variable} h-full antialiased${isDark ? " dark" : ""}`}
       suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var p=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&p)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
-          }}
-        />
-      </head>
       <body className="min-h-full flex flex-col">
         <Providers initialLang={initialLang}>{children}</Providers>
         <NativeInit />

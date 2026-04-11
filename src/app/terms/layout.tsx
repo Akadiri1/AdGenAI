@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "AdGenAI Terms of Service — rules for using our AI ad creation platform.",
+  description: "Famousli Terms of Service — rules for using our AI ad creation platform.",
   alternates: { canonical: "/terms" },
 };
 

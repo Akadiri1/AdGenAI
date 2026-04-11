@@ -47,7 +47,7 @@ export function PWAInstallButton() {
     <button
       onClick={install}
       className="flex h-9 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-2.5 text-[10px] sm:text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
-      title="Install AdGenAI app"
+      title="Install Famousli app"
     >
       <Download className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Install app</span>

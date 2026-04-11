@@ -3,8 +3,8 @@ import { ArrowLeft, Shield, Database, Brain, Share2, Clock, UserCheck, Lock, Bab
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — AdGenAI",
-  description: "Learn how AdGenAI collects, uses, and protects your personal information.",
+  title: "Privacy Policy — Famousli",
+  description: "Learn how Famousli collects, uses, and protects your personal information.",
 };
 
 const sections = [
@@ -124,11 +124,11 @@ const sections = [
     content: [
       {
         subtitle: "GDPR Rights (EEA Residents)",
-        text: "You have the right to access, rectify, erase, restrict processing, data portability, and object to processing of your personal data. You may also withdraw consent at any time. To exercise these rights, contact support@adgenai.com.",
+        text: "You have the right to access, rectify, erase, restrict processing, data portability, and object to processing of your personal data. You may also withdraw consent at any time. To exercise these rights, contact support@famousli.com.",
       },
       {
         subtitle: "CCPA Rights (California Residents)",
-        text: "You have the right to know what personal information we collect, request deletion, opt out of data sales (we don't sell data), and not be discriminated against for exercising your rights. Submit requests to support@adgenai.com.",
+        text: "You have the right to know what personal information we collect, request deletion, opt out of data sales (we don't sell data), and not be discriminated against for exercising your rights. Submit requests to support@famousli.com.",
       },
       {
         subtitle: "Universal Rights",
@@ -160,7 +160,7 @@ const sections = [
     content: [
       {
         subtitle: "Age Requirement",
-        text: "AdGenAI is not intended for use by individuals under 16 years of age. We do not knowingly collect personal information from children. If we discover that a child under 16 has created an account, we will promptly delete it and all associated data.",
+        text: "Famousli is not intended for use by individuals under 16 years of age. We do not knowingly collect personal information from children. If we discover that a child under 16 has created an account, we will promptly delete it and all associated data.",
       },
     ],
   },
@@ -194,7 +194,7 @@ const sections = [
     content: [
       {
         subtitle: "Questions or Requests",
-        text: "If you have any questions about this Privacy Policy or wish to exercise your data rights, please contact us at support@adgenai.com. We aim to respond to all requests within 30 days.",
+        text: "If you have any questions about this Privacy Policy or wish to exercise your data rights, please contact us at support@famousli.com. We aim to respond to all requests within 30 days.",
       },
     ],
   },
@@ -226,7 +226,7 @@ export default function PrivacyPage() {
             Last updated: April 7, 2026
           </p>
           <p className="mt-4 text-text-secondary leading-relaxed max-w-2xl">
-            At AdGenAI, we take your privacy seriously. This policy explains how we collect,
+            At Famousli, we take your privacy seriously. This policy explains how we collect,
             use, store, and protect your personal information when you use our AI-powered
             ad creation platform.
           </p>
@@ -267,8 +267,8 @@ export default function PrivacyPage() {
         <div className="mt-12 rounded-2xl border border-black/5 bg-white p-6 sm:p-8 shadow-sm text-center">
           <p className="text-text-secondary text-sm">
             If you have questions about this privacy policy, contact us at{" "}
-            <a href="mailto:support@adgenai.com" className="text-primary font-semibold hover:underline">
-              support@adgenai.com
+            <a href="mailto:support@famousli.com" className="text-primary font-semibold hover:underline">
+              support@famousli.com
             </a>
           </p>
         </div>

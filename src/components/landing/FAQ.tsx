@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const faqs = [
   {
-    q: "Do I need any marketing knowledge to use AdGenAI?",
+    q: "Do I need any marketing knowledge to use Famousli?",
     a: "No. Our Magic Mode is built for people with zero marketing experience. Type your business in one sentence, and our AI handles everything — copy, images, video, scheduling, and posting.",
   },
   {
@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "Do credits expire?",
-    a: "Never. Unlike competitors who force you to use credits monthly, your AdGenAI credits roll over indefinitely. Use them when you need them.",
+    a: "Never. Unlike competitors who force you to use credits monthly, your Famousli credits roll over indefinitely. Use them when you need them.",
   },
   {
     q: "What languages do you support?",

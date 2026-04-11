@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/components/ui/Toast";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { Watermark } from "@/components/Logo";
+import { AVATAR_LIBRARY, SITUATIONS, filterAvatars } from "@/lib/avatars";
 
 type Ad = {
   id: string;
@@ -64,7 +65,7 @@ export function StudioClient({
 
   const [ad, setAd] = useState(initialAd);
   const hasVariants = variants.length > 1;
-  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "music" | "ugc" | "settings">("copy");
+  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "actors" | "music" | "ugc" | "settings">("copy");
   const [saving, setSaving] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -91,6 +92,12 @@ export function StudioClient({
   const [voiceStyle, setVoiceStyle] = useState(0.1);
   const [ugcGenerating, setUgcGenerating] = useState(false);
   const [selectedUgcTemplate, setSelectedUgcTemplate] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [selectedActorId, setSelectedActorId] = useState<string>("");
+  const [actorScript, setActorScript] = useState<string>("");
+  const [actorFilters, setActorFilters] = useState<{ gender: string; age: string; situation: string; search: string }>({
+    gender: "", age: "", situation: "", search: "",
+  });
 
   function update<K extends keyof Ad>(key: K, val: Ad[K]) {
     setAd({ ...ad, [key]: val });
@@ -195,7 +202,7 @@ export function StudioClient({
     if (!url) { toastError("No media to download"); return; }
     const a = document.createElement("a");
     a.href = url;
-    a.download = `adgenai-${ad.id}.${ad.videoUrl ? "mp4" : "png"}`;
+    a.download = `famousli-${ad.id}.${ad.videoUrl ? "mp4" : "png"}`;
     a.click();
   }
 
@@ -253,6 +260,7 @@ export function StudioClient({
   const TABS = [
     { key: "copy" as const, label: "Copy", icon: Type },
     { key: "visuals" as const, label: "Visuals", icon: ImageIcon },
+    { key: "actors" as const, label: "Actors", icon: Users },
     { key: "ugc" as const, label: "UGC", icon: Mic },
     { key: "music" as const, label: "Music", icon: Music },
     { key: "settings" as const, label: "Settings", icon: Palette },
@@ -557,19 +565,53 @@ export function StudioClient({
                 </div>
               )}
 
-              {/* Upload custom image */}
-              <div className="rounded-xl border-2 border-dashed border-black/15 bg-bg-secondary/30 p-4">
-                <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              {/* Upload custom image — file picker only */}
+              <div className="rounded-xl border-2 border-dashed border-black/15 bg-bg-secondary/30 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   <Upload className="h-3.5 w-3.5" /> Upload your own image
                 </div>
-                <input
-                  type="url"
-                  value={customImageUrl}
-                  onChange={(e) => { setCustomImageUrl(e.target.value); setDirty(true); }}
-                  placeholder="https://yoursite.com/product-photo.jpg"
-                  className="w-full rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <p className="mt-1.5 text-[10px] text-text-secondary">Paste a URL to any image. It will replace the current ad image.</p>
+
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {uploading ? "Uploading..." : "Choose image from your device"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("folder", "ads/uploads");
+                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                        setCustomImageUrl(data.url);
+                        setDirty(true);
+                        success("Image uploaded — click Save to apply");
+                      } catch (err) {
+                        toastError((err as Error).message);
+                      } finally {
+                        setUploading(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </label>
+
+                {customImageUrl && (
+                  <div className="rounded-lg border-2 border-primary/20 bg-white p-2">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary mb-1">Preview (click Save to apply)</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={customImageUrl} alt="Preview" className="w-full max-h-48 object-contain rounded" />
+                  </div>
+                )}
+
+                <p className="text-[10px] text-text-secondary">Max 10MB. PNG, JPG, or WebP.</p>
               </div>
 
               {/* AI regenerate */}
@@ -604,6 +646,211 @@ export function StudioClient({
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Actors tab */}
+          {activeTab === "actors" && (
+            <div className="space-y-4">
+              {/* Selected actor + script */}
+              {selectedActorId && (
+                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary text-2xl font-bold text-white">
+                      {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name?.[0] ?? "?"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-heading font-bold text-text-primary">
+                          {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}
+                        </h3>
+                        <span className="text-[10px] font-bold uppercase text-text-secondary">
+                          {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.ethnicity} • {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.situation}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedActorId("")}
+                        className="text-xs text-text-secondary hover:text-danger underline"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                      What should this actor say?
+                    </label>
+                    <textarea
+                      value={actorScript}
+                      onChange={(e) => setActorScript(e.target.value)}
+                      rows={5}
+                      maxLength={800}
+                      placeholder="Type the exact words you want the actor to speak. e.g. 'I tried this for 30 days and the results were insane. My business doubled in revenue without me hiring anyone...'"
+                      className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                    />
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <span className="text-text-secondary">{actorScript.length}/800</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (ad.script) {
+                            setActorScript(ad.script);
+                            success("Loaded script from this ad");
+                          } else {
+                            toastError("This ad has no script yet — write one in the Copy tab first");
+                          }
+                        }}
+                        className="text-primary font-semibold hover:underline"
+                      >
+                        Use ad script
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!actorScript.trim() || ugcGenerating}
+                    onClick={async () => {
+                      setUgcGenerating(true);
+                      try {
+                        const res = await fetch("/api/generate/avatar", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            adId: ad.id,
+                            avatarId: selectedActorId,
+                            script: actorScript,
+                            voice: { speed: voiceSpeed, stability: voiceStability, styleExaggeration: voiceStyle },
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error ?? "Generation failed");
+                        success("Actor video generation started — check back in a moment");
+                      } catch (err) {
+                        toastError((err as Error).message);
+                      } finally {
+                        setUgcGenerating(false);
+                      }
+                    }}
+                    className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {ugcGenerating ? "Generating actor video..." : `Generate video with ${AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}`}
+                  </button>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+                <h3 className="font-heading font-bold text-text-primary mb-3">Pick an actor</h3>
+                <p className="text-sm text-text-secondary mb-4">{AVATAR_LIBRARY.length} AI actors and actresses to choose from</p>
+
+                <div className="grid gap-2 sm:grid-cols-4 mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search by name, vibe, situation..."
+                    value={actorFilters.search}
+                    onChange={(e) => setActorFilters({ ...actorFilters, search: e.target.value })}
+                    className="sm:col-span-2 rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                  <select
+                    value={actorFilters.gender}
+                    onChange={(e) => setActorFilters({ ...actorFilters, gender: e.target.value })}
+                    className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                  >
+                    <option value="">All genders</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
+                  <select
+                    value={actorFilters.age}
+                    onChange={(e) => setActorFilters({ ...actorFilters, age: e.target.value })}
+                    className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                  >
+                    <option value="">All ages</option>
+                    <option value="young">Young (18-30)</option>
+                    <option value="middle">Middle (30-50)</option>
+                    <option value="senior">Senior (50+)</option>
+                  </select>
+                </div>
+                <select
+                  value={actorFilters.situation}
+                  onChange={(e) => setActorFilters({ ...actorFilters, situation: e.target.value })}
+                  className="w-full rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary mb-4"
+                >
+                  <option value="">All situations / settings</option>
+                  {SITUATIONS.map((s) => (
+                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}</option>
+                  ))}
+                </select>
+
+                {/* Actor grid */}
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {filterAvatars({
+                    gender: actorFilters.gender as "male" | "female" | "non-binary" | undefined || undefined,
+                    age: actorFilters.age as "young" | "middle" | "senior" | undefined || undefined,
+                    situation: actorFilters.situation as never || undefined,
+                    search: actorFilters.search || undefined,
+                  }).map((actor) => {
+                    const isSelected = selectedActorId === actor.id;
+                    const locked = actor.isPro && !isPaid;
+                    return (
+                      <button
+                        key={actor.id}
+                        type="button"
+                        onClick={() => {
+                          if (locked) {
+                            toastError("This actor is Pro-only. Upgrade to use it.");
+                            return;
+                          }
+                          setSelectedActorId(actor.id);
+                        }}
+                        className={`relative rounded-2xl border-2 p-3 text-left transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : "border-black/10 hover:border-primary/40 bg-white"
+                        } ${locked ? "opacity-60" : ""}`}
+                      >
+                        {locked && (
+                          <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md bg-warning text-white">
+                            <Lock className="h-3 w-3" />
+                          </div>
+                        )}
+                        {actor.isHD && !locked && (
+                          <div className="absolute top-2 right-2 rounded-md bg-success px-1.5 py-0.5 text-[8px] font-bold text-white">HD</div>
+                        )}
+                        <div className="aspect-square mb-2 flex items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 text-3xl font-bold text-text-primary">
+                          {actor.name[0]}
+                        </div>
+                        <div className="font-semibold text-sm text-text-primary">{actor.name}</div>
+                        <div className="text-[10px] text-text-secondary capitalize">{actor.ethnicity} • {actor.age}</div>
+                        <div className="text-[10px] text-text-secondary capitalize">{actor.situation.replace("-", " ")}</div>
+                        {actor.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {actor.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="rounded bg-bg-secondary px-1.5 py-0.5 text-[9px] text-text-secondary">{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {filterAvatars({
+                  gender: actorFilters.gender as never || undefined,
+                  age: actorFilters.age as never || undefined,
+                  situation: actorFilters.situation as never || undefined,
+                  search: actorFilters.search || undefined,
+                }).length === 0 && (
+                  <div className="py-8 text-center text-sm text-text-secondary">
+                    No actors match your filters. Try clearing one.
+                  </div>
+                )}
               </div>
             </div>
           )}

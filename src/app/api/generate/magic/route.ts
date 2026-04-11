@@ -9,6 +9,7 @@ import { platformsToString, imagesToString } from "@/lib/adHelpers";
 import { buildUserContext } from "@/lib/aiContext";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { checkBrandKit } from "@/lib/brandCheck";
+import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -26,7 +27,7 @@ const bodySchema = z.object({
   generateImages: z.boolean().default(true),
   country: z.string().default("US"),
   language: z.string().default("en"),
-  numVariants: z.number().min(1).max(5).default(3),
+  numVariants: z.number().min(1).max(5).default(1),
 });
 
 export async function POST(req: Request) {
@@ -143,6 +144,16 @@ export async function POST(req: Request) {
       });
     }),
   );
+
+  for (const ad of createdAds) {
+    await logAudit({
+      userId,
+      action: "ad_created",
+      resource: ad.id,
+      metadata: { type: ad.type, platforms: body.platforms, source: "magic" },
+      ...getRequestContext(req),
+    });
+  }
 
   return NextResponse.json({
     success: true,

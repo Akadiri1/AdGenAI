@@ -194,7 +194,7 @@ export default function HookGeneratorPage() {
               Love these hooks? Create full ads with them.
             </h3>
             <p className="text-white/90 mb-6 max-w-md mx-auto">
-              AdGenAI turns your hook into a complete ad — copy, images, video, music — and auto-posts to Instagram, TikTok, Facebook, and more.
+              Famousli turns your hook into a complete ad — copy, images, video, music — and auto-posts to Instagram, TikTok, Facebook, and more.
             </p>
             <Link
               href="/auth/signup"

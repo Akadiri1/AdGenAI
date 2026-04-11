@@ -43,7 +43,7 @@ export function Results() {
             Trusted by businesses everywhere
           </h2>
           <p className="mt-4 text-lg text-text-secondary">
-            From solo entrepreneurs to growing brands, AdGenAI powers ad creation at scale.
+            From solo entrepreneurs to growing brands, Famousli powers ad creation at scale.
           </p>
         </div>
 

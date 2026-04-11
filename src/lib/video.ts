@@ -106,7 +106,7 @@ export async function assembleVideo(params: VideoAssemblyParams): Promise<string
   if (imageUrls.length === 0) throw new Error("At least one image required");
 
   const { w, h } = DIMENSIONS[aspectRatio];
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "adgenai-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "famousli-"));
   const outputPath = path.join(tmpDir, "output.mp4");
 
   // Download all inputs

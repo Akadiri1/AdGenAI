@@ -1,5 +1,5 @@
 // Minimal service worker — network-first for HTML, cache-first for static assets.
-const CACHE = "adgenai-v1";
+const CACHE = "famousli-v1";
 const STATIC_ASSETS = ["/manifest.json"];
 
 self.addEventListener("install", (e) => {

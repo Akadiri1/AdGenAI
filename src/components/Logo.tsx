@@ -1,7 +1,7 @@
 /**
- * AdGenAI logo — a stylized "A" formed by a spark/arrow shape
- * Represents: creative energy (spark), momentum (arrow-right),
- * and AI generation (gradient fill matching brand palette).
+ * Famousli logo — a stylized spark/peak mark inside a gradient rounded square.
+ * Represents: creative energy (spark), momentum (peak), and AI generation
+ * (gradient fill matching brand palette).
  */
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -28,7 +28,7 @@ export function Logo({
       <LogoMark className={s.box} />
       {withText && (
         <span className={`font-heading font-extrabold tracking-tight text-text-primary ${s.text}`}>
-          AdGen<span className="gradient-text">AI</span>
+          Famous<span className="gradient-text">li</span>
         </span>
       )}
     </div>
@@ -42,17 +42,17 @@ export function LogoMark({ className = "" }: { className?: string }) {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="AdGenAI"
+      aria-label="Famousli"
     >
       <defs>
-        <linearGradient id="adgenai-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <linearGradient id="famousli-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
           <stop stopColor="#FF6B35" />
           <stop offset="0.5" stopColor="#F39C12" />
           <stop offset="1" stopColor="#2EC4B6" />
         </linearGradient>
       </defs>
       {/* Rounded square background */}
-      <rect width="40" height="40" rx="10" fill="url(#adgenai-grad)" />
+      <rect width="40" height="40" rx="10" fill="url(#famousli-grad)" />
       {/* Stylized "A" with a spark dot — represents AI-generated creativity */}
       <path
         d="M12 28L20 12L28 28"
@@ -99,7 +99,7 @@ export function Watermark({ className = "" }: { className?: string }) {
         <circle cx="30" cy="11" r="2.5" fill="white" />
       </svg>
       <span className="text-[10px] font-bold uppercase tracking-wider text-white">
-        Made with AdGenAI
+        Made with Famousli
       </span>
     </div>
   );

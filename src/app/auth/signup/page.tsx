@@ -37,7 +37,7 @@ function SignupInner() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-bg">
             <span className="text-lg font-bold text-white">A</span>
           </div>
-          <span className="font-heading text-2xl font-bold text-text-primary">AdGenAI</span>
+          <span className="font-heading text-2xl font-bold text-text-primary">Famousli</span>
         </Link>
 
         <div className="rounded-3xl border border-black/5 bg-white p-8 shadow-xl">

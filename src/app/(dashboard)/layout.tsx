@@ -8,6 +8,7 @@ import { SupportBubble } from "@/components/SupportBubble";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
   children,
@@ -22,9 +23,10 @@ export default async function DashboardLayout({
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { credits: true, plan: true, name: true, email: true },
+      select: { credits: true, plan: true, name: true, email: true, isSuspended: true },
     });
     if (user) {
+      if (user.isSuspended) redirect("/suspended");
       credits = user.credits;
       plan = user.plan;
       userName = user.name ?? user.email?.split("@")[0] ?? "User";

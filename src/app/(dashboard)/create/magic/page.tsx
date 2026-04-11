@@ -42,7 +42,7 @@ export default function MagicModePage() {
           scheduledAt: scheduleMode === "pick" && scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
           postNow: scheduleMode === "now",
           generateImages: true,
-          numVariants: 3,
+          numVariants: 1,
         }),
       });
       const data = await res.json();
@@ -51,7 +51,7 @@ export default function MagicModePage() {
         throw new Error(data.error ?? "Generation failed");
       }
       refreshCredits();
-      success(`Generated ${data.ads.length} ad variant${data.ads.length !== 1 ? "s" : ""}!`);
+      success("Ad created! Edit it in Studio.");
       // Go to studio with all variant IDs so user can compare and pick
       const adIds = data.ads.map((a: { id: string }) => a.id);
       const firstAdId = adIds[0];
@@ -243,7 +243,7 @@ export default function MagicModePage() {
               Ready to create magic? ✨
             </h2>
             <p className="text-text-secondary mb-6">
-              Review your settings, then AI will generate 3 ad variants.
+              Review your settings, then AI will generate your ad — you can edit it in Studio.
             </p>
 
             <div className="space-y-4 rounded-2xl bg-bg-secondary p-5">
@@ -275,7 +275,7 @@ export default function MagicModePage() {
             </div>
 
             <div className="mt-4 rounded-xl bg-primary/5 border border-primary/20 p-4 text-sm text-text-primary">
-              <strong className="text-primary">Cost:</strong> 1 credit for 3 ad variants
+              <strong className="text-primary">Cost:</strong> 1 credit per ad — fully editable after
             </div>
 
             {error && (

@@ -8,15 +8,15 @@ export function ThemeToggle() {
 
   useEffect(() => {
     const stored = localStorage.getItem("theme") as "light" | "dark" | null;
-    const initial = stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const initial = stored ?? (document.documentElement.classList.contains("dark") ? "dark" : "light");
     setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
   }, []);
 
   function toggle() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     localStorage.setItem("theme", next);
+    document.cookie = `theme=${next}; path=/; max-age=31536000; samesite=lax`;
     document.documentElement.classList.toggle("dark", next === "dark");
   }
 

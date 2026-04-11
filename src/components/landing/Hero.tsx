@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Sparkles, Play, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
+import { VideoGallery } from "./VideoGallery";
+import { DEMO_VIDEOS } from "@/lib/demoVideos";
 
 export function Hero() {
   return (
@@ -65,29 +67,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Video demo area — 3 video placeholders */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: "Magic Mode — 30 second ad", desc: "Type your business → get 3 ad variants instantly" },
-            { label: "Studio — Edit everything", desc: "Change copy, images, music, and voice controls" },
-            { label: "Auto-Post — One click", desc: "Schedule and publish to IG, FB, TikTok, WhatsApp" },
-          ].map((v, i) => (
-            <div key={i} className="group relative overflow-hidden rounded-2xl border border-black/5 bg-white shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl">
-              {/* Video placeholder — replace with actual demo videos later */}
-              <div className="relative aspect-[9/16] bg-gradient-to-br from-bg-dark via-secondary/80 to-primary/60">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
-                    <Play className="h-6 w-6 text-white ml-1" fill="white" />
-                  </div>
-                </div>
-                {/* Overlay text */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                  <div className="text-sm font-bold text-white">{v.label}</div>
-                  <div className="text-xs text-white/80 mt-0.5">{v.desc}</div>
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Video gallery — hover to play, click to fullscreen */}
+        <div className="mb-2">
+          <div className="text-center mb-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              Real ads made with Famousli — hover to preview, click to play
+            </p>
+          </div>
+          <VideoGallery videos={DEMO_VIDEOS} />
         </div>
 
         {/* Platform logos */}

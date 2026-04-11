@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateImage } from "@/lib/images";
 import { imagesToString, stringToImages } from "@/lib/adHelpers";
+import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -37,11 +38,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Editing is a paid feature (Pro, Business, Enterprise)
-  const paidPlans = ["PRO", "BUSINESS", "ENTERPRISE"];
+  // Editing is a paid feature (Starter and above — Free users must upgrade)
+  const paidPlans = ["STARTER", "PRO", "BUSINESS", "ENTERPRISE"];
   if (!user || !paidPlans.includes(user.plan)) {
     return NextResponse.json(
-      { error: "Editing ads is available on Pro, Business, and Enterprise plans. Upgrade to edit.", upgrade: true },
+      { error: "Editing ads is a paid feature. Upgrade to Starter or higher.", upgrade: true },
       { status: 402 },
     );
   }
@@ -93,11 +94,22 @@ export async function PATCH(
     },
   });
 
+  await logAudit({
+    userId: session.user.id,
+    action: "ad_edited",
+    resource: id,
+    metadata: {
+      regeneratedImage: !!newImageUrl,
+      changed: Object.keys(body).filter((k) => body[k as keyof typeof body] !== undefined),
+    },
+    ...getRequestContext(req),
+  });
+
   return NextResponse.json({ success: true, ad: updated });
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -112,5 +124,12 @@ export async function DELETE(
   }
 
   await prisma.ad.delete({ where: { id } });
+  await logAudit({
+    userId: session.user.id,
+    action: "ad_deleted",
+    resource: id,
+    metadata: { headline: ad.headline },
+    ...getRequestContext(req),
+  });
   return NextResponse.json({ success: true });
 }

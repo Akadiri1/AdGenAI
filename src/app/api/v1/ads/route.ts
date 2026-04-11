@@ -15,7 +15,7 @@ export const maxDuration = 120;
 const bodySchema = z.object({
   businessInput: z.string().min(3).max(500),
   platforms: z.array(z.string()).min(1).default(["INSTAGRAM"]),
-  numVariants: z.number().min(1).max(5).default(3),
+  numVariants: z.number().min(1).max(5).default(1),
   language: z.string().default("en"),
   generateImages: z.boolean().default(true),
 });

@@ -1,5 +1,5 @@
 {
-  "name": "ads",
+  "name": "famousli",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "native:init": "npx cap init AdGenAI com.adgenai.app --web-dir out",
+    "native:init": "npx cap init Famousli com.famousli.app --web-dir out",
     "native:add:ios": "npx cap add ios",
     "native:add:android": "npx cap add android",
     "native:build": "next build && npx cap sync",

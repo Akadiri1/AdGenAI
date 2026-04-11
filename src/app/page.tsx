@@ -16,7 +16,7 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      name: "AdGenAI",
+      name: "Famousli",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web, iOS, Android",
       description:
@@ -66,24 +66,24 @@ const jsonLd = {
     },
     {
       "@type": "Organization",
-      name: "AdGenAI",
-      url: "https://adgenai.com",
+      name: "Famousli",
+      url: "https://famousli.com",
       description: "AI-powered ad creation for businesses worldwide",
       sameAs: [
-        "https://instagram.com/adgenai",
-        "https://x.com/adgenai",
-        "https://tiktok.com/@adgenai",
-        "https://youtube.com/@adgenai",
-        "https://linkedin.com/company/adgenai",
+        "https://instagram.com/famousli",
+        "https://x.com/famousli",
+        "https://tiktok.com/@famousli",
+        "https://youtube.com/@famousli",
+        "https://linkedin.com/company/famousli",
       ],
     },
     {
       "@type": "WebSite",
-      name: "AdGenAI",
-      url: "https://adgenai.com",
+      name: "Famousli",
+      url: "https://famousli.com",
       potentialAction: {
         "@type": "SearchAction",
-        target: "https://adgenai.com/tools/hook-generator?q={search_term_string}",
+        target: "https://famousli.com/tools/hook-generator?q={search_term_string}",
         "query-input": "required name=search_term_string",
       },
     },
@@ -92,7 +92,7 @@ const jsonLd = {
       mainEntity: [
         {
           "@type": "Question",
-          name: "Do I need marketing knowledge to use AdGenAI?",
+          name: "Do I need marketing knowledge to use Famousli?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "No. Magic Mode is built for people with zero marketing experience. Type your business in one sentence, and AI handles everything.",
@@ -100,7 +100,7 @@ const jsonLd = {
         },
         {
           "@type": "Question",
-          name: "Which platforms does AdGenAI post to?",
+          name: "Which platforms does Famousli post to?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "Instagram, Facebook, TikTok, YouTube Shorts, X/Twitter, LinkedIn, Pinterest, Snapchat, and WhatsApp.",
@@ -116,7 +116,7 @@ const jsonLd = {
         },
         {
           "@type": "Question",
-          name: "What languages does AdGenAI support?",
+          name: "What languages does Famousli support?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "30+ languages including English, Spanish, French, German, Portuguese, Hindi, Arabic, Japanese, Chinese, Swahili, and more.",

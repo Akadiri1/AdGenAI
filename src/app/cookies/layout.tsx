@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
-  description: "AdGenAI Cookie Policy — what cookies we use and how to manage them.",
+  description: "Famousli Cookie Policy — what cookies we use and how to manage them.",
   alternates: { canonical: "/cookies" },
 };
 

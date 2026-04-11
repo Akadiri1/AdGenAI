@@ -1,6 +1,6 @@
 {
-  "name": "AdGenAI — AI Ad Creator",
-  "short_name": "AdGenAI",
+  "name": "Famousli — AI Ad Creator",
+  "short_name": "Famousli",
   "description": "Create professional ads in 30 seconds. Schedule, auto-post, and track performance across every platform.",
   "start_url": "/dashboard",
   "display": "standalone",

@@ -3,8 +3,8 @@ import { ArrowLeft, FileText, UserPlus, CreditCard, ShieldCheck, Lightbulb, Brai
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — AdGenAI",
-  description: "Terms and conditions for using the AdGenAI platform.",
+  title: "Terms of Service — Famousli",
+  description: "Terms and conditions for using the Famousli platform.",
 };
 
 const sections = [
@@ -14,7 +14,7 @@ const sections = [
     content: [
       {
         subtitle: "Agreement",
-        text: "By accessing or using AdGenAI (the \"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not access or use the Service. These Terms constitute a legally binding agreement between you and AdGenAI.",
+        text: "By accessing or using Famousli (the \"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not access or use the Service. These Terms constitute a legally binding agreement between you and Famousli.",
       },
       {
         subtitle: "Eligibility",
@@ -36,7 +36,7 @@ const sections = [
       },
       {
         subtitle: "Account Security",
-        text: "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify us of any unauthorized use of your account at support@adgenai.com.",
+        text: "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify us of any unauthorized use of your account at support@famousli.com.",
       },
       {
         subtitle: "One Account Per Person",
@@ -50,7 +50,7 @@ const sections = [
     content: [
       {
         subtitle: "Plans and Pricing",
-        text: "AdGenAI offers Free, Starter, Pro, Business, and Enterprise plans. Pricing is listed on our website and may be updated from time to time. We will notify existing subscribers at least 30 days before any price changes take effect.",
+        text: "Famousli offers Free, Starter, Pro, Business, and Enterprise plans. Pricing is listed on our website and may be updated from time to time. We will notify existing subscribers at least 30 days before any price changes take effect.",
       },
       {
         subtitle: "Credit System",
@@ -66,7 +66,7 @@ const sections = [
       },
       {
         subtitle: "Refunds",
-        text: "Monthly subscriptions: You may request a full refund within 7 days of your first payment if you have used fewer than 10 credits. Annual subscriptions: You may request a prorated refund within 30 days of purchase. After these periods, refunds are issued at our discretion. Contact support@adgenai.com for refund requests.",
+        text: "Monthly subscriptions: You may request a full refund within 7 days of your first payment if you have used fewer than 10 credits. Annual subscriptions: You may request a prorated refund within 30 days of purchase. After these periods, refunds are issued at our discretion. Contact support@famousli.com for refund requests.",
       },
       {
         subtitle: "Cancellation",
@@ -80,7 +80,7 @@ const sections = [
     content: [
       {
         subtitle: "Permitted Use",
-        text: "You may use AdGenAI to create, schedule, and publish advertisements for legitimate business purposes. You retain responsibility for ensuring your ads comply with the advertising policies of each platform you post to.",
+        text: "You may use Famousli to create, schedule, and publish advertisements for legitimate business purposes. You retain responsibility for ensuring your ads comply with the advertising policies of each platform you post to.",
       },
       {
         subtitle: "Prohibited Content",
@@ -102,11 +102,11 @@ const sections = [
     content: [
       {
         subtitle: "Your Content",
-        text: "You retain all ownership rights to content you upload to or create using the Service, including ad copy, images, videos, and brand assets. By using the Service, you grant AdGenAI a limited license to process, store, and display your content solely to provide the Service.",
+        text: "You retain all ownership rights to content you upload to or create using the Service, including ad copy, images, videos, and brand assets. By using the Service, you grant Famousli a limited license to process, store, and display your content solely to provide the Service.",
       },
       {
         subtitle: "Platform License",
-        text: "The Service, including its software, design, features, documentation, and branding, is owned by AdGenAI and protected by intellectual property laws. You are granted a limited, non-exclusive, non-transferable license to use the Service in accordance with these Terms.",
+        text: "The Service, including its software, design, features, documentation, and branding, is owned by Famousli and protected by intellectual property laws. You are granted a limited, non-exclusive, non-transferable license to use the Service in accordance with these Terms.",
       },
       {
         subtitle: "Templates and Assets",
@@ -114,7 +114,7 @@ const sections = [
       },
       {
         subtitle: "Feedback",
-        text: "If you provide feedback, suggestions, or ideas about the Service, you grant AdGenAI an unrestricted, perpetual license to use such feedback for any purpose without compensation.",
+        text: "If you provide feedback, suggestions, or ideas about the Service, you grant Famousli an unrestricted, perpetual license to use such feedback for any purpose without compensation.",
       },
     ],
   },
@@ -124,7 +124,7 @@ const sections = [
     content: [
       {
         subtitle: "Nature of AI Content",
-        text: "AdGenAI uses artificial intelligence to generate ad copy, images, and video content. While we strive for high quality, AI-generated content may occasionally be inaccurate, inappropriate, or not fully aligned with your intent. You are responsible for reviewing all generated content before publishing.",
+        text: "Famousli uses artificial intelligence to generate ad copy, images, and video content. While we strive for high quality, AI-generated content may occasionally be inaccurate, inappropriate, or not fully aligned with your intent. You are responsible for reviewing all generated content before publishing.",
       },
       {
         subtitle: "No Guarantee of Uniqueness",
@@ -132,7 +132,7 @@ const sections = [
       },
       {
         subtitle: "Compliance Responsibility",
-        text: "You are solely responsible for ensuring that ads created using the Service comply with all applicable laws, regulations, and platform-specific advertising policies. AdGenAI does not provide legal, financial, or medical advice through its generated content.",
+        text: "You are solely responsible for ensuring that ads created using the Service comply with all applicable laws, regulations, and platform-specific advertising policies. Famousli does not provide legal, financial, or medical advice through its generated content.",
       },
     ],
   },
@@ -178,7 +178,7 @@ const sections = [
     content: [
       {
         subtitle: "By You",
-        text: "You may terminate your account at any time through your account settings or by contacting support@adgenai.com. Upon termination, your data will be handled in accordance with our Privacy Policy.",
+        text: "You may terminate your account at any time through your account settings or by contacting support@famousli.com. Upon termination, your data will be handled in accordance with our Privacy Policy.",
       },
       {
         subtitle: "By Us",
@@ -214,7 +214,7 @@ const sections = [
     content: [
       {
         subtitle: "Get in Touch",
-        text: "For questions, concerns, or legal inquiries regarding these Terms of Service, please contact us at support@adgenai.com. We aim to respond to all inquiries within 5 business days.",
+        text: "For questions, concerns, or legal inquiries regarding these Terms of Service, please contact us at support@famousli.com. We aim to respond to all inquiries within 5 business days.",
       },
     ],
   },
@@ -246,7 +246,7 @@ export default function TermsPage() {
             Last updated: April 7, 2026
           </p>
           <p className="mt-4 text-text-secondary leading-relaxed max-w-2xl">
-            Please read these Terms of Service carefully before using AdGenAI. By accessing or
+            Please read these Terms of Service carefully before using Famousli. By accessing or
             using our platform, you agree to be bound by these terms.
           </p>
         </div>
@@ -286,8 +286,8 @@ export default function TermsPage() {
         <div className="mt-12 rounded-2xl border border-black/5 bg-white p-6 sm:p-8 shadow-sm text-center">
           <p className="text-text-secondary text-sm">
             Questions about these terms? Contact us at{" "}
-            <a href="mailto:support@adgenai.com" className="text-primary font-semibold hover:underline">
-              support@adgenai.com
+            <a href="mailto:support@famousli.com" className="text-primary font-semibold hover:underline">
+              support@famousli.com
             </a>
           </p>
         </div>

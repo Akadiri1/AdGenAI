@@ -9,7 +9,7 @@ import {
 
 const STEPS = [
   {
-    title: "Welcome to AdGenAI!",
+    title: "Welcome to Famousli!",
     description: "Let's take a quick tour so you know how everything works. This will take 30 seconds.",
     icon: Sparkles,
     color: "bg-primary text-white",
@@ -17,7 +17,7 @@ const STEPS = [
   },
   {
     title: "Create ads with Magic Mode",
-    description: "Type your business in one sentence — AI generates 3 ad variants with copy, images, and platform-specific formatting. No marketing knowledge needed.",
+    description: "Type your business in one sentence — AI generates a complete ad with copy, image, and platform-specific formatting. Edit it in Studio after. No marketing knowledge needed.",
     icon: Sparkles,
     color: "bg-gradient-to-r from-primary to-warning text-white",
     cta: "Next",

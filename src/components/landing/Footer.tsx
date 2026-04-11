@@ -41,7 +41,7 @@ export function Footer() {
                 <span className="text-lg font-bold text-white">A</span>
               </div>
               <span className="font-heading text-xl font-bold text-text-primary">
-                AdGenAI
+                Famousli
               </span>
             </Link>
             <p className="text-sm text-text-secondary max-w-xs leading-relaxed">
@@ -70,7 +70,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 md:flex-row">
           <p className="text-sm text-text-secondary">
-            © {year} AdGenAI. All rights reserved.
+            © {year} Famousli. All rights reserved.
           </p>
           <p className="text-sm text-text-secondary">
             Made with <span className="text-danger">♥</span> for small businesses worldwide

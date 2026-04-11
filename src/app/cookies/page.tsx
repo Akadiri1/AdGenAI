@@ -3,8 +3,8 @@ import { ArrowLeft, Cookie, Settings, BarChart3, Target, Shield } from "lucide-r
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy — AdGenAI",
-  description: "Learn about the cookies AdGenAI uses and how to manage your preferences.",
+  title: "Cookie Policy — Famousli",
+  description: "Learn about the cookies Famousli uses and how to manage your preferences.",
 };
 
 const cookieCategories = [
@@ -15,12 +15,12 @@ const cookieCategories = [
     color: "text-success",
     bgColor: "bg-success/10",
     cookies: [
-      { name: "next-auth.session-token", purpose: "User authentication and session management", duration: "30 days", provider: "AdGenAI" },
-      { name: "next-auth.csrf-token", purpose: "Cross-site request forgery protection", duration: "Session", provider: "AdGenAI" },
-      { name: "next-auth.callback-url", purpose: "OAuth callback routing", duration: "Session", provider: "AdGenAI" },
-      { name: "cookie_consent", purpose: "Stores your cookie consent preferences", duration: "1 year", provider: "AdGenAI" },
-      { name: "lang", purpose: "Stores your preferred language", duration: "1 year", provider: "AdGenAI" },
-      { name: "theme", purpose: "Stores your dark/light mode preference", duration: "1 year", provider: "AdGenAI" },
+      { name: "next-auth.session-token", purpose: "User authentication and session management", duration: "30 days", provider: "Famousli" },
+      { name: "next-auth.csrf-token", purpose: "Cross-site request forgery protection", duration: "Session", provider: "Famousli" },
+      { name: "next-auth.callback-url", purpose: "OAuth callback routing", duration: "Session", provider: "Famousli" },
+      { name: "cookie_consent", purpose: "Stores your cookie consent preferences", duration: "1 year", provider: "Famousli" },
+      { name: "lang", purpose: "Stores your preferred language", duration: "1 year", provider: "Famousli" },
+      { name: "theme", purpose: "Stores your dark/light mode preference", duration: "1 year", provider: "Famousli" },
     ],
   },
   {
@@ -43,9 +43,9 @@ const cookieCategories = [
     color: "text-secondary",
     bgColor: "bg-secondary/10",
     cookies: [
-      { name: "preferred_currency", purpose: "Stores your selected currency for pricing", duration: "1 year", provider: "AdGenAI" },
-      { name: "billing_cycle", purpose: "Remembers monthly/yearly billing toggle", duration: "1 year", provider: "AdGenAI" },
-      { name: "onboarding_complete", purpose: "Tracks whether onboarding wizard was completed", duration: "Persistent", provider: "AdGenAI" },
+      { name: "preferred_currency", purpose: "Stores your selected currency for pricing", duration: "1 year", provider: "Famousli" },
+      { name: "billing_cycle", purpose: "Remembers monthly/yearly billing toggle", duration: "1 year", provider: "Famousli" },
+      { name: "onboarding_complete", purpose: "Tracks whether onboarding wizard was completed", duration: "Persistent", provider: "Famousli" },
     ],
   },
   {
@@ -89,7 +89,7 @@ export default function CookiesPage() {
             Last updated: April 7, 2026
           </p>
           <p className="mt-4 text-text-secondary leading-relaxed max-w-2xl">
-            This Cookie Policy explains what cookies are, how AdGenAI uses them,
+            This Cookie Policy explains what cookies are, how Famousli uses them,
             and how you can manage your cookie preferences.
           </p>
         </div>
@@ -223,8 +223,8 @@ export default function CookiesPage() {
         <div className="mt-12 rounded-2xl border border-black/5 bg-white p-6 sm:p-8 shadow-sm text-center">
           <p className="text-text-secondary text-sm">
             Questions about our cookie practices? Contact us at{" "}
-            <a href="mailto:support@adgenai.com" className="text-primary font-semibold hover:underline">
-              support@adgenai.com
+            <a href="mailto:support@famousli.com" className="text-primary font-semibold hover:underline">
+              support@famousli.com
             </a>
           </p>
         </div>

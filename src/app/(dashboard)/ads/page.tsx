@@ -2,9 +2,9 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { AdCard } from "@/components/ads/AdPreview";
 import { stringToPlatforms } from "@/lib/adHelpers";
 import { Film } from "lucide-react";
+import { AdsListClient } from "./AdsListClient";
 
 export const dynamic = "force-dynamic";
 
@@ -62,13 +62,7 @@ export default async function AdsPage({
           </Link>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {ads.map((ad) => (
-            <Link key={ad.id} href={`/ads/${ad.id}`}>
-              <AdCard ad={ad} />
-            </Link>
-          ))}
-        </div>
+        <AdsListClient initialAds={ads.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))} />
       )}
     </div>
   );

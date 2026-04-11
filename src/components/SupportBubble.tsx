@@ -21,13 +21,13 @@ type SocialLink = {
 
 const SOCIAL_LINKS: SocialLink[] = [
   { name: "WhatsApp", icon: WhatsAppIcon, href: "https://wa.me/2348000000000", color: "hover:bg-green-500/10", sub: "Chat with us", group: "chat" },
-  { name: "Discord", icon: DiscordIcon, href: "https://discord.gg/adgenai", color: "hover:bg-indigo-500/10", sub: "Join community", group: "chat" },
-  { name: "YouTube", icon: YouTubeIcon, href: "https://youtube.com/@adgenai", color: "hover:bg-red-500/10", sub: "Tutorials & podcasts", group: "chat" },
-  { name: "Instagram", icon: InstagramIcon, href: "https://instagram.com/adgenai", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
-  { name: "X (Twitter)", icon: XTwitterIcon, href: "https://x.com/adgenai", color: "hover:bg-gray-500/10", sub: "Follow us", group: "follow" },
-  { name: "Facebook", icon: FacebookIcon, href: "https://facebook.com/adgenai", color: "hover:bg-blue-500/10", sub: "Follow us", group: "follow" },
-  { name: "LinkedIn", icon: LinkedInIcon, href: "https://linkedin.com/company/adgenai", color: "hover:bg-blue-700/10", sub: "Follow us", group: "follow" },
-  { name: "TikTok", icon: TikTokIcon, href: "https://tiktok.com/@adgenai", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
+  { name: "Discord", icon: DiscordIcon, href: "https://discord.gg/famousli", color: "hover:bg-indigo-500/10", sub: "Join community", group: "chat" },
+  { name: "YouTube", icon: YouTubeIcon, href: "https://youtube.com/@famousli", color: "hover:bg-red-500/10", sub: "Tutorials & podcasts", group: "chat" },
+  { name: "Instagram", icon: InstagramIcon, href: "https://instagram.com/famousli", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
+  { name: "X (Twitter)", icon: XTwitterIcon, href: "https://x.com/famousli", color: "hover:bg-gray-500/10", sub: "Follow us", group: "follow" },
+  { name: "Facebook", icon: FacebookIcon, href: "https://facebook.com/famousli", color: "hover:bg-blue-500/10", sub: "Follow us", group: "follow" },
+  { name: "LinkedIn", icon: LinkedInIcon, href: "https://linkedin.com/company/famousli", color: "hover:bg-blue-700/10", sub: "Follow us", group: "follow" },
+  { name: "TikTok", icon: TikTokIcon, href: "https://tiktok.com/@famousli", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
 ];
 
 export function SupportBubble() {
@@ -35,7 +35,7 @@ export function SupportBubble() {
   const [tab, setTab] = useState<"chat" | "socials">("chat");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<{ from: "user" | "bot"; text: string }[]>([
-    { from: "bot", text: "Hey! 👋 Got questions about AdGenAI? Ask me anything — how to create ads, billing, features, connecting accounts, etc." },
+    { from: "bot", text: "Hey! 👋 Got questions about Famousli? Ask me anything — how to create ads, billing, features, connecting accounts, etc." },
   ]);
   const [sending, setSending] = useState(false);
   const constraintsRef = useRef<HTMLDivElement>(null);
@@ -59,7 +59,7 @@ export function SupportBubble() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: `The user asked this question about AdGenAI (an AI ad creation platform): "${userMsg}". Give a helpful, concise answer in 2-3 sentences. If you don't know, say "I'll connect you with our team — reach out via WhatsApp or email for faster help."`,
+          text: `The user asked this question about Famousli (an AI ad creation platform): "${userMsg}". Give a helpful, concise answer in 2-3 sentences. If you don't know, say "I'll connect you with our team — reach out via WhatsApp or email for faster help."`,
           fieldType: "generic",
           mode: "generate",
         }),
@@ -121,7 +121,7 @@ export function SupportBubble() {
             {/* Header */}
             <div className="flex items-center justify-between bg-gradient-to-r from-primary to-warning p-4 text-white">
               <div>
-                <div className="font-heading font-bold">AdGenAI Support</div>
+                <div className="font-heading font-bold">Famousli Support</div>
                 <div className="text-xs text-white/80">We typically reply instantly</div>
               </div>
               <button
@@ -256,7 +256,7 @@ export function SupportBubble() {
 
                 <div className="mt-4 pt-3 border-t border-black/5">
                   <a
-                    href="mailto:support@adgenai.com"
+                    href="mailto:support@famousli.com"
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-bg-secondary transition-colors"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -264,7 +264,7 @@ export function SupportBubble() {
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold text-text-primary">Email us</div>
-                      <div className="text-[10px] text-text-secondary">support@adgenai.com</div>
+                      <div className="text-[10px] text-text-secondary">support@famousli.com</div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-text-secondary" />
                   </a>

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 /**
  * Export ad with white-label branding.
  * Business/Enterprise users get their logo applied.
- * Free/Starter get AdGenAI watermark.
+ * Free/Starter get Famousli watermark.
  * Pro gets clean export (no watermark, no custom logo).
  */
 export async function GET(
@@ -38,7 +38,7 @@ export async function GET(
   return NextResponse.json({
     url: mediaUrl,
     whiteLabel: isWhiteLabel,
-    watermark: !isPaid ? "AdGenAI" : null,
+    watermark: !isPaid ? "Famousli" : null,
     brandLogo: isWhiteLabel ? user?.brandLogo : null,
     brandName: isWhiteLabel ? user?.businessName : null,
     downloadable: true,

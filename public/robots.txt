@@ -1,4 +1,4 @@
-# AdGenAI — AI Ad Creation Platform
+# Famousli — AI Ad Creation Platform
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -20,4 +20,4 @@ Allow: /privacy
 Allow: /terms
 Allow: /cookies
 
-Sitemap: https://adgenai.com/sitemap.xml
+Sitemap: https://famousli.com/sitemap.xml

@@ -135,7 +135,7 @@ export async function generateCampaign(params: {
   numVariants?: number;
   userContext?: string;
 }): Promise<CampaignGenerationResult> {
-  const { businessInput, platforms, country, language, numVariants = 3, userContext } = params;
+  const { businessInput, platforms, country, language, numVariants = 1, userContext } = params;
 
   const contextBlock = userContext
     ? `\n--- BRAND CONTEXT (use this to personalize everything) ---\n${userContext}\n--- END BRAND CONTEXT ---\n\nIMPORTANT: Use the brand context above to:\n- Match their exact voice/tone\n- Reference their specific products/services\n- Target their stated audience\n- Use their brand colors in image prompts\n- Build on patterns from their top-performing past ads\n`

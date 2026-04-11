@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
 const optionalUrl = z.union([z.string().url(), z.literal(""), z.null(), z.undefined()]);
@@ -56,6 +57,13 @@ export async function POST(req: Request) {
       country: body.country || undefined,
       currency: body.currency || undefined,
     },
+  });
+
+  await logAudit({
+    userId: session.user.id,
+    action: "brand_kit_updated",
+    metadata: { businessName: body.businessName || undefined },
+    ...getRequestContext(req),
   });
 
   return NextResponse.json({ success: true });

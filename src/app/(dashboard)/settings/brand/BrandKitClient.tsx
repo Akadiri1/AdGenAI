@@ -7,7 +7,7 @@ import {
   Building2, Globe, FileText, Users, Palette, Image, MessageSquareQuote,
   Sparkles, Save,
 } from "lucide-react";
-import { AIRewriteOnly } from "@/components/ui/AIRewriteOnly";
+import { useAIRewrite } from "@/components/ui/AIRewriteOnly";
 import { FileUpload } from "@/components/ui/FileUpload";
 
 type Form = {
@@ -138,23 +138,15 @@ export function BrandKitClient({ initial }: { initial: Form }) {
 
       {/* What You Do */}
       <Section icon={FileText} title="What You Do" description="Help AI understand your business deeply">
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-              Business description <Required />
-            </span>
-            <AIRewriteOnly value={form.businessDescription} onChange={(v) => setForm({ ...form, businessDescription: v })} fieldType="generic" maxLength={500} />
-          </div>
-          <textarea
-            value={form.businessDescription}
-            onChange={(e) => setForm({ ...form, businessDescription: e.target.value })}
-            rows={4}
-            maxLength={500}
-            placeholder="We make handcrafted soy candles with natural fragrances. We ship worldwide and focus on eco-friendly packaging. Our customers are women aged 25-45 who value wellness and home aesthetics..."
-            className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-          <div className="mt-1 text-right text-xs text-text-secondary">{form.businessDescription.length}/500</div>
-        </div>
+        <PolishedTextarea
+          label="Business description"
+          required
+          value={form.businessDescription}
+          onChange={(v) => setForm({ ...form, businessDescription: v })}
+          rows={4}
+          maxLength={500}
+          placeholder="We make handcrafted soy candles with natural fragrances. We ship worldwide and focus on eco-friendly packaging. Our customers are women aged 25-45 who value wellness and home aesthetics..."
+        />
         <Field
           label="Tagline / Slogan"
           value={form.brandTagline}
@@ -165,23 +157,15 @@ export function BrandKitClient({ initial }: { initial: Form }) {
 
       {/* Target Audience */}
       <Section icon={Users} title="Target Audience" description="Who should your ads reach?">
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-              Describe your ideal customer <Required />
-            </span>
-            <AIRewriteOnly value={form.targetAudience} onChange={(v) => setForm({ ...form, targetAudience: v })} fieldType="generic" maxLength={300} />
-          </div>
-          <textarea
-            value={form.targetAudience}
-            onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
-            rows={3}
-            maxLength={300}
-            placeholder="Women aged 25-45, urban, interested in wellness, home decor, sustainability. Shops online, active on Instagram and Pinterest..."
-            className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-          />
-          <div className="mt-1 text-right text-xs text-text-secondary">{form.targetAudience.length}/300</div>
-        </div>
+        <PolishedTextarea
+          label="Describe your ideal customer"
+          required
+          value={form.targetAudience}
+          onChange={(v) => setForm({ ...form, targetAudience: v })}
+          rows={3}
+          maxLength={300}
+          placeholder="Women aged 25-45, urban, interested in wellness, home decor, sustainability. Shops online, active on Instagram and Pinterest..."
+        />
       </Section>
 
       {/* Brand Voice */}
@@ -352,6 +336,40 @@ function Field({ label, value, onChange, placeholder, type = "text", required = 
         placeholder={placeholder}
         className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
       />
+    </div>
+  );
+}
+
+function PolishedTextarea({
+  label, value, onChange, rows, maxLength, placeholder, required = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  rows: number;
+  maxLength: number;
+  placeholder: string;
+  required?: boolean;
+}) {
+  const { button, panel } = useAIRewrite({ value, onChange, fieldType: "generic", maxLength });
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+          {label} {required && <Required />}
+        </span>
+        {button}
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+      />
+      <div className="mt-1 text-right text-xs text-text-secondary">{value.length}/{maxLength}</div>
+      {panel}
     </div>
   );
 }
