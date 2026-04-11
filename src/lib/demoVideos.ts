@@ -1,17 +1,28 @@
 import type { DemoVideo } from "@/components/landing/VideoGallery";
 
 /**
- * Demo videos shown on the landing page.
+ * Demo videos shown on the landing page hero gallery.
  *
- * To add real videos:
- *   1. Drop .mp4 files into c:/ads/public/videos/
- *   2. Optionally drop .jpg poster thumbnails into c:/ads/public/videos/posters/
- *   3. Update the entries below with the right filenames
+ * THREE WAYS TO ADD YOUR OWN:
  *
- * For now, the videos point to free Pexels stock clips so the gallery shows
- * something real until you generate your own ads with Seedance / Kling / etc.
+ * 1. Local files (recommended for production):
+ *    - Drop .mp4 files into c:/ads/public/videos/
+ *    - Drop .jpg poster thumbnails into c:/ads/public/videos/posters/
+ *    - Reference like:  src: "/videos/my-ad.mp4", poster: "/videos/posters/my-ad.jpg"
+ *
+ * 2. Hosted URLs (Cloudflare R2, Vercel Blob, S3, Pexels, etc.):
+ *    - Just paste the full URL in src and poster
+ *
+ * 3. Override via environment variable (useful when you want to swap videos
+ *    without redeploying — set NEXT_PUBLIC_DEMO_VIDEOS_JSON to a JSON array):
+ *    NEXT_PUBLIC_DEMO_VIDEOS_JSON='[{"id":"d1","title":"...","src":"...","poster":"..."}]'
+ *
+ * The default list below uses free Pexels stock clips so the gallery is
+ * never empty during development. Replace with real Famousli-generated ads
+ * before launch (or whenever you have your first sample outputs).
  */
-export const DEMO_VIDEOS: DemoVideo[] = [
+
+const FALLBACK_VIDEOS: DemoVideo[] = [
   {
     id: "demo-1",
     title: "Skincare UGC",
@@ -69,3 +80,17 @@ export const DEMO_VIDEOS: DemoVideo[] = [
     poster: "https://images.pexels.com/videos/4630049/free-video-4630049.jpg?auto=compress&cs=tinysrgb&w=600",
   },
 ];
+
+function parseEnvVideos(): DemoVideo[] | null {
+  const raw = process.env.NEXT_PUBLIC_DEMO_VIDEOS_JSON;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed as DemoVideo[];
+  } catch {
+    console.warn("[demoVideos] Invalid NEXT_PUBLIC_DEMO_VIDEOS_JSON — using fallback");
+  }
+  return null;
+}
+
+export const DEMO_VIDEOS: DemoVideo[] = parseEnvVideos() ?? FALLBACK_VIDEOS;

@@ -92,6 +92,7 @@ export function StudioClient({
   const [voiceStyle, setVoiceStyle] = useState(0.1);
   const [ugcGenerating, setUgcGenerating] = useState(false);
   const [selectedUgcTemplate, setSelectedUgcTemplate] = useState("");
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedActorId, setSelectedActorId] = useState<string>("");
   const [actorScript, setActorScript] = useState<string>("");
@@ -342,12 +343,25 @@ export function StudioClient({
         </div>
       )}
 
+      {/* Mobile-only: collapse preview toggle */}
+      <button
+        type="button"
+        onClick={() => setPreviewCollapsed(!previewCollapsed)}
+        className="lg:hidden mb-3 flex w-full items-center justify-between rounded-xl border-2 border-black/10 bg-white dark:bg-white/5 px-4 py-3 text-sm font-semibold text-text-primary hover:bg-bg-secondary"
+      >
+        <span className="flex items-center gap-2">
+          <Film className="h-4 w-4 text-primary" />
+          {previewCollapsed ? "Show preview" : "Hide preview"}
+        </span>
+        <span className="text-xs text-text-secondary">{previewCollapsed ? "▼" : "▲"}</span>
+      </button>
+
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
-        {/* Preview — left side */}
-        <div className="lg:col-span-2">
+        {/* Preview — left side (collapsible on mobile) */}
+        <div className={`lg:col-span-2 ${previewCollapsed ? "hidden lg:block" : ""}`}>
           <div className="lg:sticky lg:top-20 space-y-4">
             <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-4 shadow-sm">
-              <div className={`relative mx-auto w-full max-w-[240px] sm:max-w-xs lg:max-w-sm ${aspectClass} overflow-hidden rounded-xl bg-bg-secondary shadow-lg`}>
+              <div className={`relative mx-auto w-full max-w-[200px] sm:max-w-xs lg:max-w-sm ${aspectClass} overflow-hidden rounded-xl bg-bg-secondary shadow-lg`}>
                 {ad.videoUrl ? (
                   // eslint-disable-next-line jsx-a11y/media-has-caption
                   <video src={ad.videoUrl} controls className="h-full w-full object-cover" />

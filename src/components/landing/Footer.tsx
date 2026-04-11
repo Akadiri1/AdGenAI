@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -6,23 +7,13 @@ export function Footer() {
     Product: [
       { label: "Features", href: "#features" },
       { label: "Pricing", href: "#pricing" },
-      { label: "Templates", href: "/templates" },
-      { label: "Marketplace", href: "/marketplace" },
-    ],
-    Company: [
-      { label: "About", href: "/about" },
-      { label: "Blog", href: "/blog" },
-      { label: "Careers", href: "/careers" },
-      { label: "Contact", href: "/contact" },
-    ],
-    Resources: [
-      { label: "Help Center", href: "/help" },
-      { label: "API Docs", href: "/docs" },
-      { label: "Affiliate Program", href: "/affiliate" },
-      { label: "Community", href: "/community" },
+      { label: "How it works", href: "#how-it-works" },
+      { label: "FAQ", href: "#faq" },
     ],
     "Free Tools": [
       { label: "Hook Generator", href: "/tools/hook-generator" },
+      { label: "Sign up free", href: "/auth/signup" },
+      { label: "Sign in", href: "/auth/login" },
     ],
     Legal: [
       { label: "Privacy", href: "/privacy" },
@@ -32,21 +23,22 @@ export function Footer() {
   };
 
   return (
-    <footer className="border-t border-black/5 bg-white px-6 py-16">
+    <footer className="border-t border-black/5 bg-white dark:bg-bg-dark px-4 sm:px-6 py-12 sm:py-16">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-8 sm:gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-bg">
-                <span className="text-lg font-bold text-white">A</span>
-              </div>
-              <span className="font-heading text-xl font-bold text-text-primary">
-                Famousli
-              </span>
+            <Link href="/" className="inline-block mb-4">
+              <Logo size="md" />
             </Link>
-            <p className="text-sm text-text-secondary max-w-xs leading-relaxed">
+            <p className="text-sm text-text-secondary max-w-xs leading-relaxed mb-4">
               AI-powered ad creation for every small business. From New York to Nairobi, Paris to Mumbai.
             </p>
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark transition-colors"
+            >
+              Start free →
+            </Link>
           </div>
 
           {Object.entries(links).map(([section, items]) => (
@@ -68,12 +60,12 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 md:flex-row">
-          <p className="text-sm text-text-secondary">
+        <div className="mt-10 sm:mt-12 flex flex-col items-center justify-between gap-3 border-t border-black/5 dark:border-white/10 pt-6 sm:pt-8 md:flex-row text-center md:text-left">
+          <p className="text-xs sm:text-sm text-text-secondary">
             © {year} Famousli. All rights reserved.
           </p>
-          <p className="text-sm text-text-secondary">
-            Made with <span className="text-danger">♥</span> for small businesses worldwide
+          <p className="text-xs sm:text-sm text-text-secondary">
+            Made with <span className="text-danger">♥</span> by Emmanuel Akadiri
           </p>
         </div>
       </div>
