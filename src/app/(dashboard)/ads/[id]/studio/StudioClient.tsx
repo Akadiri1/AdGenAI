@@ -1150,10 +1150,11 @@ export function StudioClient({
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={downloadAd}
-              className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:border-white/15 bg-white dark:bg-white/5 px-3 text-xs sm:text-sm font-semibold text-text-primary dark:text-white hover:bg-bg-secondary"
+              className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:!border-white/20 bg-white dark:!bg-white/10 px-3 text-xs sm:text-sm font-semibold text-text-primary dark:!text-white hover:bg-bg-secondary"
               title="Download ad"
             >
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Download</span>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Download</span>
             </button>
             <button
               onClick={() => setShowTemplateModal(true)}
