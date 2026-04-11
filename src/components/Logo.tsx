@@ -27,7 +27,7 @@ export function Logo({
     <div className={`flex items-center gap-2 ${className}`}>
       <LogoMark className={s.box} />
       {withText && (
-        <span className={`font-heading font-extrabold tracking-tight text-text-primary ${s.text}`}>
+        <span className={`font-heading font-extrabold tracking-tight text-text-primary dark:text-white ${s.text}`}>
           Famous<span className="gradient-text">li</span>
         </span>
       )}

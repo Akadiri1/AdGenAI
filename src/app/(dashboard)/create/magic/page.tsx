@@ -97,7 +97,7 @@ export default function MagicModePage() {
         <div className="mt-3 text-sm font-semibold text-text-secondary">Step {step} of 4</div>
       </div>
 
-      <div className="rounded-3xl border border-black/5 bg-white p-8 shadow-sm overflow-hidden">
+      <div className="rounded-2xl sm:rounded-3xl border border-black/5 bg-white p-4 sm:p-8 shadow-sm overflow-hidden">
         <AnimatePresence mode="wait">
         <motion.div
           key={step}

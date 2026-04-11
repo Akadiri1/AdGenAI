@@ -116,7 +116,7 @@ export function BottomNav() {
               </div>
 
               <div className="overflow-y-auto px-4 pb-6" style={{ maxHeight: "calc(70vh - 70px)" }}>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {MORE_ITEMS.map((item) => {
                     const Icon = item.icon;
                     const active = pathname.startsWith(item.href);

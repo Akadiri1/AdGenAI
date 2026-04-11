@@ -288,16 +288,16 @@ export function StudioClient({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {dirty && isPaid && (
-            <button onClick={save} disabled={saving} className="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50">
+            <button onClick={save} disabled={saving} className="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 text-xs sm:text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50">
               <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}
             </button>
           )}
-          <button onClick={() => setShowTemplateModal(true)} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-4 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors">
-            <BookTemplate className="h-4 w-4" /> Save as Template
+          <button onClick={() => setShowTemplateModal(true)} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-colors">
+            <BookTemplate className="h-4 w-4" /> <span className="hidden sm:inline">Save as </span>Template
           </button>
-          <button onClick={downloadAd} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white px-4 text-sm font-semibold text-text-primary hover:bg-bg-secondary">
+          <button onClick={downloadAd} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white px-3 sm:px-4 text-xs sm:text-sm font-semibold text-text-primary hover:bg-bg-secondary">
             <Download className="h-4 w-4" /> Download
           </button>
         </div>
@@ -312,7 +312,7 @@ export function StudioClient({
             </h2>
             <span className="text-xs text-text-secondary">Click to switch</span>
           </div>
-          <div className="grid gap-3 grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
             {variants.map((v, i) => (
               <button
                 key={v.id}
@@ -354,7 +354,7 @@ export function StudioClient({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
         {/* Preview — left side */}
         <div className="lg:col-span-2">
           <div className="lg:sticky lg:top-20 space-y-4">
@@ -476,19 +476,19 @@ export function StudioClient({
 
         {/* Editor — right side */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Tabs */}
-          <div className="flex gap-1 rounded-xl bg-bg-secondary p-1">
+          {/* Tabs — horizontal scroll on mobile, evenly spaced on desktop */}
+          <div className="flex gap-1 rounded-xl bg-bg-secondary p-1 overflow-x-auto scrollbar-hide -mx-1 sm:mx-0">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-semibold transition-all ${
+                  className={`flex flex-shrink-0 sm:flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 min-h-[44px] text-xs font-semibold whitespace-nowrap transition-all ${
                     activeTab === tab.key ? "bg-white text-text-primary shadow-sm" : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5" /> {tab.label}
+                  <Icon className="h-3.5 w-3.5 flex-shrink-0" /> {tab.label}
                 </button>
               );
             })}
@@ -504,7 +504,7 @@ export function StudioClient({
 
           {/* Copy tab */}
           {activeTab === "copy" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <AIRephraseField
                 label="Headline"
                 hint={`${(ad.headline ?? "").length}/80`}
@@ -550,12 +550,12 @@ export function StudioClient({
 
           {/* Visuals tab */}
           {activeTab === "visuals" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <h3 className="font-heading font-bold text-text-primary">Images</h3>
 
               {/* Current images */}
               {ad.images.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {ad.images.map((img, i) => (
                     <div key={i} className="aspect-square overflow-hidden rounded-xl bg-bg-secondary">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -859,7 +859,7 @@ export function StudioClient({
           {activeTab === "ugc" && (
             <div className="space-y-4">
               {/* UGC Script Templates */}
-              <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
                 <h3 className="font-heading font-bold text-text-primary">UGC Script Templates</h3>
                 <p className="text-sm text-text-secondary">Pick a proven format — AI writes the script using your brand details</p>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -899,7 +899,7 @@ export function StudioClient({
               </div>
 
               {/* Voice Controls */}
-              <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
                 <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
                   <Mic className="h-5 w-5 text-primary" /> Voice Controls
                 </h3>
@@ -921,7 +921,7 @@ export function StudioClient({
               </div>
 
               {/* Mass Variant Generation */}
-              <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
                 <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" /> Mass Variant Testing
                 </h3>
@@ -982,7 +982,7 @@ export function StudioClient({
 
           {/* Music tab */}
           {activeTab === "music" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
               <p className="text-sm text-text-secondary">Pick a genre for the video version of your ad</p>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1009,7 +1009,7 @@ export function StudioClient({
 
           {/* Settings tab */}
           {activeTab === "settings" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   <Languages className="inline h-3.5 w-3.5 mr-1" /> Language

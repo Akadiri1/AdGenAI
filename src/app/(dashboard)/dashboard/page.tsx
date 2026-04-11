@@ -173,7 +173,7 @@ export default async function DashboardPage() {
       {/* Live activity feed — user's records as they happen */}
       <LiveActivityFeed compact />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-black/5 bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-heading text-lg font-bold text-text-primary">Recent Ads</h3>
