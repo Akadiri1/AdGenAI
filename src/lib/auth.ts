@@ -5,6 +5,7 @@ import EmailProvider from "next-auth/providers/email";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
+import { magicLinkEmail } from "@/lib/emailTemplates";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -35,6 +36,21 @@ export const authOptions: NextAuthOptions = {
               },
             },
             from: process.env.EMAIL_FROM ?? process.env.SMTP_USER,
+            // Custom branded magic link email
+            async sendVerificationRequest({ identifier: email, url }) {
+              // Detect if this is a new user (no row in DB yet)
+              const existing = await prisma.user.findUnique({
+                where: { email },
+                select: { id: true },
+              });
+              const { subject, html, text } = magicLinkEmail({
+                url,
+                host: new URL(url).host,
+                isNewUser: !existing,
+              });
+              const ok = await sendEmail({ to: email, subject, html, text });
+              if (!ok) throw new Error("Failed to send magic link email");
+            },
           }),
         ]
       : process.env.EMAIL_SERVER

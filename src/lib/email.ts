@@ -2,6 +2,7 @@ export async function sendEmail(params: {
   to: string;
   subject: string;
   html: string;
+  text?: string;
 }): Promise<boolean> {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn("[email] SMTP not configured, skipping email to", params.to);
@@ -26,6 +27,7 @@ export async function sendEmail(params: {
       to: params.to,
       subject: params.subject,
       html: params.html,
+      ...(params.text && { text: params.text }),
     });
     return true;
   } catch (err) {
