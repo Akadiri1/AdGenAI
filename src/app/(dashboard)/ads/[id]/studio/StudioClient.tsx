@@ -268,7 +268,7 @@ export function StudioClient({
   ];
 
   return (
-    <div className="mx-auto max-w-7xl pb-28 px-1 sm:px-0">
+    <div className="mx-auto max-w-7xl pb-28 overflow-x-hidden">
       {/* Header — clean: just back, title, and unsaved indicator */}
       <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -657,7 +657,7 @@ export function StudioClient({
             <div className="space-y-4">
               {/* Selected actor + script */}
               {selectedActorId && (
-                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-5">
+                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-3 sm:p-5">
                   <div className="flex items-start gap-4">
                     <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary text-2xl font-bold text-white">
                       {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name?.[0] ?? "?"}
@@ -746,7 +746,7 @@ export function StudioClient({
               )}
 
               {/* Filters */}
-              <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-5 shadow-sm">
                 <h3 className="font-heading font-bold text-text-primary mb-3">Pick an actor</h3>
                 <p className="text-sm text-text-secondary mb-4">{AVATAR_LIBRARY.length} AI actors and actresses to choose from</p>
 

@@ -46,7 +46,7 @@ export default async function DashboardLayout({
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar plan={plan} userName={userName} />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:p-6 pb-20 md:pb-6">{children}</main>
         </div>
         <BottomNav />
         <SupportBubble />

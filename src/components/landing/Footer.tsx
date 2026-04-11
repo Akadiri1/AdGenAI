@@ -65,7 +65,7 @@ export function Footer() {
             © {year} Famousli. All rights reserved.
           </p>
           <p className="text-xs sm:text-sm text-text-secondary">
-            Made with <span className="text-danger">♥</span> by Emmanuel Akadiri
+            AI-powered ads for businesses worldwide
           </p>
         </div>
       </div>

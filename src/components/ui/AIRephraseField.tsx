@@ -107,10 +107,10 @@ export function AIRephraseField(props: InputProps | TextareaProps) {
   ];
 
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">{label}</span>
-        <div className="flex items-center gap-1.5">
+    <div className="min-w-0">
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary truncate min-w-0 flex-1">{label}</span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {hint && <span className="text-xs text-text-secondary hidden sm:block">{hint}</span>}
 
           <button
