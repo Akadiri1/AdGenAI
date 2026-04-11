@@ -267,39 +267,27 @@ export function StudioClient({
   ];
 
   return (
-    <div className="mx-auto max-w-7xl">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="mx-auto max-w-7xl pb-24">
+      {/* Header — clean: just back, title, and unsaved indicator */}
+      <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
             href={`/ads/${ad.id}`}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white hover:bg-bg-secondary"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white hover:bg-bg-secondary"
+            title="Back to ad"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div>
-            <h1 className="font-heading text-xl font-bold text-text-primary flex items-center gap-2">
-              <SlidersHorizontal className="h-5 w-5 text-primary" /> Ad Studio
+          <div className="min-w-0 flex-1">
+            <h1 className="font-heading text-lg sm:text-xl font-bold text-text-primary flex items-center gap-2 truncate">
+              <SlidersHorizontal className="h-5 w-5 text-primary flex-shrink-0" /> Ad Studio
             </h1>
-            <div className="flex items-center gap-2 text-xs text-text-secondary">
+            <div className="flex items-center gap-2 text-xs text-text-secondary flex-wrap">
               <span className="rounded bg-bg-secondary px-1.5 py-0.5 font-semibold">{ad.status}</span>
               {ad.score && <span>Score: {Math.round(ad.score)}/100</span>}
-              {dirty && <span className="text-warning font-semibold">Unsaved changes</span>}
+              {dirty && <span className="text-warning font-semibold">● Unsaved changes</span>}
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {dirty && isPaid && (
-            <button onClick={save} disabled={saving} className="flex h-10 items-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 text-xs sm:text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50">
-              <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}
-            </button>
-          )}
-          <button onClick={() => setShowTemplateModal(true)} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-colors">
-            <BookTemplate className="h-4 w-4" /> <span className="hidden sm:inline">Save as </span>Template
-          </button>
-          <button onClick={downloadAd} className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white px-3 sm:px-4 text-xs sm:text-sm font-semibold text-text-primary hover:bg-bg-secondary">
-            <Download className="h-4 w-4" /> Download
-          </button>
         </div>
       </div>
 
@@ -1154,6 +1142,51 @@ export function StudioClient({
           </div>
         </div>
       )}
+
+      {/* Sticky bottom action bar — primary actions always reachable */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 dark:border-white/10 bg-white/95 dark:bg-bg-dark/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:left-64">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
+          {/* Secondary actions (left) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={downloadAd}
+              className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:border-white/15 bg-white dark:bg-white/5 px-3 text-xs sm:text-sm font-semibold text-text-primary dark:text-white hover:bg-bg-secondary"
+              title="Download ad"
+            >
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Download</span>
+            </button>
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              className="hidden sm:flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-colors"
+              title="Save as template"
+            >
+              <BookTemplate className="h-4 w-4" /> Template
+            </button>
+          </div>
+
+          {/* Primary actions (right) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isPaid && (
+              <button
+                onClick={save}
+                disabled={saving || !dirty}
+                className="flex h-11 items-center gap-1.5 rounded-xl border-2 border-primary/30 bg-primary/5 px-3 sm:px-4 text-xs sm:text-sm font-bold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}
+              </button>
+            )}
+            <button
+              onClick={() => handleSchedule(true)}
+              disabled={scheduling || dirty}
+              title={dirty ? "Save your changes first" : "Publish this ad now"}
+              className="flex h-11 items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 sm:px-5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-primary/30 hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <Send className="h-4 w-4" />
+              {scheduling ? "Publishing..." : "Publish"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
