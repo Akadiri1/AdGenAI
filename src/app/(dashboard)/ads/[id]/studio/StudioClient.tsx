@@ -267,7 +267,7 @@ export function StudioClient({
   ];
 
   return (
-    <div className="mx-auto max-w-7xl pb-24">
+    <div className="mx-auto max-w-7xl pb-28 px-1 sm:px-0">
       {/* Header — clean: just back, title, and unsaved indicator */}
       <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -346,8 +346,8 @@ export function StudioClient({
         {/* Preview — left side */}
         <div className="lg:col-span-2">
           <div className="lg:sticky lg:top-20 space-y-4">
-            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <div className={`relative mx-auto max-w-sm ${aspectClass} overflow-hidden rounded-xl bg-bg-secondary shadow-lg`}>
+            <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-4 shadow-sm">
+              <div className={`relative mx-auto w-full max-w-[240px] sm:max-w-xs lg:max-w-sm ${aspectClass} overflow-hidden rounded-xl bg-bg-secondary shadow-lg`}>
                 {ad.videoUrl ? (
                   // eslint-disable-next-line jsx-a11y/media-has-caption
                   <video src={ad.videoUrl} controls className="h-full w-full object-cover" />
@@ -382,7 +382,7 @@ export function StudioClient({
               </div>
               {!ad.videoUrl && (
                 <>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {[
                       { id: "6s", label: "6s", sub: "Bumper" },
                       { id: "15s", label: "15s", sub: "Short" },
