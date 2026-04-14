@@ -5,6 +5,7 @@ import { ReferralClaimer } from "@/components/ReferralClaimer";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CreditsProvider } from "@/components/CreditsProvider";
 import { SupportBubble } from "@/components/SupportBubble";
+import { AppLock } from "@/components/AppLock";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -40,17 +41,19 @@ export default async function DashboardLayout({
 
   return (
     <CreditsProvider initialCredits={credits}>
-      <div className="flex h-screen overflow-hidden bg-bg-secondary/20">
-        <ReferralClaimer />
-        <OnboardingTour />
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar plan={plan} userName={userName} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:p-6 pb-20 md:pb-6">{children}</main>
+      <AppLock>
+        <div className="flex h-screen overflow-hidden bg-bg-secondary/20">
+          <ReferralClaimer />
+          <OnboardingTour />
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Topbar plan={plan} userName={userName} />
+            <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:p-6 pb-20 md:pb-6">{children}</main>
+          </div>
+          <BottomNav />
+          <SupportBubble />
         </div>
-        <BottomNav />
-        <SupportBubble />
-      </div>
+      </AppLock>
     </CreditsProvider>
   );
 }

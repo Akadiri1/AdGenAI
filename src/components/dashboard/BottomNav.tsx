@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Sparkles, Film, BarChart3, MoreHorizontal,
   Megaphone, CalendarDays, Palette, ShoppingBag, Link2,
-  Gift, Settings, HelpCircle, X, CreditCard, Paintbrush, User,
+  Gift, Settings, HelpCircle, X, CreditCard, Paintbrush, User, LogOut, Lock,
 } from "lucide-react";
 
 const PRIMARY_TABS = [
@@ -28,6 +29,7 @@ const MORE_ITEMS = [
   { href: "/settings/account", icon: User, label: "Account" },
   { href: "/settings/billing", icon: CreditCard, label: "Billing" },
   { href: "/settings/brand", icon: Paintbrush, label: "Brand Kit" },
+  { href: "/settings/security", icon: Lock, label: "Security" },
   { href: "/onboarding", icon: HelpCircle, label: "How it works" },
 ];
 
@@ -141,6 +143,19 @@ export function BottomNav() {
                     );
                   })}
                 </div>
+
+                {/* Sign out button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMore(false);
+                    signOut({ callbackUrl: "/auth/login" });
+                  }}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-danger/20 bg-danger/5 py-3 text-sm font-semibold text-danger hover:bg-danger/10 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
               </div>
             </motion.div>
           </>

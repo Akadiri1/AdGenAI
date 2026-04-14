@@ -2,9 +2,10 @@ import { requireAdmin } from "@/lib/adminAuth";
 import Link from "next/link";
 import {
   LayoutDashboard, Users, DollarSign, Film, Activity,
-  Settings, LogOut, ShieldCheck, Receipt,
+  LogOut, ShieldCheck, Receipt,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { AdminMobileNav } from "./AdminMobileNav";
 
 export const dynamic = "force-dynamic";
 
@@ -68,14 +69,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-black/5 bg-white/80 px-4 sm:px-6 backdrop-blur-lg">
-          <h1 className="font-heading text-base sm:text-lg font-bold text-text-primary flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-danger" />
-            Super Admin
-          </h1>
-          <div className="text-xs text-text-secondary">{new Date().toLocaleString()}</div>
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-black/5 dark:border-white/10 bg-white/80 dark:bg-bg-dark/80 px-3 sm:px-6 backdrop-blur-lg">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <AdminMobileNav adminEmail={admin.email} />
+            <h1 className="font-heading text-base sm:text-lg font-bold text-text-primary dark:text-white flex items-center gap-2 truncate">
+              <ShieldCheck className="h-5 w-5 text-danger flex-shrink-0" />
+              <span className="truncate">Super Admin</span>
+            </h1>
+          </div>
+          <div className="text-[10px] sm:text-xs text-text-secondary flex-shrink-0">
+            <Link
+              href="/dashboard"
+              className="md:hidden inline-flex items-center gap-1 rounded-lg border border-black/10 px-2 py-1 font-semibold hover:bg-bg-secondary"
+            >
+              Exit
+            </Link>
+            <span className="hidden md:inline">{new Date().toLocaleString()}</span>
+          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

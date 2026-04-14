@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { useLang } from "@/components/LangProvider";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Sparkles, Film, Megaphone, CalendarDays, BarChart3,
-  Palette, ShoppingBag, Link2, Gift, Settings, Plus, HelpCircle,
+  Palette, ShoppingBag, Link2, Gift, Settings, Plus, HelpCircle, LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -69,7 +70,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-black/5 p-4 space-y-1">
+      <div className="border-t border-black/5 dark:border-white/10 p-4 space-y-1">
         <Link
           href="/onboarding"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
@@ -84,6 +85,14 @@ export function Sidebar() {
           <Settings className="h-[18px] w-[18px]" />
           {t("nav.settings")}
         </Link>
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/auth/login" })}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-danger/10 hover:text-danger transition-colors"
+        >
+          <LogOut className="h-[18px] w-[18px]" />
+          Sign out
+        </button>
       </div>
     </aside>
   );
