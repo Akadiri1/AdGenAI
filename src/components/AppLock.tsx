@@ -8,7 +8,6 @@ import {
   verifyPin,
   verifyBiometric,
   markUnlocked,
-  shouldLockNow,
   isBiometricSupported,
 } from "@/lib/appLock";
 
@@ -16,26 +15,54 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [locked, setLocked] = useState(false);
 
+  // Lock on initial page load
   useEffect(() => {
     const config = getAppLockConfig();
-    setLocked(shouldLockNow(config));
+    if (config.enabled && (config.pinHash || config.biometricCredentialId)) {
+      setLocked(true); // always lock on fresh load
+    }
     setChecked(true);
   }, []);
 
+  // Lock EVERY time user leaves the app and comes back
+  // (tab switch, home button, app switcher, phone call, etc.)
   useEffect(() => {
-    function onVisibility() {
-      if (document.visibilityState === "visible") {
-        const config = getAppLockConfig();
-        if (shouldLockNow(config)) setLocked(true);
+    const config = getAppLockConfig();
+    if (!config.enabled) return;
+
+    function onHidden() {
+      // User left the app — mark that we need to lock when they return
+      if (document.visibilityState === "hidden") {
+        sessionStorage.setItem("famousli_should_lock", "1");
       }
     }
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
+
+    function onVisible() {
+      // User came back — check if we should lock
+      if (document.visibilityState === "visible") {
+        const shouldLock = sessionStorage.getItem("famousli_should_lock");
+        if (shouldLock === "1") {
+          const cfg = getAppLockConfig();
+          if (cfg.enabled && (cfg.pinHash || cfg.biometricCredentialId)) {
+            setLocked(true);
+          }
+          sessionStorage.removeItem("famousli_should_lock");
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", onHidden);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onHidden);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const handleUnlock = useCallback(() => {
     markUnlocked();
     setLocked(false);
+    sessionStorage.removeItem("famousli_should_lock");
   }, []);
 
   if (!checked) return null;
@@ -101,14 +128,14 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#0F0F1E] p-6">
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white p-6">
       {/* Logo + brand */}
       <div className="mb-8 flex flex-col items-center">
         <Logo size="xl" withText={false} />
-        <h1 className="mt-4 font-heading text-2xl font-bold text-white">
+        <h1 className="mt-4 font-heading text-2xl font-bold text-text-primary">
           Famousli
         </h1>
-        <div className="mt-2 flex items-center gap-1.5 text-sm text-white/50">
+        <div className="mt-2 flex items-center gap-1.5 text-sm text-text-secondary">
           <Lock className="h-3.5 w-3.5" />
           <span>
             {hasPin && hasBiometric && "Enter PIN or use biometric"}
@@ -127,7 +154,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
               className={`h-4 w-4 rounded-full transition-all duration-200 ${
                 i < pin.length
                   ? "bg-primary scale-110"
-                  : "bg-white/15 border-2 border-white/20"
+                  : "bg-black/10 border-2 border-black/20"
               }`}
             />
           ))}
@@ -149,7 +176,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
               type="button"
               onClick={() => pressDigit(String(d))}
               disabled={busy}
-              className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-2xl font-bold text-white hover:bg-white/15 active:scale-90 transition-all disabled:opacity-40"
+              className="flex h-16 w-full items-center justify-center rounded-2xl bg-black/5 text-2xl font-bold text-text-primary hover:bg-black/10 active:scale-90 transition-all disabled:opacity-40"
             >
               {d}
             </button>
@@ -159,7 +186,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
               type="button"
               onClick={handleBiometricButton}
               disabled={busy}
-              className="flex h-16 w-full items-center justify-center rounded-2xl bg-primary/15 text-primary hover:bg-primary/25 active:scale-90 transition-all disabled:opacity-40"
+              className="flex h-16 w-full items-center justify-center rounded-2xl bg-primary/10 text-primary hover:bg-primary/20 active:scale-90 transition-all disabled:opacity-40"
               aria-label="Use biometric"
             >
               <Fingerprint className="h-7 w-7" />
@@ -171,7 +198,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             type="button"
             onClick={() => pressDigit("0")}
             disabled={busy}
-            className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-2xl font-bold text-white hover:bg-white/15 active:scale-90 transition-all disabled:opacity-40"
+            className="flex h-16 w-full items-center justify-center rounded-2xl bg-black/5 text-2xl font-bold text-text-primary hover:bg-black/10 active:scale-90 transition-all disabled:opacity-40"
           >
             0
           </button>
@@ -179,7 +206,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             type="button"
             onClick={() => { setError(null); setPin(pin.slice(0, -1)); }}
             disabled={busy || pin.length === 0}
-            className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-white/60 hover:bg-white/15 active:scale-90 transition-all disabled:opacity-20"
+            className="flex h-16 w-full items-center justify-center rounded-2xl bg-black/5 text-text-secondary hover:bg-black/10 active:scale-90 transition-all disabled:opacity-20"
             aria-label="Backspace"
           >
             <Delete className="h-6 w-6" />
@@ -194,13 +221,13 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             type="button"
             onClick={handleBiometricButton}
             disabled={busy}
-            className="w-full flex flex-col items-center justify-center gap-3 rounded-3xl bg-white/8 border border-white/10 py-10 text-white hover:bg-white/12 active:scale-95 transition-all disabled:opacity-40"
+            className="w-full flex flex-col items-center justify-center gap-3 rounded-3xl bg-black/5 border border-black/10 py-10 text-text-primary hover:bg-black/8 active:scale-95 transition-all disabled:opacity-40"
           >
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/20">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
               <Fingerprint className="h-10 w-10 text-primary" />
             </div>
             <span className="text-base font-semibold">Tap to unlock</span>
-            <span className="text-xs text-white/40">Fingerprint or Face ID</span>
+            <span className="text-xs text-text-secondary">Fingerprint or Face ID</span>
           </button>
         </div>
       )}
@@ -209,7 +236,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
       <div className="mt-8">
         <a
           href="/api/auth/signout"
-          className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
         >
           <Shield className="h-3 w-3" /> Sign out instead
         </a>
