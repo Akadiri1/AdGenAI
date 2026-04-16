@@ -11,7 +11,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/">
-          <Logo size="md" />
+          <Logo size="sm" className="flex md:hidden" />
+          <Logo size="md" className="hidden md:flex" />
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">

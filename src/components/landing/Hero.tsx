@@ -8,8 +8,8 @@ export function Hero() {
     <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-32">
       {/* Background effects */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute right-0 top-40 h-[400px] w-[400px] rounded-full bg-accent/8 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute right-0 top-40 h-[200px] w-[200px] sm:h-[400px] sm:w-[400px] rounded-full bg-accent/8 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-6xl">
