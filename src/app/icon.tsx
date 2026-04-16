@@ -3,15 +3,19 @@ import { ImageResponse } from "next/og";
 // Next.js auto-generates the icon file from this React component.
 // Used as the favicon AND app icon at /icon.
 //
-// Maskable-safe design: the inner 60% (307×307 of 512×512) is the
-// "safe zone" — content here is guaranteed visible regardless of how
-// the OS crops the icon (circle, squircle, rounded square, etc.).
-// Background fills the full 512×512 so there's no transparent gap.
+// Cluely-style geometric mark: four rounded shapes in a 2×2 grid,
+// each in a distinct brand colour, on the dark brand background.
+// Maskable-safe: the four shapes sit within the innermost 60% safe zone.
 export const runtime = "edge";
 export const size = { width: 512, height: 512 };
 export const contentType = "image/png";
 
 export default function Icon() {
+  const gap = 16;
+  const pad = 100; // padding to keep shapes in maskable safe zone
+  const cellW = (512 - pad * 2 - gap) / 2;
+  const cellH = cellW;
+
   return new ImageResponse(
     (
       <div
@@ -21,27 +25,29 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #FF6B35 0%, #F39C12 50%, #2EC4B6 100%)",
+          background: "#1A1A2E",
         }}
       >
-        {/* Letter sized to fit the 60% safe zone (≈307px), with proper visual centering */}
-        <span
+        <div
           style={{
-            fontSize: 280,
-            fontWeight: 900,
-            color: "white",
-            fontFamily: "system-ui, sans-serif",
-            fontStyle: "italic",
-            letterSpacing: -6,
-            lineHeight: 1,
-            // Slight optical adjustment so the F looks centered (descender-less letters appear high)
-            marginTop: -8,
+            display: "flex",
+            flexWrap: "wrap",
+            width: pad * 2 + gap + cellW * 2 - pad * 2 + pad,
+            gap: gap,
           }}
         >
-          F
-        </span>
+          {/* Top-left — coral */}
+          <div style={{ width: cellW, height: cellH, borderRadius: 28, background: "#FF6B35" }} />
+          {/* Top-right — gold */}
+          <div style={{ width: cellW, height: cellH, borderRadius: "28px 40px 40px 28px", background: "#F39C12" }} />
+          {/* Bottom-left — purple */}
+          <div style={{ width: cellW, height: cellH, borderRadius: "28px 28px 28px 40px", background: "#A855F7" }} />
+          {/* Bottom-right — teal */}
+          <div style={{ width: cellW, height: cellH, borderRadius: 40, background: "#2EC4B6" }} />
+        </div>
       </div>
     ),
     { ...size },
   );
 }
+

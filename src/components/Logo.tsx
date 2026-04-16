@@ -1,7 +1,8 @@
 /**
- * Famousli logo — a stylized spark/peak mark inside a gradient rounded square.
- * Represents: creative energy (spark), momentum (peak), and AI generation
- * (gradient fill matching brand palette).
+ * Famousli logo — Cluely-inspired abstract geometric mark.
+ * Four rounded shapes in a 2×2 cluster, each in a distinct brand colour.
+ * Represents: creativity (variety of shapes), energy (warm palette),
+ * and AI intelligence (cool teal accent).
  */
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -35,6 +36,18 @@ export function Logo({
   );
 }
 
+/**
+ * Abstract geometric logo mark — four rounded shapes in a 2×2 grid.
+ * Each quadrant uses a different brand colour with unique corner radii
+ * to create visual interest, similar to Cluely's icon style.
+ *
+ *  ┌─────┐ ┌─────┐
+ *  │coral│ │gold │
+ *  └─────┘ └─────┘
+ *  ┌─────┐ ┌─────┐
+ *  │purpl│ │teal │
+ *  └─────┘ └─────┘
+ */
 export function LogoMark({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -44,47 +57,14 @@ export function LogoMark({ className = "" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Famousli"
     >
-      <defs>
-        <linearGradient id="famousli-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FF6B35" />
-          <stop offset="0.5" stopColor="#F39C12" />
-          <stop offset="1" stopColor="#2EC4B6" />
-        </linearGradient>
-      </defs>
-      {/* Rounded square background */}
-      <rect width="40" height="40" rx="10" fill="url(#famousli-grad)" />
-      {/*
-        Stylized lowercase "f" — Cluely-style geometric letterform.
-        The "f" is the first letter of "famousli", carved with:
-        - A vertical stem (the backbone)
-        - A curved top hook (the ascending stroke, simplified to a quarter-arc)
-        - A horizontal crossbar (the defining feature of "f")
-        - A small dot above-right (the "li" spark — represents the AI/generation signal)
-      */}
-      {/* Vertical stem */}
-      <path
-        d="M16 14V30"
-        stroke="white"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      {/* Top hook — a quarter-arc curving right from the top of the stem */}
-      <path
-        d="M16 14C16 10.5 18.5 8 22 8H24"
-        stroke="white"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Crossbar */}
-      <path
-        d="M11 20H23"
-        stroke="white"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      {/* "li" spark dot — represents the AI signal, aligns with the gradient "li" in the wordmark */}
-      <circle cx="29" cy="10" r="2.8" fill="white" />
+      {/* Top-left — coral/orange, fully rounded top-left corner */}
+      <rect x="1" y="1" width="17.5" height="17.5" rx="6" ry="6" fill="#FF6B35" />
+      {/* Top-right — warm gold, pill-shaped (tall rounded right) */}
+      <rect x="21.5" y="1" width="17.5" height="17.5" rx="8.75" ry="6" fill="#F39C12" />
+      {/* Bottom-left — soft purple, rounded bottom-left */}
+      <rect x="1" y="21.5" width="17.5" height="17.5" rx="6" ry="8.75" fill="#A855F7" />
+      {/* Bottom-right — teal/mint, circular feel */}
+      <rect x="21.5" y="21.5" width="17.5" height="17.5" rx="8.75" ry="8.75" fill="#2EC4B6" />
     </svg>
   );
 }
@@ -92,6 +72,7 @@ export function LogoMark({ className = "" }: { className?: string }) {
 /**
  * Watermark variant — applied to free-tier ad exports.
  * Semi-transparent, pill-shaped, safe for bottom-right overlay.
+ * Uses the same 4-shape geometric mark at a smaller size.
  */
 export function Watermark({ className = "" }: { className?: string }) {
   return (
@@ -104,17 +85,10 @@ export function Watermark({ className = "" }: { className?: string }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <defs>
-          <linearGradient id="wm-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#FF6B35" />
-            <stop offset="1" stopColor="#2EC4B6" />
-          </linearGradient>
-        </defs>
-        <rect width="40" height="40" rx="10" fill="url(#wm-grad)" />
-        <path d="M16 14V30" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-        <path d="M16 14C16 10.5 18.5 8 22 8H24" stroke="white" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-        <path d="M11 20H23" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="29" cy="10" r="2.8" fill="white" />
+        <rect x="1" y="1" width="17.5" height="17.5" rx="6" ry="6" fill="#FF6B35" />
+        <rect x="21.5" y="1" width="17.5" height="17.5" rx="8.75" ry="6" fill="#F39C12" />
+        <rect x="1" y="21.5" width="17.5" height="17.5" rx="6" ry="8.75" fill="#A855F7" />
+        <rect x="21.5" y="21.5" width="17.5" height="17.5" rx="8.75" ry="8.75" fill="#2EC4B6" />
       </svg>
       <span className="text-[10px] font-bold uppercase tracking-wider text-white">
         Made with Famousli

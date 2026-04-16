@@ -30,21 +30,19 @@ export default async function OGImage() {
             marginBottom: 32,
           }}
         >
+          {/* 4-shape geometric logo mark inline */}
           <div
             style={{
-              width: 72,
-              height: 72,
-              background: "white",
-              borderRadius: 18,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 44,
-              fontWeight: 900,
-              color: "#FF6B35",
+              flexWrap: "wrap",
+              width: 68,
+              gap: 4,
             }}
           >
-            A
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#FF6B35" }} />
+            <div style={{ width: 32, height: 32, borderRadius: "8px 10px 10px 8px", background: "#F39C12" }} />
+            <div style={{ width: 32, height: 32, borderRadius: "8px 8px 8px 10px", background: "#A855F7" }} />
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#2EC4B6" }} />
           </div>
           <div style={{ fontSize: 56, fontWeight: 900, color: "white" }}>Famousli</div>
         </div>

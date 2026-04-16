@@ -14,12 +14,12 @@ const config: CapacitorConfig = {
   plugins: {
     StatusBar: {
       style: "DARK",
-      backgroundColor: "#FF6B35",
+      backgroundColor: "#1A1A2E",
     },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: "#FF6B35",
+      backgroundColor: "#1A1A2E",
       showSpinner: false,
     },
     Keyboard: {
@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
     contentInset: "automatic",
   },
   android: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#1A1A2E",
     allowMixedContent: true,
   },
 };
