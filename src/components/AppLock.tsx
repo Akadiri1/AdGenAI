@@ -11,38 +11,65 @@ import {
   isBiometricSupported,
 } from "@/lib/appLock";
 
+/**
+ * Lock logic:
+ * - On first app open / PWA launch → locked (if enabled)
+ * - After unlock → stays unlocked while navigating pages
+ * - When user leaves the app (tab hidden / app switch) → mark "left at" timestamp
+ * - When user returns (tab visible) → only re-lock if they were gone for 5+ seconds
+ *   (prevents re-locking on quick tab switches or keyboard popup)
+ * - Page navigation within the app NEVER triggers lock
+ */
+const LOCK_KEY = "famousli_lock_state";
+const HIDE_KEY = "famousli_hidden_at";
+
+function isCurrentlyUnlocked(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(LOCK_KEY) === "unlocked";
+  } catch { return false; }
+}
+
+function setUnlockedState(unlocked: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (unlocked) localStorage.setItem(LOCK_KEY, "unlocked");
+    else localStorage.removeItem(LOCK_KEY);
+  } catch { /* ignore */ }
+}
+
 export function AppLock({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [locked, setLocked] = useState(false);
 
-  // Only lock on REAL page loads (full reload, app launch, returning from background)
-  // NOT on client-side navigation between pages (Next.js SPA transitions)
+  // On mount: lock only if NOT already unlocked in this browsing session
   useEffect(() => {
-    // This runs once on mount. Use a session flag to detect "already unlocked in this session"
-    const alreadyUnlocked = sessionStorage.getItem("famousli_unlocked");
     const config = getAppLockConfig();
+    const hasLock = config.enabled && (config.pinHash || config.biometricCredentialId);
 
-    if (config.enabled && (config.pinHash || config.biometricCredentialId) && !alreadyUnlocked) {
+    if (hasLock && !isCurrentlyUnlocked()) {
       setLocked(true);
     }
     setChecked(true);
   }, []);
 
-  // Lock when user LEAVES the app (tab hidden) and RETURNS (tab visible)
+  // When user leaves app → record timestamp. When they return → re-lock only if gone 5+ sec
   useEffect(() => {
     function onVisibility() {
       if (document.visibilityState === "hidden") {
-        // User left — clear the "unlocked" flag so next return triggers lock
-        sessionStorage.removeItem("famousli_unlocked");
+        localStorage.setItem(HIDE_KEY, String(Date.now()));
       } else if (document.visibilityState === "visible") {
-        // User returned — check if lock is needed
-        const alreadyUnlocked = sessionStorage.getItem("famousli_unlocked");
-        if (!alreadyUnlocked) {
+        const hiddenAt = Number(localStorage.getItem(HIDE_KEY) ?? "0");
+        const goneMs = Date.now() - hiddenAt;
+        // Only re-lock if user was away for 5+ seconds (avoids keyboard popup, quick tab switch)
+        if (goneMs > 5000) {
           const config = getAppLockConfig();
           if (config.enabled && (config.pinHash || config.biometricCredentialId)) {
             setLocked(true);
+            setUnlockedState(false);
           }
         }
+        localStorage.removeItem(HIDE_KEY);
       }
     }
     document.addEventListener("visibilitychange", onVisibility);
@@ -52,8 +79,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const handleUnlock = useCallback(() => {
     markUnlocked();
     setLocked(false);
-    // Mark this session as unlocked — prevents re-locking on page navigation
-    sessionStorage.setItem("famousli_unlocked", "1");
+    setUnlockedState(true);
   }, []);
 
   if (!checked) return null;
