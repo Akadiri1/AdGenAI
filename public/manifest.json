@@ -4,8 +4,8 @@
   "description": "Create professional ads in 30 seconds. Schedule, auto-post, and track performance across every platform.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#FAFAFA",
-  "theme_color": "#FF6B35",
+  "background_color": "#1A1A2E",
+  "theme_color": "#1A1A2E",
   "orientation": "portrait-primary",
   "icons": [
     {

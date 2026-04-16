@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Fingerprint, Delete, Shield } from "lucide-react";
+import { Fingerprint, Delete, Shield, Lock } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import {
   getAppLockConfig,
@@ -12,26 +12,16 @@ import {
   isBiometricSupported,
 } from "@/lib/appLock";
 
-/**
- * App lock overlay — shows a full-screen PIN/biometric prompt when the app
- * should be locked. Once unlocked, disappears and lets the dashboard render.
- *
- * Triggers:
- *  - Initial mount (if lock is enabled + lastUnlockAt is stale)
- *  - Tab visibility change after being hidden for the auto-lock window
- */
 export function AppLock({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [locked, setLocked] = useState(false);
 
-  // Check lock state on mount
   useEffect(() => {
     const config = getAppLockConfig();
     setLocked(shouldLockNow(config));
     setChecked(true);
   }, []);
 
-  // Re-check lock when tab becomes visible again
   useEffect(() => {
     function onVisibility() {
       if (document.visibilityState === "visible") {
@@ -48,7 +38,6 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     setLocked(false);
   }, []);
 
-  // Don't render anything until we know the lock state (prevents flash)
   if (!checked) return null;
 
   return (
@@ -67,7 +56,6 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   const hasPin = !!config.pinHash;
   const hasBiometric = !!config.biometricCredentialId && isBiometricSupported();
 
-  // Auto-attempt biometric on mount (if enabled)
   useEffect(() => {
     if (!hasBiometric) return;
     let cancelled = false;
@@ -75,9 +63,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
       try {
         const ok = await verifyBiometric();
         if (!cancelled && ok) onUnlock();
-      } catch {
-        /* user cancelled or error — fall back to PIN */
-      }
+      } catch { /* fall back to PIN */ }
     })();
     return () => { cancelled = true; };
   }, [hasBiometric, onUnlock]);
@@ -87,27 +73,20 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
     setBusy(true);
     try {
       const ok = await verifyPin(value);
-      if (ok) {
-        onUnlock();
-      } else {
-        setError("Incorrect PIN");
+      if (ok) { onUnlock(); }
+      else {
+        setError("Wrong PIN");
         setPin("");
-        // Haptic feedback on mobile
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   function pressDigit(d: string) {
     setError(null);
     const next = (pin + d).slice(0, 8);
     setPin(next);
-    // Auto-submit at 4 digits if user prefers (most common)
-    if (next.length === 4 && config.pinHash) {
-      submitPin(next);
-    }
+    if (next.length === 4 && config.pinHash) submitPin(next);
   }
 
   async function handleBiometricButton() {
@@ -115,119 +94,125 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
     try {
       const ok = await verifyBiometric();
       if (ok) onUnlock();
-      else setError("Biometric authentication failed");
+      else setError("Biometric failed — try again or use PIN");
     } catch {
-      setError("Biometric authentication failed");
+      setError("Biometric failed — try again or use PIN");
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-bg-dark/95 backdrop-blur-lg p-4">
-      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-bg-dark/80 p-6 sm:p-8 text-center">
-        <div className="mb-6 flex justify-center">
-          <Logo size="lg" withText={false} />
-        </div>
-
-        <h1 className="font-heading text-xl sm:text-2xl font-bold text-white mb-2">
-          Famousli is locked
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#0F0F1E] p-6">
+      {/* Logo + brand */}
+      <div className="mb-8 flex flex-col items-center">
+        <Logo size="xl" withText={false} />
+        <h1 className="mt-4 font-heading text-2xl font-bold text-white">
+          Famousli
         </h1>
-        <p className="text-sm text-white/60 mb-8">
-          {hasPin && hasBiometric && "Use your PIN or biometric to unlock"}
-          {hasPin && !hasBiometric && "Enter your PIN to unlock"}
-          {!hasPin && hasBiometric && "Use biometric to unlock"}
-        </p>
+        <div className="mt-2 flex items-center gap-1.5 text-sm text-white/50">
+          <Lock className="h-3.5 w-3.5" />
+          <span>
+            {hasPin && hasBiometric && "Enter PIN or use biometric"}
+            {hasPin && !hasBiometric && "Enter your PIN to unlock"}
+            {!hasPin && hasBiometric && "Use biometric to unlock"}
+          </span>
+        </div>
+      </div>
 
-        {/* PIN dots */}
-        {hasPin && (
-          <div className="mb-8 flex items-center justify-center gap-3">
-            {Array.from({ length: Math.max(4, pin.length) }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-3 w-3 rounded-full border-2 transition-all ${
-                  i < pin.length
-                    ? "bg-primary border-primary scale-110"
-                    : "border-white/25"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+      {/* PIN dots */}
+      {hasPin && (
+        <div className="mb-6 flex items-center justify-center gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-4 w-4 rounded-full transition-all duration-200 ${
+                i < pin.length
+                  ? "bg-primary scale-110"
+                  : "bg-white/15 border-2 border-white/20"
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
-        {error && (
-          <div className="mb-4 text-sm font-semibold text-danger animate-[shake_0.4s]">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="mb-4 rounded-xl bg-danger/10 border border-danger/20 px-4 py-2 text-sm font-semibold text-danger">
+          {error}
+        </div>
+      )}
 
-        {/* PIN keypad */}
-        {hasPin && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => pressDigit(String(d))}
-                disabled={busy}
-                className="flex h-16 items-center justify-center rounded-2xl bg-white/5 text-2xl font-bold text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-40"
-              >
-                {d}
-              </button>
-            ))}
-            {hasBiometric ? (
-              <button
-                type="button"
-                onClick={handleBiometricButton}
-                disabled={busy}
-                className="flex h-16 items-center justify-center rounded-2xl bg-primary/20 text-primary hover:bg-primary/30 active:scale-95 transition-all disabled:opacity-40"
-                aria-label="Use biometric"
-              >
-                <Fingerprint className="h-7 w-7" />
-              </button>
-            ) : (
-              <div />
-            )}
+      {/* PIN keypad */}
+      {hasPin && (
+        <div className="w-full max-w-[280px] grid grid-cols-3 gap-3 mb-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
             <button
+              key={d}
               type="button"
-              onClick={() => pressDigit("0")}
+              onClick={() => pressDigit(String(d))}
               disabled={busy}
-              className="flex h-16 items-center justify-center rounded-2xl bg-white/5 text-2xl font-bold text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-40"
+              className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-2xl font-bold text-white hover:bg-white/15 active:scale-90 transition-all disabled:opacity-40"
             >
-              0
+              {d}
             </button>
+          ))}
+          {hasBiometric ? (
             <button
               type="button"
-              onClick={() => { setError(null); setPin(pin.slice(0, -1)); }}
-              disabled={busy || pin.length === 0}
-              className="flex h-16 items-center justify-center rounded-2xl bg-white/5 text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-40"
-              aria-label="Backspace"
+              onClick={handleBiometricButton}
+              disabled={busy}
+              className="flex h-16 w-full items-center justify-center rounded-2xl bg-primary/15 text-primary hover:bg-primary/25 active:scale-90 transition-all disabled:opacity-40"
+              aria-label="Use biometric"
             >
-              <Delete className="h-6 w-6" />
+              <Fingerprint className="h-7 w-7" />
             </button>
-          </div>
-        )}
+          ) : (
+            <div />
+          )}
+          <button
+            type="button"
+            onClick={() => pressDigit("0")}
+            disabled={busy}
+            className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-2xl font-bold text-white hover:bg-white/15 active:scale-90 transition-all disabled:opacity-40"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            onClick={() => { setError(null); setPin(pin.slice(0, -1)); }}
+            disabled={busy || pin.length === 0}
+            className="flex h-16 w-full items-center justify-center rounded-2xl bg-white/8 text-white/60 hover:bg-white/15 active:scale-90 transition-all disabled:opacity-20"
+            aria-label="Backspace"
+          >
+            <Delete className="h-6 w-6" />
+          </button>
+        </div>
+      )}
 
-        {/* Biometric-only mode */}
-        {!hasPin && hasBiometric && (
+      {/* Biometric-only mode (no PIN set) — big friendly button */}
+      {!hasPin && hasBiometric && (
+        <div className="w-full max-w-[280px] space-y-4">
           <button
             type="button"
             onClick={handleBiometricButton}
             disabled={busy}
-            className="w-full flex items-center justify-center gap-2 h-14 rounded-2xl bg-primary text-white font-semibold hover:bg-primary-dark active:scale-95 transition-all disabled:opacity-40"
+            className="w-full flex flex-col items-center justify-center gap-3 rounded-3xl bg-white/8 border border-white/10 py-10 text-white hover:bg-white/12 active:scale-95 transition-all disabled:opacity-40"
           >
-            <Fingerprint className="h-5 w-5" />
-            Unlock with biometric
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/20">
+              <Fingerprint className="h-10 w-10 text-primary" />
+            </div>
+            <span className="text-base font-semibold">Tap to unlock</span>
+            <span className="text-xs text-white/40">Fingerprint or Face ID</span>
           </button>
-        )}
-
-        {/* Emergency fallback — sign out */}
-        <div className="mt-6 border-t border-white/10 pt-4">
-          <a
-            href="/api/auth/signout"
-            className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
-          >
-            <Shield className="h-3 w-3" /> Sign out instead
-          </a>
         </div>
+      )}
+
+      {/* Emergency sign out */}
+      <div className="mt-8">
+        <a
+          href="/api/auth/signout"
+          className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
+        >
+          <Shield className="h-3 w-3" /> Sign out instead
+        </a>
       </div>
     </div>
   );
