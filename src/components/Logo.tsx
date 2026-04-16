@@ -53,22 +53,38 @@ export function LogoMark({ className = "" }: { className?: string }) {
       </defs>
       {/* Rounded square background */}
       <rect width="40" height="40" rx="10" fill="url(#famousli-grad)" />
-      {/* Stylized "A" with a spark dot — represents AI-generated creativity */}
+      {/*
+        Stylized lowercase "f" — Cluely-style geometric letterform.
+        The "f" is the first letter of "famousli", carved with:
+        - A vertical stem (the backbone)
+        - A curved top hook (the ascending stroke, simplified to a quarter-arc)
+        - A horizontal crossbar (the defining feature of "f")
+        - A small dot above-right (the "li" spark — represents the AI/generation signal)
+      */}
+      {/* Vertical stem */}
       <path
-        d="M12 28L20 12L28 28"
+        d="M16 14V30"
         stroke="white"
-        strokeWidth="3.2"
+        strokeWidth="3.5"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
+      {/* Top hook — a quarter-arc curving right from the top of the stem */}
       <path
-        d="M15.5 22H24.5"
+        d="M16 14C16 10.5 18.5 8 22 8H24"
         stroke="white"
-        strokeWidth="3.2"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Crossbar */}
+      <path
+        d="M11 20H23"
+        stroke="white"
+        strokeWidth="3.5"
         strokeLinecap="round"
       />
-      {/* Spark dot — the "AI" / generation signal */}
-      <circle cx="30" cy="11" r="2.5" fill="white" />
+      {/* "li" spark dot — represents the AI signal, aligns with the gradient "li" in the wordmark */}
+      <circle cx="29" cy="10" r="2.8" fill="white" />
     </svg>
   );
 }
@@ -95,8 +111,10 @@ export function Watermark({ className = "" }: { className?: string }) {
           </linearGradient>
         </defs>
         <rect width="40" height="40" rx="10" fill="url(#wm-grad)" />
-        <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="30" cy="11" r="2.5" fill="white" />
+        <path d="M16 14V30" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+        <path d="M16 14C16 10.5 18.5 8 22 8H24" stroke="white" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d="M11 20H23" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="29" cy="10" r="2.8" fill="white" />
       </svg>
       <span className="text-[10px] font-bold uppercase tracking-wider text-white">
         Made with Famousli

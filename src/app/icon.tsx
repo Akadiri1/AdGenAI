@@ -27,10 +27,11 @@ export default function Icon() {
         {/* Letter sized to fit the 60% safe zone (≈307px), with proper visual centering */}
         <span
           style={{
-            fontSize: 240,
+            fontSize: 280,
             fontWeight: 900,
             color: "white",
             fontFamily: "system-ui, sans-serif",
+            fontStyle: "italic",
             letterSpacing: -6,
             lineHeight: 1,
             // Slight optical adjustment so the F looks centered (descender-less letters appear high)
