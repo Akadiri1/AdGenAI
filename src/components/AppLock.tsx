@@ -15,54 +15,45 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [locked, setLocked] = useState(false);
 
-  // Lock on initial page load
+  // Only lock on REAL page loads (full reload, app launch, returning from background)
+  // NOT on client-side navigation between pages (Next.js SPA transitions)
   useEffect(() => {
+    // This runs once on mount. Use a session flag to detect "already unlocked in this session"
+    const alreadyUnlocked = sessionStorage.getItem("famousli_unlocked");
     const config = getAppLockConfig();
-    if (config.enabled && (config.pinHash || config.biometricCredentialId)) {
-      setLocked(true); // always lock on fresh load
+
+    if (config.enabled && (config.pinHash || config.biometricCredentialId) && !alreadyUnlocked) {
+      setLocked(true);
     }
     setChecked(true);
   }, []);
 
-  // Lock EVERY time user leaves the app and comes back
-  // (tab switch, home button, app switcher, phone call, etc.)
+  // Lock when user LEAVES the app (tab hidden) and RETURNS (tab visible)
   useEffect(() => {
-    const config = getAppLockConfig();
-    if (!config.enabled) return;
-
-    function onHidden() {
-      // User left the app — mark that we need to lock when they return
+    function onVisibility() {
       if (document.visibilityState === "hidden") {
-        sessionStorage.setItem("famousli_should_lock", "1");
-      }
-    }
-
-    function onVisible() {
-      // User came back — check if we should lock
-      if (document.visibilityState === "visible") {
-        const shouldLock = sessionStorage.getItem("famousli_should_lock");
-        if (shouldLock === "1") {
-          const cfg = getAppLockConfig();
-          if (cfg.enabled && (cfg.pinHash || cfg.biometricCredentialId)) {
+        // User left — clear the "unlocked" flag so next return triggers lock
+        sessionStorage.removeItem("famousli_unlocked");
+      } else if (document.visibilityState === "visible") {
+        // User returned — check if lock is needed
+        const alreadyUnlocked = sessionStorage.getItem("famousli_unlocked");
+        if (!alreadyUnlocked) {
+          const config = getAppLockConfig();
+          if (config.enabled && (config.pinHash || config.biometricCredentialId)) {
             setLocked(true);
           }
-          sessionStorage.removeItem("famousli_should_lock");
         }
       }
     }
-
-    document.addEventListener("visibilitychange", onHidden);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      document.removeEventListener("visibilitychange", onHidden);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
   const handleUnlock = useCallback(() => {
     markUnlocked();
     setLocked(false);
-    sessionStorage.removeItem("famousli_should_lock");
+    // Mark this session as unlocked — prevents re-locking on page navigation
+    sessionStorage.setItem("famousli_unlocked", "1");
   }, []);
 
   if (!checked) return null;
