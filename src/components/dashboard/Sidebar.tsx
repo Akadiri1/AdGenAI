@@ -28,8 +28,8 @@ export function Sidebar() {
   const { t } = useLang();
 
   return (
-    <aside className="hidden w-64 flex-col border-r border-black/5 bg-white md:flex">
-      <div className="flex h-16 items-center border-b border-black/5 px-6">
+    <aside className="hidden w-64 flex-col border-r border-black/5 dark:border-white/10 bg-white dark:bg-bg-dark md:flex">
+      <div className="flex h-16 items-center border-b border-black/5 dark:border-white/10 px-6">
         <Link href="/dashboard">
           <Logo size="md" />
         </Link>

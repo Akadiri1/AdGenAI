@@ -63,7 +63,10 @@ export async function POST(req: Request) {
     const res = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 2000,
-      system: "You are an expert ad copywriter. Return valid JSON only.",
+      system: `You are an expert ad copywriter. You specialize in performance marketing and brand consistency. Return valid JSON only.
+
+BRAND CONTEXT (Use this to ensure variants match the business and target audience):
+${brandContext}`,
       messages: [{
         role: "user",
         content: `Given this winning ad:
@@ -76,7 +79,7 @@ Generate ${body.numVariants} variations. ${varyInstruction}
 Return JSON array:
 [{"headline":"...","bodyText":"...","callToAction":"...","imagePrompt":"detailed prompt for a different person/setting showing this product/brand"}]
 
-Make each variant meaningfully different. Different hooks, angles, demographics, settings.`,
+Make each variant meaningfully different while staying 100% true to the BRAND CONTEXT above. Different hooks, angles, demographics, settings.`,
       }],
     });
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export const REFEREE_BONUS_CREDITS = 5;
+export const REFEREE_BONUS_CREDITS = 2;
 export const REFERRAL_COMMISSION_RATE = 0.3; // 30%
 
 /**

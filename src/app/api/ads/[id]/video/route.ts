@@ -7,6 +7,7 @@ import { stringToImages, imagesToString } from "@/lib/adHelpers";
 import { uploadToStorage } from "@/lib/storage";
 import { generateImage } from "@/lib/images";
 import { getDuration } from "@/lib/videoDurations";
+import { getMusicUrlForGenre } from "@/lib/music";
 import { z } from "zod";
 import fs from "fs";
 
@@ -119,6 +120,10 @@ export async function POST(
     return NextResponse.json(
       { error: "Video assembly failed", details: (err as Error).message },
       { status: 500 },
+    );
+  }
+}
+tatus: 500 },
     );
   }
 }

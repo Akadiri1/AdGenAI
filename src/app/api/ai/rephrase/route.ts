@@ -38,11 +38,15 @@ export async function POST(req: Request) {
 
   const { text, fieldType, tone, maxLength, mode } = bodySchema.parse(await req.json());
 
-  // Get user's preferred language
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { language: true },
-  });
+  // Get user's brand context and preferred language
+  const [user, brandContext] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    }),
+    buildUserContext(session.user.id)
+  ]);
+
   const langNames: Record<string, string> = {
     en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese",
     it: "Italian", hi: "Hindi", ar: "Arabic", ja: "Japanese", zh: "Chinese",
@@ -124,6 +128,10 @@ RULES:
     return NextResponse.json(
       { error: "AI rephrase failed", details: (err as Error).message },
       { status: 500 },
+    );
+  }
+}
+  { status: 500 },
     );
   }
 }

@@ -27,7 +27,7 @@ model User {
   image          String?
   avatar         String?
   plan           String    @default("FREE")
-  credits        Int       @default(3)
+  credits        Int       @default(1)
   creditsExpiry  DateTime?
   businessName   String?
   businessType   String?

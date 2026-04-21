@@ -1,8 +1,6 @@
 /**
- * Famousli logo — Cluely-inspired abstract geometric mark.
- * Four rounded shapes in a 2×2 cluster, each in a distinct brand colour.
- * Represents: creativity (variety of shapes), energy (warm palette),
- * and AI intelligence (cool teal accent).
+ * Famousli brand identity.
+ * Features a circular "f" mark and a modern typographic logo.
  */
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -11,7 +9,7 @@ const SIZES: Record<Size, { box: string; text: string }> = {
   sm: { box: "h-7 w-7", text: "text-base" },
   md: { box: "h-9 w-9", text: "text-xl" },
   lg: { box: "h-12 w-12", text: "text-2xl" },
-  xl: { box: "h-16 w-16", text: "text-3xl" },
+  xl: { box: "h-16 w-16", text: "text-4xl" },
 };
 
 export function Logo({
@@ -25,11 +23,11 @@ export function Logo({
 }) {
   const s = SIZES[size];
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2.5 ${className}`}>
       <LogoMark className={s.box} />
       {withText && (
-        <span className={`font-heading font-extrabold tracking-tight text-[#1A1A2E] dark:text-white ${s.text}`}>
-          Famous<span className="gradient-text">li</span>
+        <span className={`font-heading font-black tracking-tight flex items-center ${s.text} text-text-primary`}>
+          Famous<span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">li</span>
         </span>
       )}
     </div>
@@ -37,16 +35,8 @@ export function Logo({
 }
 
 /**
- * Abstract geometric logo mark — four rounded shapes in a 2×2 grid.
- * Each quadrant uses a different brand colour with unique corner radii
- * to create visual interest, similar to Cluely's icon style.
- *
- *  ┌─────┐ ┌─────┐
- *  │coral│ │gold │
- *  └─────┘ └─────┘
- *  ┌─────┐ ┌─────┐
- *  │purpl│ │teal │
- *  └─────┘ └─────┘
+ * Circular "f" logo mark.
+ * Clean, bold "f" centered in a vibrant primary-colored circle.
  */
 export function LogoMark({ className = "" }: { className?: string }) {
   return (
@@ -57,41 +47,29 @@ export function LogoMark({ className = "" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Famousli"
     >
-      {/* Top-left — coral/orange, fully rounded top-left corner */}
-      <rect x="1" y="1" width="17.5" height="17.5" rx="6" ry="6" fill="#FF6B35" />
-      {/* Top-right — warm gold, pill-shaped (tall rounded right) */}
-      <rect x="21.5" y="1" width="17.5" height="17.5" rx="8.75" ry="6" fill="#F39C12" />
-      {/* Bottom-left — soft purple, rounded bottom-left */}
-      <rect x="1" y="21.5" width="17.5" height="17.5" rx="6" ry="8.75" fill="#A855F7" />
-      {/* Bottom-right — teal/mint, circular feel */}
-      <rect x="21.5" y="21.5" width="17.5" height="17.5" rx="8.75" ry="8.75" fill="#2EC4B6" />
+      {/* Background Circle — Using the primary brand color */}
+      <circle cx="20" cy="20" r="20" fill="#FF6B35" />
+      
+      {/* Lowercase 'f' — Modern, Bold, and clean */}
+      <path 
+        d="M24.5 12.5C23.2 12.5 22.2 13.5 22.2 14.8V17.5H25.5V20.5H22.2V29H18.8V20.5H16.5V17.5H18.8V14.8C18.8 11.5 21 10 24.5 10V12.5Z" 
+        fill="white" 
+      />
     </svg>
   );
 }
 
 /**
  * Watermark variant — applied to free-tier ad exports.
- * Semi-transparent, pill-shaped, safe for bottom-right overlay.
- * Uses the same 4-shape geometric mark at a smaller size.
  */
 export function Watermark({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur-sm ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-md border border-white/10 ${className}`}
     >
-      <svg
-        viewBox="0 0 40 40"
-        className="h-3.5 w-3.5"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect x="1" y="1" width="17.5" height="17.5" rx="6" ry="6" fill="#FF6B35" />
-        <rect x="21.5" y="1" width="17.5" height="17.5" rx="8.75" ry="6" fill="#F39C12" />
-        <rect x="1" y="21.5" width="17.5" height="17.5" rx="6" ry="8.75" fill="#A855F7" />
-        <rect x="21.5" y="21.5" width="17.5" height="17.5" rx="8.75" ry="8.75" fill="#2EC4B6" />
-      </svg>
-      <span className="text-[10px] font-bold uppercase tracking-wider text-white">
-        Made with Famousli
+      <LogoMark className="h-4 w-4" />
+      <span className="text-[11px] font-black uppercase tracking-widest text-white">
+        FAMOUS<span className="text-primary">LI</span>
       </span>
     </div>
   );

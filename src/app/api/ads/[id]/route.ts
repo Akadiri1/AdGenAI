@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateImage } from "@/lib/images";
 import { imagesToString, stringToImages } from "@/lib/adHelpers";
 import { logAudit, getRequestContext } from "@/lib/audit";
+import { buildUserContext } from "@/lib/aiContext";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -30,15 +31,17 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [ad, user] = await Promise.all([
+  const [ad, user, brandContext] = await Promise.all([
     prisma.ad.findUnique({ where: { id } }),
     prisma.user.findUnique({ where: { id: session.user.id }, select: { plan: true } }),
+    buildUserContext(session.user.id),
   ]);
+
   if (!ad || ad.userId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Editing is a paid feature (Starter and above — Free users must upgrade)
+  // Editing is a paid feature
   const paidPlans = ["STARTER", "PRO", "BUSINESS", "ENTERPRISE"];
   if (!user || !paidPlans.includes(user.plan)) {
     return NextResponse.json(
@@ -47,7 +50,6 @@ export async function PATCH(
     );
   }
 
-  // Don't allow edits after posting
   if (ad.status === "POSTED" || ad.status === "POSTING") {
     return NextResponse.json(
       { error: "Cannot edit an ad that has already been posted" },
@@ -57,16 +59,15 @@ export async function PATCH(
 
   const body = patchSchema.parse(await req.json());
 
-  // Handle image regen / custom upload
   let newImageUrl: string | undefined;
   if (body.customImageUrl) {
     newImageUrl = body.customImageUrl;
   } else if (body.regenerateImage && body.newImagePrompt) {
     try {
       newImageUrl = await generateImage({
-        prompt: body.newImagePrompt,
+        prompt: `${body.newImagePrompt}\n\nBrand Context:\n${brandContext}`,
         aspectRatio: (body.aspectRatio ?? ad.aspectRatio) as "1:1" | "9:16" | "16:9" | "4:5",
-        quality: "high", // editing is paid-only
+        quality: "high",
       });
     } catch (err) {
       return NextResponse.json(
@@ -89,7 +90,7 @@ export async function PATCH(
       ...(newImageUrl && {
         images: imagesToString([newImageUrl, ...stringToImages(ad.images).slice(0, 4)]),
         thumbnailUrl: newImageUrl,
-        videoUrl: null, // invalidate existing video when image changes
+        videoUrl: null,
       }),
     },
   });
@@ -133,3 +134,4 @@ export async function DELETE(
   });
   return NextResponse.json({ success: true });
 }
+// Force re-build

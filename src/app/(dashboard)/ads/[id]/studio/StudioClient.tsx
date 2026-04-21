@@ -7,7 +7,7 @@ import {
   ArrowLeft, Download, Send, Clock, Save, SlidersHorizontal,
   Image as ImageIcon, Music, Languages, Palette, Type,
   Sparkles, Upload, Lock, Film, CheckCircle2, BookTemplate, X,
-  Users, Copy, Mic, Loader2,
+  Users, Copy, Mic, Loader2, Plus,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
@@ -64,8 +64,9 @@ export function StudioClient({
   const { success, error: toastError } = useToast();
 
   const [ad, setAd] = useState(initialAd);
-  const hasVariants = variants.length > 1;
-  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "actors" | "music" | "ugc" | "settings">("copy");
+  const [allVariants, setAllVariants] = useState(variants);
+  const hasVariants = allVariants.length > 1;
+  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "actors" | "music" | "settings">("copy");
   const [saving, setSaving] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -198,12 +199,13 @@ export function StudioClient({
     }
   }
 
-  function downloadAd() {
-    const url = ad.videoUrl ?? ad.thumbnailUrl;
+  function downloadAd(target?: Ad) {
+    const aToDown = target ?? ad;
+    const url = aToDown.videoUrl ?? aToDown.thumbnailUrl;
     if (!url) { toastError("No media to download"); return; }
     const a = document.createElement("a");
     a.href = url;
-    a.download = `famousli-${ad.id}.${ad.videoUrl ? "mp4" : "png"}`;
+    a.download = `famousli-${aToDown.id}.${aToDown.videoUrl ? "mp4" : "png"}`;
     a.click();
   }
 
@@ -262,7 +264,6 @@ export function StudioClient({
     { key: "copy" as const, label: "Copy", icon: Type },
     { key: "visuals" as const, label: "Visuals", icon: ImageIcon },
     { key: "actors" as const, label: "Actors", icon: Users },
-    { key: "ugc" as const, label: "UGC", icon: Mic },
     { key: "music" as const, label: "Music", icon: Music },
     { key: "settings" as const, label: "Settings", icon: Palette },
   ];
@@ -297,47 +298,64 @@ export function StudioClient({
         <div className="mb-6 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-heading font-bold text-text-primary">
-              {variants.length} Variants Generated
+              {allVariants.length} Variants Generated
             </h2>
             <span className="text-xs text-text-secondary">Click to switch</span>
           </div>
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
-            {variants.map((v, i) => (
-              <button
+            {allVariants.map((v, i) => (
+              <div
                 key={v.id}
-                onClick={() => {
-                  setAd(v);
-                  setDirty(false);
-                  setCustomImageUrl("");
-                  setImagePrompt("");
-                }}
-                className={`relative overflow-hidden rounded-xl border-2 transition-all text-left ${
+                className={`group relative overflow-hidden rounded-xl border-2 transition-all text-left ${
                   ad.id === v.id ? "border-primary shadow-md" : "border-black/10 hover:border-black/20"
                 }`}
               >
-                <div className="aspect-video bg-bg-secondary">
-                  {v.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center"><Film className="h-6 w-6 text-text-secondary" /></div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <div className="line-clamp-1 text-xs font-semibold text-text-primary">{v.headline ?? `Variant ${i + 1}`}</div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-text-secondary">Variant {i + 1}</span>
-                    {v.score && (
-                      <span className="rounded bg-bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-text-primary">{Math.round(v.score)}/100</span>
+                <button
+                  onClick={() => {
+                    if (dirty && !confirm("You have unsaved changes on this variant. Switch anyway?")) {
+                      return;
+                    }
+                    setAd(v);
+                    setDirty(false);
+                    setCustomImageUrl("");
+                    setImagePrompt("");
+                  }}
+                  className="w-full h-full text-left"
+                >
+                  <div className="aspect-video bg-bg-secondary">
+                    {v.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={v.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center"><Film className="h-6 w-6 text-text-secondary" /></div>
                     )}
                   </div>
-                </div>
+                  <div className="p-2">
+                    <div className="line-clamp-1 text-xs font-semibold text-text-primary">{v.headline ?? `Variant ${i + 1}`}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-text-secondary">Variant {i + 1}</span>
+                      {v.score && (
+                        <span className="rounded bg-bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-text-primary">{Math.round(v.score)}/100</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Individual download button on variant */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); downloadAd(v); }}
+                  className="absolute left-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all hover:bg-primary shadow-lg"
+                  title="Download this variant"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </button>
+
                 {ad.id === v.id && (
                   <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                   </div>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -441,38 +459,6 @@ export function StudioClient({
                 ))}
               </div>
             </div>
-
-            {/* Action buttons */}
-            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-2">
-              <button
-                onClick={() => handleSchedule(true)}
-                disabled={scheduling}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" /> {scheduling ? "..." : "Publish now"}
-              </button>
-              <div className="flex gap-2">
-                <input
-                  type="datetime-local"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="flex-1 rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-xs outline-none focus:border-primary"
-                />
-                <button
-                  onClick={() => handleSchedule(false)}
-                  disabled={scheduling || !scheduleDate}
-                  className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white px-3 text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
-                >
-                  <Clock className="h-3.5 w-3.5" /> Schedule
-                </button>
-              </div>
-              <button
-                onClick={downloadAd}
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border-2 border-black/10 bg-white text-sm font-semibold text-text-primary hover:bg-bg-secondary"
-              >
-                <Download className="h-4 w-4" /> Download instead
-              </button>
-            </div>
           </div>
         </div>
 
@@ -506,47 +492,92 @@ export function StudioClient({
 
           {/* Copy tab */}
           {activeTab === "copy" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <AIRephraseField
-                label="Headline"
-                hint={`${(ad.headline ?? "").length}/80`}
-                value={ad.headline ?? ""}
-                onChange={(v) => update("headline", v)}
-                maxLength={80}
-                placeholder="Your hook"
-                fieldType="headline"
-                businessContext={ad.bodyText ?? undefined}
-              />
-              <AIRephraseField
-                kind="textarea"
-                label="Body text"
-                hint={`${(ad.bodyText ?? "").length}/300`}
-                value={ad.bodyText ?? ""}
-                onChange={(v) => update("bodyText", v)}
-                maxLength={300}
-                placeholder="What problem does this solve?"
-                fieldType="body"
-                rows={4}
-              />
-              <AIRephraseField
-                label="Call to action"
-                value={ad.callToAction ?? ""}
-                onChange={(v) => update("callToAction", v)}
-                maxLength={50}
-                placeholder="Shop now"
-                fieldType="cta"
-              />
-              {(ad.type === "VIDEO" || ad.script) && (
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
+              <div className="space-y-4">
+                <AIRephraseField
+                  label="Headline"
+                  hint={`${(ad.headline ?? "").length}/80`}
+                  value={ad.headline ?? ""}
+                  onChange={(v) => update("headline", v)}
+                  maxLength={80}
+                  placeholder="Your hook"
+                  fieldType="headline"
+                  businessContext={ad.bodyText ?? undefined}
+                />
                 <AIRephraseField
                   kind="textarea"
-                  label="Video script"
-                  value={ad.script ?? ""}
-                  onChange={(v) => update("script", v)}
-                  placeholder="15-30 second script"
-                  fieldType="script"
-                  rows={5}
+                  label="Body text"
+                  hint={`${(ad.bodyText ?? "").length}/300`}
+                  value={ad.bodyText ?? ""}
+                  onChange={(v) => update("bodyText", v)}
+                  maxLength={300}
+                  placeholder="What problem does this solve?"
+                  fieldType="body"
+                  rows={4}
                 />
-              )}
+                <AIRephraseField
+                  label="Call to action"
+                  value={ad.callToAction ?? ""}
+                  onChange={(v) => update("callToAction", v)}
+                  maxLength={50}
+                  placeholder="Shop now"
+                  fieldType="cta"
+                />
+              </div>
+
+              {/* UGC Script Templates — Integrated into Copy tab */}
+              <div className="pt-4 border-t border-black/5 space-y-4">
+                <div>
+                  <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> Viral Video Scripts
+                  </h3>
+                  <p className="text-[10px] text-text-secondary">AI will rewrite your script using these proven viral formats</p>
+                </div>
+                
+                <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3">
+                  {[
+                    { id: "honest-review", label: "Review", desc: "Honest feedback" },
+                    { id: "problem-solution", label: "Solution", desc: "Pain → Fix" },
+                    { id: "day-in-life", label: "Daily", desc: "Product in use" },
+                    { id: "unboxing", label: "Unboxing", desc: "Excitement" },
+                    { id: "hot-take", label: "Hook", desc: "Bold claim" },
+                    { id: "comparison", label: "Vs", desc: "Compare" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedUgcTemplate(selectedUgcTemplate === t.id ? "" : t.id)}
+                      className={`text-left rounded-xl border-2 p-2.5 transition-all ${
+                        selectedUgcTemplate === t.id ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
+                      }`}
+                    >
+                      <div className="text-[11px] font-bold text-text-primary">{t.label}</div>
+                      <div className="text-[9px] text-text-secondary">{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+                {selectedUgcTemplate && (
+                  <button
+                    onClick={generateUgcScript}
+                    disabled={ugcGenerating}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-accent text-xs font-bold text-white hover:bg-accent/90 disabled:opacity-50 transition-colors"
+                  >
+                    {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    {ugcGenerating ? "Generating..." : "Apply Format to Script"}
+                  </button>
+                )}
+
+                {(ad.type === "VIDEO" || ad.script || selectedUgcTemplate) && (
+                  <AIRephraseField
+                    kind="textarea"
+                    label="Final Script"
+                    value={ad.script ?? ""}
+                    onChange={(v) => update("script", v)}
+                    placeholder="This is what the actor will say..."
+                    fieldType="script"
+                    rows={5}
+                  />
+                )}
+              </div>
             </div>
           )}
 
@@ -676,7 +707,7 @@ export function StudioClient({
                         onClick={() => setSelectedActorId("")}
                         className="text-xs text-text-secondary hover:text-danger underline"
                       >
-                        Clear selection
+                        Change actor
                       </button>
                     </div>
                   </div>
@@ -688,28 +719,88 @@ export function StudioClient({
                     <textarea
                       value={actorScript}
                       onChange={(e) => setActorScript(e.target.value)}
-                      rows={5}
+                      rows={4}
                       maxLength={800}
-                      placeholder="Type the exact words you want the actor to speak. e.g. 'I tried this for 30 days and the results were insane. My business doubled in revenue without me hiring anyone...'"
+                      placeholder="Type the exact words..."
                       className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                     />
-                    <div className="mt-1 flex items-center justify-between text-xs">
-                      <span className="text-text-secondary">{actorScript.length}/800</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (ad.script) {
-                            setActorScript(ad.script);
-                            success("Loaded script from this ad");
-                          } else {
-                            toastError("This ad has no script yet — write one in the Copy tab first");
-                          }
-                        }}
-                        className="text-primary font-semibold hover:underline"
-                      >
-                        Use ad script
-                      </button>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setUgcGenerating(true);
+                            try {
+                              const res = await fetch("/api/ai/ugc-script", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  templateId: "honest-review",
+                                  productName: ad.headline,
+                                  additionalContext: ad.bodyText,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error ?? "Failed");
+                              setActorScript(data.script);
+                              success("AI script written!");
+                            } catch (err) {
+                              toastError("Could not write script — try writing a headline first");
+                            } finally {
+                              setUgcGenerating(false);
+                            }
+                          }}
+                          disabled={ugcGenerating}
+                          className="flex h-8 items-center gap-1.5 rounded-lg bg-accent/10 px-3 text-[10px] font-bold text-accent hover:bg-accent/20 transition-all disabled:opacity-50"
+                        >
+                          {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                          {ugcGenerating ? "Writing..." : "Write with AI"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!actorScript.trim()) return;
+                            setUgcGenerating(true);
+                            try {
+                              const res = await fetch("/api/ai/rephrase", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  text: actorScript,
+                                  fieldType: "script",
+                                  mode: "improve",
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error ?? "Failed");
+                              setActorScript(data.text);
+                              success("Script polished!");
+                            } catch (err) {
+                              toastError("Rewrite failed");
+                            } finally {
+                              setUgcGenerating(false);
+                            }
+                          }}
+                          disabled={ugcGenerating || !actorScript.trim()}
+                          className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 text-[10px] font-bold text-text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
+                        >
+                          {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {ugcGenerating ? "Rewriting..." : "Rewrite"}
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-text-secondary">{actorScript.length}/800</span>
                     </div>
+                  </div>
+
+                  {/* Voice Controls — Integrated into Actors tab */}
+                  <div className="mt-4 space-y-4 border-t border-black/5 pt-4">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-text-secondary">
+                      <Mic className="h-3.5 w-3.5" /> Voice Tuning
+                    </div>
+                    <VoiceSlider label="Speed" value={voiceSpeed} min={0.5} max={2.0} step={0.1}
+                      onChange={setVoiceSpeed} hint={voiceSpeed < 0.9 ? "Relaxed" : voiceSpeed > 1.2 ? "Energetic" : "Normal"} />
+                    <VoiceSlider label="Stability" value={voiceStability} min={0} max={1} step={0.05}
+                      onChange={setVoiceStability} hint={voiceStability < 0.3 ? "Dynamic" : voiceStability > 0.7 ? "Consistent" : "Balanced"} />
                   </div>
 
                   <button
@@ -730,30 +821,29 @@ export function StudioClient({
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error ?? "Generation failed");
-                        success("Actor video generation started — check back in a moment");
+                        success("AI Video started — check back in 1-2 mins");
                       } catch (err) {
                         toastError((err as Error).message);
                       } finally {
                         setUgcGenerating(false);
                       }
                     }}
-                    className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-40 transition-all shadow-lg shadow-primary/20"
                   >
                     {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {ugcGenerating ? "Generating actor video..." : `Generate video with ${AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}`}
+                    {ugcGenerating ? "Generating..." : `Create AI Video with ${AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}`}
                   </button>
                 </div>
               )}
 
               {/* Filters */}
               <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-5 shadow-sm">
-                <h3 className="font-heading font-bold text-text-primary mb-3">Pick an actor</h3>
-                <p className="text-sm text-text-secondary mb-4">{AVATAR_LIBRARY.length} AI actors and actresses to choose from</p>
-
+                <h3 className="font-heading font-bold text-text-primary mb-3">Choose an AI Actor</h3>
+                
                 <div className="grid gap-2 sm:grid-cols-4 mb-4">
                   <input
                     type="text"
-                    placeholder="Search by name, vibe, situation..."
+                    placeholder="Search vibe..."
                     value={actorFilters.search}
                     onChange={(e) => setActorFilters({ ...actorFilters, search: e.target.value })}
                     className="sm:col-span-2 rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
@@ -763,32 +853,21 @@ export function StudioClient({
                     onChange={(e) => setActorFilters({ ...actorFilters, gender: e.target.value })}
                     className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
                   >
-                    <option value="">All genders</option>
+                    <option value="">Genders</option>
                     <option value="female">Female</option>
                     <option value="male">Male</option>
-                    <option value="non-binary">Non-binary</option>
                   </select>
                   <select
-                    value={actorFilters.age}
-                    onChange={(e) => setActorFilters({ ...actorFilters, age: e.target.value })}
+                    value={actorFilters.situation}
+                    onChange={(e) => setActorFilters({ ...actorFilters, situation: e.target.value })}
                     className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
                   >
-                    <option value="">All ages</option>
-                    <option value="young">Young (18-30)</option>
-                    <option value="middle">Middle (30-50)</option>
-                    <option value="senior">Senior (50+)</option>
+                    <option value="">Settings</option>
+                    {SITUATIONS.slice(0, 5).map((s) => (
+                      <option key={s} value={s}>{s.replace("-", " ")}</option>
+                    ))}
                   </select>
                 </div>
-                <select
-                  value={actorFilters.situation}
-                  onChange={(e) => setActorFilters({ ...actorFilters, situation: e.target.value })}
-                  className="w-full rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary mb-4"
-                >
-                  <option value="">All situations / settings</option>
-                  {SITUATIONS.map((s) => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}</option>
-                  ))}
-                </select>
 
                 {/* Actor grid */}
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -797,7 +876,7 @@ export function StudioClient({
                     age: actorFilters.age as "young" | "middle" | "senior" | undefined || undefined,
                     situation: actorFilters.situation as never || undefined,
                     search: actorFilters.search || undefined,
-                  }).map((actor) => {
+                  }).slice(0, 12).map((actor) => {
                     const isSelected = selectedActorId === actor.id;
                     const locked = actor.isPro && !isPaid;
                     return (
@@ -806,7 +885,7 @@ export function StudioClient({
                         type="button"
                         onClick={() => {
                           if (locked) {
-                            toastError("This actor is Pro-only. Upgrade to use it.");
+                            toastError("Pro actor — Upgrade to use");
                             return;
                           }
                           setSelectedActorId(actor.id);
@@ -817,121 +896,98 @@ export function StudioClient({
                             : "border-black/10 hover:border-primary/40 bg-white"
                         } ${locked ? "opacity-60" : ""}`}
                       >
-                        {locked && (
-                          <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md bg-warning text-white">
-                            <Lock className="h-3 w-3" />
-                          </div>
-                        )}
-                        {actor.isHD && !locked && (
-                          <div className="absolute top-2 right-2 rounded-md bg-success px-1.5 py-0.5 text-[8px] font-bold text-white">HD</div>
-                        )}
-                        <div className="aspect-square mb-2 flex items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 text-3xl font-bold text-text-primary">
+                        <div className="aspect-square mb-2 flex items-center justify-center rounded-xl bg-bg-secondary text-2xl font-bold text-text-primary">
                           {actor.name[0]}
                         </div>
-                        <div className="font-semibold text-sm text-text-primary">{actor.name}</div>
-                        <div className="text-[10px] text-text-secondary capitalize">{actor.ethnicity} • {actor.age}</div>
-                        <div className="text-[10px] text-text-secondary capitalize">{actor.situation.replace("-", " ")}</div>
-                        {actor.tags.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {actor.tags.slice(0, 2).map((tag) => (
-                              <span key={tag} className="rounded bg-bg-secondary px-1.5 py-0.5 text-[9px] text-text-secondary">{tag}</span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="font-bold text-xs text-text-primary truncate">{actor.name}</div>
+                        <div className="text-[9px] text-text-secondary capitalize truncate">{actor.situation.replace("-", " ")}</div>
+                        {locked && <Lock className="absolute top-2 right-2 h-3 w-3 text-warning" />}
                       </button>
                     );
                   })}
                 </div>
-
-                {filterAvatars({
-                  gender: actorFilters.gender as never || undefined,
-                  age: actorFilters.age as never || undefined,
-                  situation: actorFilters.situation as never || undefined,
-                  search: actorFilters.search || undefined,
-                }).length === 0 && (
-                  <div className="py-8 text-center text-sm text-text-secondary">
-                    No actors match your filters. Try clearing one.
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* UGC tab */}
-          {activeTab === "ugc" && (
-            <div className="space-y-4">
-              {/* UGC Script Templates */}
-              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-                <h3 className="font-heading font-bold text-text-primary">UGC Script Templates</h3>
-                <p className="text-sm text-text-secondary">Pick a proven format — AI writes the script using your brand details</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    { id: "street-interview", label: "Street Interview", desc: "Casual Q&A recommendation" },
-                    { id: "honest-review", label: "Honest Review", desc: "Skeptical → convinced" },
-                    { id: "problem-solution", label: "Problem → Solution", desc: "Pain point → your product" },
-                    { id: "day-in-life", label: "Day in My Life", desc: "Product in daily routine" },
-                    { id: "unboxing", label: "Unboxing", desc: "First impressions excitement" },
-                    { id: "before-after", label: "Before & After", desc: "Transformation story" },
-                    { id: "storytime", label: "Storytime", desc: "Personal story → recommendation" },
-                    { id: "hot-take", label: "Hot Take", desc: "Bold statement → proof" },
-                    { id: "comparison", label: "This vs That", desc: "Compare & win" },
-                  ].map((t) => (
+          {/* Music tab */}
+          {activeTab === "music" && (
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
+              <div>
+                <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
+                <p className="text-xs text-text-secondary">Optional: Pick a genre or sound vibe for your video ads</p>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {MUSIC_OPTIONS.map((g) => {
+                  const isSelected = (ad.musicGenre === g) || (g === "none" && !ad.musicGenre);
+                  return (
                     <button
-                      key={t.id}
-                      onClick={() => setSelectedUgcTemplate(selectedUgcTemplate === t.id ? "" : t.id)}
-                      className={`text-left rounded-xl border-2 p-3 transition-all ${
-                        selectedUgcTemplate === t.id ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
+                      key={g}
+                      onClick={() => update("musicGenre", g === "none" ? null : g)}
+                      className={`rounded-xl border-2 px-3 py-2.5 text-[10px] sm:text-xs font-semibold capitalize transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 text-primary shadow-sm"
+                          : "border-black/10 hover:border-black/20 text-text-primary bg-white"
                       }`}
                     >
-                      <div className="text-sm font-semibold text-text-primary">{t.label}</div>
-                      <div className="text-[10px] text-text-secondary">{t.desc}</div>
+                      {g === "none" ? "🚫 No Music" : g.replace(/-/g, " ")}
                     </button>
-                  ))}
+                  );
+                })}
+              </div>
+              
+              {ad.musicGenre && (
+                <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs sm:text-sm">
+                  <CheckCircle2 className="inline h-4 w-4 text-primary mr-1.5" />
+                  Selected: <strong className="text-primary capitalize">{ad.musicGenre.replace(/-/g, " ")}</strong>
                 </div>
-                {selectedUgcTemplate && (
-                  <button
-                    onClick={generateUgcScript}
-                    disabled={ugcGenerating}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50 transition-colors"
+              )}
+              {!ad.musicGenre && (
+                <div className="rounded-xl bg-bg-secondary p-3 text-xs text-text-secondary">
+                  No music selected. Ad will use actor voice/sound effects only.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Settings tab */}
+          {activeTab === "settings" && (
+            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    <Languages className="inline h-3.5 w-3.5 mr-1" /> Language
+                  </div>
+                  <select
+                    value={ad.language}
+                    onChange={(e) => update("language", e.target.value)}
+                    className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
                   >
-                    {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {ugcGenerating ? "Generating script..." : "Generate UGC script"}
-                  </button>
-                )}
-              </div>
-
-              {/* Voice Controls */}
-              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-                <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
-                  <Mic className="h-5 w-5 text-primary" /> Voice Controls
-                </h3>
-                <p className="text-sm text-text-secondary">Fine-tune how the AI actor sounds (applies to video generation)</p>
-
-                <div className="space-y-4">
-                  <VoiceSlider label="Speed" value={voiceSpeed} min={0.5} max={2.0} step={0.1}
-                    onChange={setVoiceSpeed} hint={voiceSpeed < 0.9 ? "Slow & relaxed" : voiceSpeed > 1.2 ? "Fast & energetic" : "Natural pace"} />
-                  <VoiceSlider label="Stability" value={voiceStability} min={0} max={1} step={0.05}
-                    onChange={setVoiceStability} hint={voiceStability < 0.3 ? "Very dynamic" : voiceStability > 0.7 ? "Consistent" : "Balanced"} />
-                  <VoiceSlider label="Style / Emotion" value={voiceStyle} min={0} max={1} step={0.05}
-                    onChange={setVoiceStyle} hint={voiceStyle < 0.2 ? "Neutral" : voiceStyle > 0.6 ? "Very expressive" : "Some emotion"} />
+                    {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+                  </select>
                 </div>
-
-                <div className="rounded-xl bg-accent/5 border border-accent/20 p-3 text-xs text-text-secondary">
-                  <Sparkles className="inline h-3.5 w-3.5 text-accent mr-1" />
-                  Voice controls will apply when AI avatar video generation is enabled (coming soon with HeyGen/ElevenLabs integration)
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    <Palette className="inline h-3.5 w-3.5 mr-1" /> Brand Colors
+                  </div>
+                  <div className="flex gap-2 rounded-xl overflow-hidden h-10 border border-black/5">
+                    <div className="flex-1" style={{ backgroundColor: brandColors.primary }} />
+                    <div className="flex-1" style={{ backgroundColor: brandColors.secondary }} />
+                    <div className="flex-1" style={{ backgroundColor: brandColors.accent }} />
+                  </div>
                 </div>
               </div>
 
-              {/* Mass Variant Generation */}
-              <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-                <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" /> Mass Variant Testing
-                </h3>
-                <p className="text-sm text-text-secondary">
-                  Generate multiple versions of this ad to A/B test which one converts best
-                </p>
+              {/* Mass Variant Generation — Integrated into Settings tab */}
+              <div className="pt-6 border-t border-black/5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Copy className="h-5 w-5 text-primary" />
+                  <h3 className="font-heading font-bold text-text-primary">A/B Testing (Mass Generation)</h3>
+                </div>
+                <p className="text-xs text-text-secondary">Generate multiple variants to find the winning ad.</p>
 
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-3">
                   {(["actors", "scripts", "both"] as const).map((v) => (
                     <button
                       key={v}
@@ -940,113 +996,34 @@ export function StudioClient({
                         varyWhat === v ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
                       }`}
                     >
-                      <div className="text-sm font-semibold text-text-primary capitalize">{v === "both" ? "Both" : v === "actors" ? "New visuals" : "New copy"}</div>
-                      <div className="text-[10px] text-text-secondary">
-                        {v === "actors" ? "Same script, different people" : v === "scripts" ? "Same look, different wording" : "Everything changes"}
+                      <div className="text-xs font-bold text-text-primary capitalize">{v}</div>
+                      <div className="text-[9px] text-text-secondary">
+                        {v === "actors" ? "New people, same script" : v === "scripts" ? "New copy, same look" : "Randomize all"}
                       </div>
                     </button>
                   ))}
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Number of variants</span>
-                    <span className="text-xs font-bold text-text-primary">{variantCount}</span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-text-primary">{variantCount} Variants</span>
                   <input
                     type="range"
                     min={2}
                     max={10}
                     value={variantCount}
                     onChange={(e) => setVariantCount(Number(e.target.value))}
-                    className="w-full accent-primary"
+                    className="w-32 accent-primary"
                   />
-                  <div className="flex justify-between text-[10px] text-text-secondary mt-1">
-                    <span>2</span><span>5</span><span>10</span>
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-bg-secondary p-3 text-xs text-text-secondary">
-                  Cost: <strong className="text-text-primary">{variantCount} credits</strong> ({variantCount} variants × 1 credit each)
                 </div>
 
                 <button
                   onClick={generateVariants}
                   disabled={generatingVariants}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50 transition-colors"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
                 >
                   {generatingVariants ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                  {generatingVariants ? "Generating variants..." : `Generate ${variantCount} variants`}
+                  Generate Variants
                 </button>
-              </div>
-            </div>
-          )}
-
-          {/* Music tab */}
-          {activeTab === "music" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
-              <p className="text-sm text-text-secondary">Pick a genre for the video version of your ad</p>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {MUSIC_OPTIONS.map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => update("musicGenre", ad.musicGenre === g ? null : g)}
-                    className={`rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-all ${
-                      ad.musicGenre === g ? "border-primary bg-primary/5 text-primary" : "border-black/10 hover:border-black/20 text-text-primary"
-                    }`}
-                  >
-                    {g.replace(/-/g, " ")}
-                  </button>
-                ))}
-              </div>
-              {ad.musicGenre && (
-                <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-sm">
-                  <CheckCircle2 className="inline h-4 w-4 text-primary mr-1.5" />
-                  Selected: <strong className="text-primary capitalize">{ad.musicGenre.replace(/-/g, " ")}</strong>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Settings tab */}
-          {activeTab === "settings" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                  <Languages className="inline h-3.5 w-3.5 mr-1" /> Language
-                </div>
-                <select
-                  value={ad.language}
-                  onChange={(e) => update("language", e.target.value)}
-                  className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                >
-                  {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                  <Palette className="inline h-3.5 w-3.5 mr-1" /> Brand Colors (from your Brand Kit)
-                </div>
-                <div className="flex gap-2 rounded-xl overflow-hidden h-10">
-                  <div className="flex-1" style={{ backgroundColor: brandColors.primary }} />
-                  <div className="flex-1" style={{ backgroundColor: brandColors.secondary }} />
-                  <div className="flex-1" style={{ backgroundColor: brandColors.accent }} />
-                </div>
-                <Link href="/settings/brand" className="mt-2 block text-xs text-primary font-semibold hover:underline">
-                  Edit in Brand Kit →
-                </Link>
-              </div>
-
-              <div>
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">Brand voice</div>
-                <div className="rounded-xl bg-bg-secondary px-3 py-2 text-sm text-text-primary capitalize">{brandVoice}</div>
-              </div>
-
-              <div>
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-secondary">Ad type</div>
-                <div className="rounded-xl bg-bg-secondary px-3 py-2 text-sm text-text-primary">{ad.type}</div>
               </div>
             </div>
           )}
@@ -1157,48 +1134,74 @@ export function StudioClient({
         </div>
       )}
 
-      {/* Sticky bottom action bar — primary actions always reachable */}
+      {/* Sticky bottom action bar — Master Controller */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 dark:border-white/10 bg-white/95 dark:bg-bg-dark/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:left-64">
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
-          {/* Secondary actions (left) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={downloadAd}
-              className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:!border-white/20 bg-white dark:!bg-white/10 px-3 text-xs sm:text-sm font-semibold text-text-primary dark:!text-white hover:bg-bg-secondary"
-              title="Download ad"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Download</span>
-            </button>
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              className="hidden sm:flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-colors"
-              title="Save as template"
-            >
-              <BookTemplate className="h-4 w-4" /> Template
-            </button>
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Status & Secondary (left) */}
+          <div className="flex w-full sm:w-auto items-center justify-between sm:justify-start gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadAd}
+                className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:!border-white/20 bg-white dark:!bg-white/10 px-3 text-xs font-semibold text-text-primary dark:!text-white hover:bg-bg-secondary"
+                title="Download current version"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Download</span>
+              </button>
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 text-xs font-semibold text-accent hover:bg-accent/10 transition-colors"
+                title="Save as reusable template"
+              >
+                <BookTemplate className="h-4 w-4" />
+                <span className="hidden sm:inline">Template</span>
+              </button>
+            </div>
+            {dirty && (
+              <div className="flex items-center gap-1.5 text-xs font-bold text-warning animate-pulse">
+                <span className="h-2 w-2 rounded-full bg-warning" />
+                Unsaved Changes
+              </div>
+            )}
           </div>
 
-          {/* Primary actions (right) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isPaid && (
+          {/* Primary Actions (right) */}
+          <div className="flex w-full sm:w-auto items-center gap-2">
+            {dirty ? (
               <button
                 onClick={save}
-                disabled={saving || !dirty}
-                className="flex h-11 items-center gap-1.5 rounded-xl border-2 border-primary/30 bg-primary/5 px-3 sm:px-4 text-xs sm:text-sm font-bold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                disabled={saving}
+                className="flex h-12 w-full sm:w-auto flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-primary px-8 text-sm font-bold text-white shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                <Save className="h-4 w-4" /> {saving ? "Saving..." : "Save"}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {saving ? "Saving..." : "Save & Apply Changes"}
               </button>
+            ) : (
+              <div className="flex w-full sm:w-auto items-center gap-2">
+                <div className="relative flex-1 sm:flex-none">
+                  <input
+                    type="datetime-local"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="h-11 w-full sm:w-44 rounded-xl border-2 border-black/10 bg-white pl-9 pr-3 text-[11px] outline-none focus:border-primary transition-all"
+                  />
+                  <Clock className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-secondary" />
+                </div>
+                
+                <button
+                  onClick={() => handleSchedule(!!scheduleDate ? false : true)}
+                  disabled={scheduling}
+                  className={`flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-all shadow-lg ${
+                    scheduleDate 
+                      ? "bg-accent shadow-accent/20" 
+                      : "bg-gradient-to-r from-primary to-accent shadow-primary/25 hover:scale-[1.02]"
+                  }`}
+                >
+                  {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {scheduling ? "Processing..." : scheduleDate ? "Schedule Post" : "Publish Now"}
+                </button>
+              </div>
             )}
-            <button
-              onClick={() => handleSchedule(true)}
-              disabled={scheduling || dirty}
-              title={dirty ? "Save your changes first" : "Publish this ad now"}
-              className="flex h-11 items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 sm:px-5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-primary/30 hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <Send className="h-4 w-4" />
-              {scheduling ? "Publishing..." : "Publish"}
-            </button>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageCircle, X, Send, Mail, ExternalLink,
+  MessageCircle, X, Send, Mail, ExternalLink, Minus,
 } from "lucide-react";
 import {
   InstagramIcon, FacebookIcon, TikTokIcon, XTwitterIcon,
@@ -32,6 +32,7 @@ const SOCIAL_LINKS: SocialLink[] = [
 
 export function SupportBubble() {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [tab, setTab] = useState<"chat" | "socials">("chat");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<{ from: "user" | "bot"; text: string }[]>([
@@ -41,10 +42,22 @@ export function SupportBubble() {
   const constraintsRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load hidden state from session storage
+  useEffect(() => {
+    const isHidden = sessionStorage.getItem("hide_support_bubble") === "true";
+    if (isHidden) setHidden(true);
+  }, []);
+
   // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  function handleHide(e: React.MouseEvent) {
+    e.stopPropagation();
+    setHidden(true);
+    sessionStorage.setItem("hide_support_bubble", "true");
+  }
 
   async function sendMessage() {
     if (!message.trim()) return;
@@ -53,7 +66,6 @@ export function SupportBubble() {
     setMessage("");
     setSending(true);
 
-    // Simple AI-powered response using the rephrase endpoint as a quick chat
     try {
       const res = await fetch("/api/ai/rephrase", {
         method: "POST",
@@ -77,6 +89,8 @@ export function SupportBubble() {
     }
   }
 
+  if (hidden) return null;
+
   return (
     <>
       {/* Drag boundary */}
@@ -85,26 +99,39 @@ export function SupportBubble() {
       {/* Floating draggable bubble */}
       <AnimatePresence>
         {!open && (
-          <motion.button
-            drag
-            dragConstraints={constraintsRef}
-            dragElastic={0.1}
-            dragMomentum={false}
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            onClick={() => setOpen(true)}
-            className="fixed bottom-20 sm:bottom-6 right-6 z-[150] pointer-events-auto cursor-grab active:cursor-grabbing"
-            style={{ touchAction: "none" }}
+            className="fixed bottom-20 sm:bottom-6 right-6 z-[150] flex flex-col items-end gap-2"
           >
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-transform hover:scale-110">
-              <MessageCircle className="h-6 w-6" />
-              <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-[8px] font-bold text-white">
-                1
-              </span>
-            </div>
-          </motion.button>
+            {/* Tiny close button above the bubble */}
+            <button
+              onClick={handleHide}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10 text-text-secondary backdrop-blur-md hover:bg-danger hover:text-white transition-all shadow-sm"
+              title="Hide for this session"
+            >
+              <X className="h-3 w-3" />
+            </button>
+            
+            <motion.button
+              drag
+              dragConstraints={constraintsRef}
+              dragElastic={0.1}
+              dragMomentum={false}
+              onClick={() => setOpen(true)}
+              className="pointer-events-auto cursor-grab active:cursor-grabbing"
+              style={{ touchAction: "none" }}
+            >
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-transform hover:scale-110">
+                <MessageCircle className="h-6 w-6" />
+                <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-[8px] font-bold text-white">
+                  1
+                </span>
+              </div>
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -120,16 +147,27 @@ export function SupportBubble() {
           >
             {/* Header */}
             <div className="flex items-center justify-between bg-gradient-to-r from-primary to-warning p-4 text-white">
-              <div>
-                <div className="font-heading font-bold">Famousli Support</div>
-                <div className="text-xs text-white/80">We typically reply instantly</div>
+              <div className="flex items-center gap-2">
+                <div>
+                  <div className="font-heading font-bold">Famousli Support</div>
+                  <div className="text-xs text-white/80">We typically reply instantly</div>
+                </div>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleHide}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-danger/20 transition-colors"
+                  title="Hide for this session"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}

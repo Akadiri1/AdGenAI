@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
 export const COSTS = {
-  MAGIC_CAMPAIGN: 1,
+  MAGIC_CAMPAIGN: 2,
   IMAGE_AD: 1,
   VIDEO_AD: 2,
   CAROUSEL: 2,
-  TALKING_ACTOR: 3,
+  TALKING_ACTOR: 4,
 } as const;
 
 export type CostKey = keyof typeof COSTS;
