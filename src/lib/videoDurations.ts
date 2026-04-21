@@ -49,6 +49,15 @@ export const VIDEO_DURATIONS: VideoDuration[] = [
     platforms: ["TikTok", "Reels", "YouTube", "Facebook", "LinkedIn"],
     description: "Extended format — full story arc with multiple scenes",
   },
+  {
+    id: "3m",
+    label: "3 minutes",
+    seconds: 180,
+    imagesNeeded: 20,
+    durationPerImage: 9,
+    platforms: ["YouTube", "Facebook Watch", "Website Header"],
+    description: "Long-form storytelling — deep dive into your business",
+  },
 ];
 
 export function getDuration(id: string): VideoDuration {

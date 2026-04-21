@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/adminAuth";
 import Link from "next/link";
 import {
   LayoutDashboard, Users, DollarSign, Film, Activity,
-  LogOut, ShieldCheck, Receipt,
+  LogOut, ShieldCheck, Receipt, Server,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AdminMobileNav } from "./AdminMobileNav";
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/finance", label: "Finance & API Costs", icon: Receipt },
+  { href: "/admin/infrastructure", label: "Infrastructure", icon: Server },
   { href: "/admin/ads", label: "Ads", icon: Film },
   { href: "/admin/activity", label: "Activity", icon: Activity },
 ];

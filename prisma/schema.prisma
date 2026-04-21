@@ -133,11 +133,23 @@ model ApiKey {
   @@index([key])
 }
 
+model ApiProvider {
+  id            String   @id @default(cuid())
+  name          String   @unique // siliconflow, fal, kling, magic
+  status        String   @default("online") // online, degraded, offline
+  lastUsedAt    DateTime @default(now())
+  lastSuccessAt DateTime?
+  lastError     String?
+  errorCount    Int      @default(0)
+  priority      Int      @default(1)
+  updatedAt     DateTime @updatedAt
+}
+
 model Ad {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type            String    // AdType
+  type            String    @default("VIDEO") // AdType
   platform        String    // comma-separated Platform values (e.g. "INSTAGRAM,FACEBOOK")
   status          String    @default("DRAFT") // AdStatus
 
@@ -152,6 +164,7 @@ model Ad {
   thumbnailUrl    String?
   musicTrack      String?
   musicGenre      String?
+  visualInstructions String?  // Custom AI instructions for scene style/content
   voiceoverUrl    String?
 
   aspectRatio     String    @default("1:1")

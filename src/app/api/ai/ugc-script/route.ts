@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { buildUserContext } from "@/lib/aiContext";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { UGC_TEMPLATES } from "@/lib/ugcTemplates";
+import { checkCredits, deductCredits, COSTS } from "@/lib/credits";
 import { z } from "zod";
 
 export const maxDuration = 30;

@@ -29,6 +29,7 @@ export const GENRE_MUSIC_MAP: Record<string, string> = {
   "dark-trap": "https://cdn.famousli.com/assets/music/trap-dark.mp3",
   "uk-drill": "https://cdn.famousli.com/assets/music/uk-drill-beat.mp3",
   "rnb": "https://cdn.famousli.com/assets/music/rnb-soul.mp3",
+  "indie-folk": "https://cdn.famousli.com/assets/music/indie-folk-warm.mp3",
 };
 
 export function getMusicUrlForGenre(genre: string | null): string | undefined {

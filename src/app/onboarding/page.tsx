@@ -134,17 +134,17 @@ const STEPS = [
   },
   {
     title: "Refer & Earn",
-    subtitle: "30% commission, forever",
-    description: "Share your referral link. When someone subscribes, you earn 30% of every payment — monthly or yearly. Cash out anytime once you hit $10. No cap, no expiry.",
+    subtitle: "20% commission, forever",
+    description: "Share your referral link. When someone subscribes, you earn 20% of every payment — monthly or yearly. Cash out anytime once you hit $10. No cap, no expiry.",
     icon: Gift,
     color: "from-primary to-danger",
     link: "/referral",
     linkLabel: "Get your referral link",
     visual: (
       <div className="mt-6 rounded-2xl bg-success/10 border border-success/20 p-4 text-center">
-        <div className="font-heading text-2xl font-bold text-success">$14.70</div>
+        <div className="font-heading text-2xl font-bold text-success">$9.80</div>
         <div className="text-xs text-text-secondary">per Starter monthly ($49)</div>
-        <div className="mt-1 font-heading text-2xl font-bold text-success">$38.70</div>
+        <div className="mt-1 font-heading text-2xl font-bold text-success">$25.80</div>
         <div className="text-xs text-text-secondary">per Pro monthly ($129)</div>
       </div>
     ),

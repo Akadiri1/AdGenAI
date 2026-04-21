@@ -6,6 +6,7 @@ export const COSTS = {
   VIDEO_AD: 2,
   CAROUSEL: 2,
   TALKING_ACTOR: 4,
+  AI_TEXT_GEN: 1, // Every AI text action (rephrase, write, rewrite) costs 1 token
 } as const;
 
 export type CostKey = keyof typeof COSTS;

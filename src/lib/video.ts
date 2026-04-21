@@ -148,26 +148,12 @@ export async function assembleVideo(params: VideoAssemblyParams): Promise<string
     const concatInputs = imagePaths.map((_, i) => `[v${i}]`).join("");
     const totalDuration = durationPerImage * imagePaths.length;
 
-    // Add text overlays if provided
-    let textFilter = "";
-    let lastLabel = "concat";
-    if (headline) {
-      const escaped = escapeForDrawtext(headline);
-      textFilter += `;[${lastLabel}]drawtext=text='${escaped}':fontsize=${Math.round(w / 20)}:fontcolor=white:borderw=2:bordercolor=black@0.7:x=(w-text_w)/2:y=h*0.08[t1]`;
-      lastLabel = "t1";
-    }
-    if (callToAction) {
-      const escaped = escapeForDrawtext(callToAction);
-      textFilter += `;[${lastLabel}]drawtext=text='${escaped}':fontsize=${Math.round(w / 24)}:fontcolor=white:box=1:boxcolor=0xFF6B35@0.85:boxborderw=15:x=(w-text_w)/2:y=h*0.85[t2]`;
-      lastLabel = "t2";
-    }
-
-    const filterComplex = `${scaleFilters};${concatInputs}concat=n=${imagePaths.length}:v=1:a=0[concat]${textFilter}`;
+    const filterComplex = `${scaleFilters};${concatInputs}concat=n=${imagePaths.length}:v=1:a=0[v]`;
 
     cmd
       .complexFilter(filterComplex)
       .outputOptions([
-        "-map", `[${lastLabel}]`,
+        "-map", "[v]",
         ...(musicPath ? ["-map", `${imagePaths.length}:a`, "-shortest"] : []),
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",

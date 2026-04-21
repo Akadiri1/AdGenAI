@@ -125,7 +125,7 @@ export async function POST(req: Request) {
       return prisma.ad.create({
         data: {
           userId,
-          type: "IMAGE",
+          type: "VIDEO",
           platform: platformsToString(body.platforms),
           status: "READY",
           headline: variant.headline,

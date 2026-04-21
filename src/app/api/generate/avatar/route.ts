@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateAvatarVideo, getVideoStatus, isHeyGenConfigured } from "@/lib/heygen";
 import { generateTalkingActor, isReplicateConfigured } from "@/lib/sadtalker";
+import { generateMagicVideo, getMagicTaskStatus, isMagicConfigured } from "@/lib/magic";
 import { AVATAR_LIBRARY } from "@/lib/avatars";
 import { checkCredits, deductCredits, addCredits, COSTS } from "@/lib/credits";
 import { platformsToString } from "@/lib/adHelpers";
@@ -97,6 +98,30 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Avatar video generation failed" }, { status: 500 });
           }
         }
+      }
+    } else if (isMagicConfigured()) {
+      // ── SECONDARY PATH: Magic AI (Minimax) ─────────────────
+      const taskId = await generateMagicVideo({
+        prompt: `A talking head video of the actor "${body.avatarId}" speaking this script clearly: "${body.script}"`,
+        model_id: "minimax_hailuo_02_standard",
+        aspect_ratio: body.aspectRatio ?? "9:16",
+      });
+
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 6000));
+        const status = await getMagicTaskStatus(taskId);
+        if (status.status === "completed" && status.videoUrl) {
+          const videoRes = await fetch(status.videoUrl);
+          const buf = await videoRes.arrayBuffer();
+          videoUrl = await uploadToStorage({
+            bytes: Buffer.from(buf),
+            contentType: "video/mp4",
+            extension: "mp4",
+            folder: "ads/avatars",
+          });
+          break;
+        }
+        if (status.status === "failed") throw new Error("Magic Avatar failed");
       }
     } else if (isReplicateConfigured()) {
       // ── SCRAPPY PATH: Sadtalker via Replicate ──────────────

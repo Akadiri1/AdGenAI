@@ -205,7 +205,7 @@ export default async function DashboardPage() {
               { icon: Paintbrush, label: brandComplete ? "Update brand kit" : "Complete brand kit (required)", href: "/settings/brand", highlight: !brandComplete },
               { icon: Link2, label: "Connect social accounts", href: "/connect", highlight: false },
               { icon: Palette, label: "Browse templates", href: "/templates", highlight: false },
-              { icon: Gift, label: "Invite friends, earn 30%", href: "/referral", highlight: false },
+              { icon: Gift, label: "Invite friends, earn 20%", href: "/referral", highlight: false },
             ].map((action) => {
               const Icon = action.icon;
               return (

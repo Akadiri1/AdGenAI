@@ -87,14 +87,14 @@ export async function POST(req: Request) {
           resource: s.id,
           metadata: { type: "subscription", amount: amountUsd, provider: "stripe" },
         });
-        // Credit the referrer 30% on this first payment
+        // Credit the referrer 20% on this first payment
         await creditReferralCommission(userId, amountUsd, s.id);
       }
       break;
     }
     case "invoice.paid": {
       // Fires on every recurring renewal — monthly or yearly.
-      // The referrer earns 30% on each renewal, forever.
+      // The referrer earns 20% on each renewal, forever.
       const inv = event.data.object as Stripe.Invoice;
       const customerId = typeof inv.customer === "string" ? inv.customer : inv.customer?.id;
       if (!customerId) break;

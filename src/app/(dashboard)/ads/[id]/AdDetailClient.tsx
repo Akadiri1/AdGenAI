@@ -343,18 +343,6 @@ export function AdDetailClient({
                 </div>
               </div>
             )}
-
-            {!ad.videoUrl && ad.images && ad.images.length > 0 && !editingImage && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={handleGenerateVideo}
-                  disabled={generatingVideo}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-warning px-5 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50"
-                >
-                  🎬 {generatingVideo ? "Assembling video (30-60s)..." : "Turn into video"}
-                </button>
-              </div>
-            )}
           </div>
 
           {ad.script && (

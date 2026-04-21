@@ -27,6 +27,7 @@ type Ad = {
   videoUrl: string | null;
   thumbnailUrl: string | null;
   musicGenre: string | null;
+  visualInstructions: string | null;
   aspectRatio: string;
   language: string;
   score: number | null;
@@ -40,9 +41,10 @@ const LANGUAGES = [
 ];
 
 const MUSIC_OPTIONS = [
-  "pop", "cinematic", "corporate", "hip-hop", "lo-fi", "electronic",
+  "none", "pop", "cinematic", "corporate", "hip-hop", "lo-fi", "electronic",
   "afrobeats", "amapiano", "jazz", "classical", "motivational", "chill",
-  "trending-tiktok", "trending-reels",
+  "trending-tiktok", "trending-reels", "rock", "country", "funk", "synthwave",
+  "ambient", "acoustic", "uplifting", "dark-trap", "uk-drill", "rnb", "indie-folk",
 ];
 
 export function StudioClient({
@@ -118,20 +120,32 @@ export function StudioClient({
           bodyText: ad.bodyText,
           callToAction: ad.callToAction,
           script: ad.script,
+          visualInstructions: ad.visualInstructions,
           scriptFramework: ad.scriptFramework,
           musicGenre: ad.musicGenre,
           aspectRatio: ad.aspectRatio,
           ...(customImageUrl && { customImageUrl }),
-          ...(imagePrompt && { regenerateImage: true, newImagePrompt: imagePrompt }),
+          ...(imagePrompt && { regenerateImage: true, newImagePrompt: imagePrompt, numScenes: variantCount }),
+          // If no prompt but dirty in Scenes tab, generate batch from brief
+          ...(!imagePrompt && dirty && activeTab === "visuals" && { regenerateImage: true, numScenes: variantCount }),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
-      if (data.ad?.thumbnailUrl) setAd({ ...ad, thumbnailUrl: data.ad.thumbnailUrl, videoUrl: null });
+      
+      const updatedAd = { 
+        ...ad, 
+        ...(data.ad?.thumbnailUrl && { thumbnailUrl: data.ad.thumbnailUrl, videoUrl: null }),
+        ...(data.ad?.images && { images: data.ad.images })
+      };
+      
+      setAd(updatedAd);
+      setAllVariants(prev => prev.map(v => v.id === ad.id ? updatedAd : v));
+      
       setDirty(false);
       setCustomImageUrl("");
       setImagePrompt("");
-      success("Changes saved");
+      success(data.message ?? "Changes saved");
     } catch (err) {
       toastError((err as Error).message);
     } finally {
@@ -262,7 +276,7 @@ export function StudioClient({
 
   const TABS = [
     { key: "copy" as const, label: "Copy", icon: Type },
-    { key: "visuals" as const, label: "Visuals", icon: ImageIcon },
+    { key: "visuals" as const, label: "Scenes", icon: Film },
     { key: "actors" as const, label: "Actors", icon: Users },
     { key: "music" as const, label: "Music", icon: Music },
     { key: "settings" as const, label: "Settings", icon: Palette },
@@ -389,14 +403,30 @@ export function StudioClient({
                 ) : (
                   <div className="flex h-full items-center justify-center"><Film className="h-12 w-12 text-text-secondary" /></div>
                 )}
-                {ad.headline && (
+
+                {/* Generating Overlay */}
+                {generatingVideo && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white p-6 text-center">
+                    <div className="relative mb-4">
+                      <div className="h-16 w-16 rounded-full border-4 border-white/20 border-t-primary animate-spin" />
+                      <Film className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                    </div>
+                    <div className="font-heading font-bold text-sm">Assembling Video...</div>
+                    <p className="mt-1 text-[10px] text-white/70">Adding music, transitions, and overlays. This usually takes 30-60 seconds.</p>
+                    <div className="mt-4 w-full max-w-[120px] h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary animate-[gradient_2s_infinite]" style={{ width: "60%" }} />
+                    </div>
+                  </div>
+                )}
+
+                {ad.headline && !generatingVideo && (
                   <div className="absolute left-0 right-0 top-3 px-3 text-center">
                     <span className="inline-block rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
                       {ad.headline}
                     </span>
                   </div>
                 )}
-                {ad.callToAction && (
+                {ad.callToAction && !generatingVideo && (
                   <div className="absolute bottom-3 left-0 right-0 px-3 text-center">
                     <span className="inline-block rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-lg" style={{ backgroundColor: brandColors.primary }}>
                       {ad.callToAction}
@@ -408,28 +438,48 @@ export function StudioClient({
             </div>
 
             {/* Video generation */}
-            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 {ad.videoUrl ? "Video" : "Create video"}
               </div>
-              {!ad.videoUrl && (
+
+              {/* Aspect ratio — moved here */}
+              <div>
+                <div className="mb-2 text-[10px] font-bold uppercase text-text-secondary">Aspect ratio</div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(["1:1", "9:16", "16:9", "4:5"] as const).map((ar) => (
+                    <button
+                      key={ar}
+                      onClick={() => update("aspectRatio", ar)}
+                      className={`rounded-lg border-2 p-1.5 text-center transition-all ${
+                        ad.aspectRatio === ar ? "border-primary bg-primary/5 shadow-sm" : "border-black/10 hover:border-black/20"
+                      }`}
+                    >
+                      <div className="text-[11px] font-bold text-text-primary">{ar}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {!ad.videoUrl && !generatingVideo && (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                     {[
                       { id: "6s", label: "6s", sub: "Bumper" },
                       { id: "15s", label: "15s", sub: "Short" },
                       { id: "30s", label: "30s", sub: "Standard" },
                       { id: "60s", label: "60s", sub: "Extended" },
+                      { id: "3m", label: "3m", sub: "Story" },
                     ].map((d) => (
                       <button
                         key={d.id}
                         onClick={() => setVideoDuration(d.id)}
-                        className={`rounded-lg border-2 p-2 text-center transition-all min-h-[52px] ${
-                          videoDuration === d.id ? "border-primary bg-primary/10" : "border-black/10 dark:border-white/15 bg-white dark:bg-white/5"
+                        className={`rounded-lg border-2 p-1.5 text-center transition-all min-h-[52px] ${
+                          videoDuration === d.id ? "border-primary bg-primary/10 shadow-sm" : "border-black/10 dark:border-white/15 bg-white dark:bg-white/5"
                         }`}
                       >
-                        <div className="text-xs font-bold text-text-primary dark:text-white">{d.label}</div>
-                        <div className="text-[10px] text-text-secondary dark:text-white/60">{d.sub}</div>
+                        <div className="text-[11px] font-bold text-text-primary dark:text-white">{d.label}</div>
+                        <div className="text-[9px] text-text-secondary dark:text-white/60">{d.sub}</div>
                       </button>
                     ))}
                   </div>
@@ -438,11 +488,24 @@ export function StudioClient({
                     disabled={generatingVideo}
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-warning text-sm font-semibold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
                   >
-                    {generatingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
-                    {generatingVideo ? "Creating video..." : "Generate video"}
+                    <Film className="h-4 w-4" />
+                    {videoDuration === "3m" ? "Generate (5 credits)" : "Generate (2 credits)"}
                   </button>
                 </>
               )}
+
+              {generatingVideo && (
+                <div className="rounded-xl bg-bg-secondary p-4 text-center space-y-3 animate-pulse border-2 border-primary/20">
+                  <div className="flex justify-center">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-text-primary">Production in Progress</div>
+                    <div className="text-[10px] text-text-secondary">Rendering transitions & audio...</div>
+                  </div>
+                </div>
+              )}
+
               {ad.videoUrl && (
                 <div className="text-xs text-success font-semibold flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Video ready ({ad.type})
@@ -524,75 +587,24 @@ export function StudioClient({
                   fieldType="cta"
                 />
               </div>
-
-              {/* UGC Script Templates — Integrated into Copy tab */}
-              <div className="pt-4 border-t border-black/5 space-y-4">
-                <div>
-                  <h3 className="font-heading font-bold text-text-primary flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" /> Viral Video Scripts
-                  </h3>
-                  <p className="text-[10px] text-text-secondary">AI will rewrite your script using these proven viral formats</p>
-                </div>
-                
-                <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3">
-                  {[
-                    { id: "honest-review", label: "Review", desc: "Honest feedback" },
-                    { id: "problem-solution", label: "Solution", desc: "Pain → Fix" },
-                    { id: "day-in-life", label: "Daily", desc: "Product in use" },
-                    { id: "unboxing", label: "Unboxing", desc: "Excitement" },
-                    { id: "hot-take", label: "Hook", desc: "Bold claim" },
-                    { id: "comparison", label: "Vs", desc: "Compare" },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => setSelectedUgcTemplate(selectedUgcTemplate === t.id ? "" : t.id)}
-                      className={`text-left rounded-xl border-2 p-2.5 transition-all ${
-                        selectedUgcTemplate === t.id ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
-                      }`}
-                    >
-                      <div className="text-[11px] font-bold text-text-primary">{t.label}</div>
-                      <div className="text-[9px] text-text-secondary">{t.desc}</div>
-                    </button>
-                  ))}
-                </div>
-                {selectedUgcTemplate && (
-                  <button
-                    onClick={generateUgcScript}
-                    disabled={ugcGenerating}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-accent text-xs font-bold text-white hover:bg-accent/90 disabled:opacity-50 transition-colors"
-                  >
-                    {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    {ugcGenerating ? "Generating..." : "Apply Format to Script"}
-                  </button>
-                )}
-
-                {(ad.type === "VIDEO" || ad.script || selectedUgcTemplate) && (
-                  <AIRephraseField
-                    kind="textarea"
-                    label="Final Script"
-                    value={ad.script ?? ""}
-                    onChange={(v) => update("script", v)}
-                    placeholder="This is what the actor will say..."
-                    fieldType="script"
-                    rows={5}
-                  />
-                )}
-              </div>
             </div>
           )}
 
-          {/* Visuals tab */}
+          {/* Visuals tab (now Scenes) */}
           {activeTab === "visuals" && (
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <h3 className="font-heading font-bold text-text-primary">Images</h3>
+              <h3 className="font-heading font-bold text-text-primary">Video Scenes</h3>
 
               {/* Current images */}
               {ad.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {ad.images.map((img, i) => (
-                    <div key={i} className="aspect-square overflow-hidden rounded-xl bg-bg-secondary">
+                    <div key={i} className="aspect-square overflow-hidden rounded-xl bg-bg-secondary group relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={`Ad image ${i + 1}`} className="h-full w-full object-cover" />
+                      <img src={img} alt={`Scene ${i + 1}`} className="h-full w-full object-cover" />
+                      <div className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white backdrop-blur-sm">
+                        SCENE {i + 1}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -647,20 +659,122 @@ export function StudioClient({
                 <p className="text-[10px] text-text-secondary">Max 10MB. PNG, JPG, or WebP.</p>
               </div>
 
+              <div className="pt-4 border-t border-black/5 space-y-4">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary flex items-center gap-2">
+                    <SlidersHorizontal className="h-3.5 w-3.5" /> AI Production Brief
+                  </h3>
+                  <p className="text-[10px] text-text-secondary">Describe the visual style, colors, and content you want for ALL scenes.</p>
+                </div>
+                <textarea
+                  value={ad.visualInstructions ?? ""}
+                  onChange={(e) => update("visualInstructions", e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Cinematic lighting, warm colors, minimalist aesthetic. Show happy people using the product in a bright modern kitchen..."
+                  className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                />
+                <div className="mt-2 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setUgcGenerating(true);
+                      try {
+                        const res = await fetch("/api/ai/rephrase", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            text: ad.bodyText || ad.headline || "our product",
+                            fieldType: "imagePrompt",
+                            mode: "generate",
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error ?? "Failed");
+                        update("visualInstructions", data.text);
+                        success("Production Brief written!");
+                      } catch (err) {
+                        toastError((err as Error).message);
+                      } finally {
+                        setUgcGenerating(false);
+                      }
+                    }}
+                    disabled={ugcGenerating}
+                    className="flex h-8 items-center gap-1.5 rounded-lg bg-accent/10 px-3 text-[10px] font-bold text-accent hover:bg-accent/20 transition-all disabled:opacity-50"
+                  >
+                    {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                    {ugcGenerating ? "Writing..." : "Write with AI (1 token)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!ad.visualInstructions?.trim()) return;
+                      setUgcGenerating(true);
+                      try {
+                        const res = await fetch("/api/ai/rephrase", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            text: ad.visualInstructions,
+                            fieldType: "imagePrompt",
+                            mode: "rewrite",
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error ?? "Failed");
+                        update("visualInstructions", data.text);
+                        success("Brief polished!");
+                      } catch (err) {
+                        toastError((err as Error).message);
+                      } finally {
+                        setUgcGenerating(false);
+                      }
+                    }}
+                    disabled={ugcGenerating || !ad.visualInstructions?.trim()}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 text-[10px] font-bold text-text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
+                  >
+                    {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {ugcGenerating ? "Rewriting..." : "Rewrite (1 token)"}
+                  </button>
+                </div>
+              </div>
+
               {/* AI regenerate */}
               <div className="rounded-xl border-2 border-dashed border-black/15 bg-bg-secondary/30 p-4">
                 <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                  <Sparkles className="h-3.5 w-3.5" /> Regenerate with AI
+                  <Sparkles className="h-3.5 w-3.5" /> Create New Scenes
                 </div>
+                <p className="text-[10px] text-text-secondary mb-3">AI will generate a fresh set of images using your Production Brief above.</p>
+                
                 <AIRephraseField
                   kind="textarea"
-                  label="New image prompt"
+                  label="Specific scene prompt (optional)"
                   value={imagePrompt}
                   onChange={(v) => { setImagePrompt(v); setDirty(true); }}
-                  placeholder="A different angle showing..."
+                  placeholder="Override the brief for this specific generation..."
                   fieldType="imagePrompt"
                   rows={2}
                 />
+
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-[10px] font-bold uppercase text-text-secondary">How many scenes?</div>
+                  <div className="flex flex-wrap gap-1.5 justify-end max-w-[200px]">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setVariantCount(n)}
+                        className={`h-7 w-7 rounded-lg border-2 text-[10px] font-bold transition-all ${
+                          variantCount === n ? "border-primary bg-primary text-white shadow-md scale-110" : "border-black/10 bg-white text-text-secondary hover:border-black/20"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 text-[9px] text-text-secondary text-right">
+                  Cost: <strong>{variantCount} credit{variantCount > 1 ? "s" : ""}</strong>
+                </div>
               </div>
 
               {/* Aspect ratio */}
@@ -712,13 +826,51 @@ export function StudioClient({
                     </div>
                   </div>
 
+                  {/* Viral Script Templates — Moved here */}
+                  <div className="mt-6 pt-4 border-t border-black/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3 text-primary" /> Viral Formats
+                      </h3>
+                      {selectedUgcTemplate && (
+                        <button
+                          onClick={generateUgcScript}
+                          disabled={ugcGenerating}
+                          className="text-[10px] font-bold text-accent hover:underline disabled:opacity-50"
+                        >
+                          {ugcGenerating ? "Generating..." : "Apply format →"}
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid gap-1.5 grid-cols-3">
+                      {[
+                        { id: "honest-review", label: "Review" },
+                        { id: "problem-solution", label: "Solution" },
+                        { id: "unboxing", label: "Unboxing" },
+                        { id: "day-in-life", label: "Daily" },
+                        { id: "hot-take", label: "Hook" },
+                        { id: "comparison", label: "Vs" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setSelectedUgcTemplate(selectedUgcTemplate === t.id ? "" : t.id)}
+                          className={`rounded-lg border px-2 py-1.5 text-center transition-all ${
+                            selectedUgcTemplate === t.id ? "border-primary bg-primary/5 text-primary" : "border-black/10 hover:border-black/20 text-text-secondary"
+                          }`}
+                        >
+                          <div className="text-[10px] font-bold">{t.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="mt-4">
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
                       What should this actor say?
                     </label>
                     <textarea
-                      value={actorScript}
-                      onChange={(e) => setActorScript(e.target.value)}
+                      value={ad.script ?? ""}
+                      onChange={(e) => update("script", e.target.value)}
                       rows={4}
                       maxLength={800}
                       placeholder="Type the exact words..."
@@ -742,7 +894,7 @@ export function StudioClient({
                               });
                               const data = await res.json();
                               if (!res.ok) throw new Error(data.error ?? "Failed");
-                              setActorScript(data.script);
+                              update("script", data.script);
                               success("AI script written!");
                             } catch (err) {
                               toastError("Could not write script — try writing a headline first");
@@ -759,21 +911,21 @@ export function StudioClient({
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!actorScript.trim()) return;
+                            if (!ad.script?.trim()) return;
                             setUgcGenerating(true);
                             try {
                               const res = await fetch("/api/ai/rephrase", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
-                                  text: actorScript,
+                                  text: ad.script,
                                   fieldType: "script",
                                   mode: "improve",
                                 }),
                               });
                               const data = await res.json();
                               if (!res.ok) throw new Error(data.error ?? "Failed");
-                              setActorScript(data.text);
+                              update("script", data.text);
                               success("Script polished!");
                             } catch (err) {
                               toastError("Rewrite failed");
@@ -781,14 +933,14 @@ export function StudioClient({
                               setUgcGenerating(false);
                             }
                           }}
-                          disabled={ugcGenerating || !actorScript.trim()}
+                          disabled={ugcGenerating || !ad.script?.trim()}
                           className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 text-[10px] font-bold text-text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
                         >
                           {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           {ugcGenerating ? "Rewriting..." : "Rewrite"}
                         </button>
                       </div>
-                      <span className="text-[10px] text-text-secondary">{actorScript.length}/800</span>
+                      <span className="text-[10px] text-text-secondary">{(ad.script ?? "").length}/800</span>
                     </div>
                   </div>
 
@@ -1022,7 +1174,7 @@ export function StudioClient({
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
                 >
                   {generatingVariants ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                  Generate Variants
+                  {generatingVariants ? "Generating..." : `Generate ${variantCount} Variants (${variantCount} credits)`}
                 </button>
               </div>
             </div>
@@ -1154,7 +1306,7 @@ export function StudioClient({
                 title="Save as reusable template"
               >
                 <BookTemplate className="h-4 w-4" />
-                <span className="hidden sm:inline">Template</span>
+                <span className="hidden sm:inline">Save as Template</span>
               </button>
             </div>
             {dirty && (

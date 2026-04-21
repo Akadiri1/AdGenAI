@@ -129,13 +129,13 @@ function ReferralClientInner({
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="font-heading text-3xl font-bold text-text-primary">Referrals</h1>
-        <p className="text-text-secondary">Earn 30% recurring commission for every paying customer you refer</p>
+        <p className="text-text-secondary">Earn 20% recurring commission for every paying customer you refer</p>
       </div>
 
       <div className="rounded-3xl gradient-bg animate-gradient p-8 text-white">
         <h2 className="font-heading text-2xl font-bold mb-2">Your referral link</h2>
         <p className="text-white/90 mb-4 text-sm">
-          Share this link. Referred users get 5 bonus credits. You get 30% of their subscription, forever.
+          Share this link. Referred users get 2 bonus credits. You get 20% of their subscription, forever.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
