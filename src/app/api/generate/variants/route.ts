@@ -44,6 +44,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ad not found" }, { status: 404 });
   }
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const brandContext = user?.businessName 
+    ? `Business: ${user.businessName}. Audience: ${user.targetAudience || 'General'}. Tone: ${user.brandVoice || 'Professional'}.`
+    : `No specific brand context. Keep it generic and high-converting.`;
+
   const totalCost = body.numVariants * COSTS.IMAGE_AD;
   if (!(await checkCredits(userId, totalCost))) {
     return NextResponse.json({ error: `Need ${totalCost} credits for ${body.numVariants} variants` }, { status: 402 });
@@ -76,8 +81,10 @@ CTA: "${sourceAd.callToAction}"
 
 Generate ${body.numVariants} variations. ${varyInstruction}
 
+CRITICAL: Image prompts MUST be 100% text-free. No headlines, no logos, no buttons, no 'sale' signs. Focus ONLY on cinematic action, environment, and photorealistic subjects.
+
 Return JSON array:
-[{"headline":"...","bodyText":"...","callToAction":"...","imagePrompt":"detailed prompt for a different person/setting showing this product/brand"}]
+[{"headline":"...","bodyText":"...","callToAction":"...","imagePrompt":"extremely detailed visual prompt focusing on cinematic action and subject (NO TEXT)"}]
 
 Make each variant meaningfully different while staying 100% true to the BRAND CONTEXT above. Different hooks, angles, demographics, settings.`,
       }],

@@ -1,65 +1,59 @@
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ScheduleCalendar } from "./ScheduleCalendar";
-import { stringToPlatforms } from "@/lib/adHelpers";
+import Link from "next/link";
+import { Calendar, Plus, Clock, Video, CheckCircle2 } from "lucide-react";
+import { ScheduleClient } from "./ScheduleClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function SchedulePage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return (
-      <div className="p-8 text-center">
-        <p className="mb-4 text-text-secondary">Please log in</p>
-        <Link href="/auth/login" className="text-primary font-semibold">Log in</Link>
-      </div>
-    );
-  }
+  if (!session?.user?.id) return null;
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
-
-  const scheduledAds = await prisma.ad.findMany({
+  const ads = await prisma.ad.findMany({
     where: {
       userId: session.user.id,
-      scheduledAt: { gte: monthStart, lte: monthEnd },
-      status: { in: ["SCHEDULED", "POSTING", "POSTED"] },
+      scheduledAt: { not: null },
     },
     orderBy: { scheduledAt: "asc" },
-    select: {
-      id: true,
-      headline: true,
-      status: true,
-      scheduledAt: true,
-      platform: true,
-      thumbnailUrl: true,
-    },
   });
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-text-primary">Schedule</h1>
-          <p className="text-text-secondary">{scheduledAds.length} post{scheduledAds.length !== 1 && "s"} scheduled</p>
+          <h1 className="font-heading text-3xl font-bold text-text-primary">Posting Schedule</h1>
+          <p className="text-text-secondary">Your upcoming automated social media posts</p>
         </div>
         <Link
-          href="/create/magic"
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+          href="/create"
+          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark transition-all shadow-md shadow-primary/20"
         >
-          ✨ New ad
+          <Plus className="h-4 w-4" />
+          Schedule New
         </Link>
       </div>
 
-      <ScheduleCalendar
-        ads={JSON.parse(JSON.stringify(
-          scheduledAds.map((a) => ({ ...a, platform: stringToPlatforms(a.platform) }))
-        ))}
-        startDate={now.toISOString()}
-      />
+      {ads.length === 0 ? (
+        <div className="rounded-3xl border-2 border-dashed border-black/5 bg-white p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-bg-secondary text-text-secondary">
+            <Calendar className="h-8 w-8" />
+          </div>
+          <h2 className="font-heading text-xl font-bold text-text-primary mb-2">Your schedule is empty</h2>
+          <p className="text-text-secondary mb-6 max-w-sm mx-auto">
+            AI-powered scheduling ensures your ads hit the feed when your audience is most active.
+          </p>
+          <Link
+            href="/create"
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition-colors"
+          >
+            Create and schedule an ad
+          </Link>
+        </div>
+      ) : (
+        <ScheduleClient initialAds={JSON.parse(JSON.stringify(ads))} />
+      )}
     </div>
   );
 }

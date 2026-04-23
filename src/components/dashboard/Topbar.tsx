@@ -21,8 +21,8 @@ export function Topbar({ plan = "FREE", userName = "User" }: Props) {
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         {/* Show logo on mobile (since sidebar is hidden) */}
         <div className="md:hidden flex-shrink-0">
-          <Link href="/dashboard">
-            <Logo size="sm" withText={false} />
+          <Link href="/dashboard" className="flex items-center">
+            <img src="/logo.jpg" alt="Logo" className="h-6 w-auto rounded-full" />
           </Link>
         </div>
         <h1 className="font-heading text-sm sm:text-lg font-bold text-text-primary dark:text-white truncate min-w-0">

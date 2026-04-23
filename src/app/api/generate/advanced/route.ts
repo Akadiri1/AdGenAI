@@ -20,9 +20,9 @@ const PlatformEnum = z.enum([
 const bodySchema = z.object({
   type: z.enum(["IMAGE", "VIDEO", "CAROUSEL", "STORY"]).default("IMAGE"),
   platforms: z.array(PlatformEnum).min(1),
-  headline: z.string().min(1).max(100),
+  headline: z.string().max(100).optional(),
   bodyText: z.string().max(500),
-  callToAction: z.string().max(50),
+  callToAction: z.string().max(50).optional(),
   script: z.string().max(2000).optional(),
   scriptFramework: z.enum(["AIDA", "PAS", "BAB", "4U", "FAB"]).optional(),
   imagePrompt: z.string().max(1000).optional(),

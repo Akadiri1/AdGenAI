@@ -6,7 +6,10 @@ import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(200),
+  ids: z.array(z.string().min(1)).optional(),
+  deleteAll: z.boolean().optional(),
+}).refine(data => data.ids || data.deleteAll, {
+  message: "Either ids or deleteAll must be provided",
 });
 
 export async function POST(req: Request) {
@@ -22,18 +25,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  // Only delete ads owned by this user
+  const whereClause = body.deleteAll 
+    ? { userId: session.user.id } 
+    : { id: { in: body.ids }, userId: session.user.id };
+
   const result = await prisma.ad.deleteMany({
-    where: {
-      id: { in: body.ids },
-      userId: session.user.id,
-    },
+    where: whereClause,
   });
 
   await logAudit({
     userId: session.user.id,
     action: "ad_deleted",
-    metadata: { kind: "bulk_delete", count: result.count, ids: body.ids },
+    metadata: { kind: "bulk_delete", count: result.count, deleteAll: !!body.deleteAll },
     ...getRequestContext(req),
   });
 

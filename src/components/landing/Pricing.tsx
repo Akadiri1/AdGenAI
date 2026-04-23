@@ -33,12 +33,12 @@ const plans = [
   },
   {
     name: "Starter",
-    priceMonthlyUsd: 49,
-    priceYearlyUsd: 468,
+    priceMonthlyUsd: 15,
+    priceYearlyUsd: 144,
     description: "For solopreneurs",
-    credits: "100 credits/month",
+    credits: "40 credits/month",
     features: [
-      "100 credits/month (rollover)",
+      "40 credits/month (rollover)",
       "No watermark",
       "All AI frameworks",
       "Schedule & auto-post",

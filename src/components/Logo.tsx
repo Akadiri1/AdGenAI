@@ -6,10 +6,10 @@
 type Size = "sm" | "md" | "lg" | "xl";
 
 const SIZES: Record<Size, { box: string; text: string }> = {
-  sm: { box: "h-7 w-7", text: "text-base" },
-  md: { box: "h-9 w-9", text: "text-xl" },
-  lg: { box: "h-12 w-12", text: "text-2xl" },
-  xl: { box: "h-16 w-16", text: "text-4xl" },
+  sm: { box: "h-7 w-auto", text: "text-base" },
+  md: { box: "h-9 w-auto", text: "text-xl" },
+  lg: { box: "h-12 w-auto", text: "text-2xl" },
+  xl: { box: "h-16 w-auto", text: "text-4xl" },
 };
 
 export function Logo({
@@ -40,22 +40,11 @@ export function Logo({
  */
 export function LogoMark({ className = "" }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 40 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Famousli"
-    >
-      {/* Background Circle — Using the primary brand color */}
-      <circle cx="20" cy="20" r="20" fill="#FF6B35" />
-      
-      {/* Lowercase 'f' — Modern, Bold, and clean */}
-      <path 
-        d="M24.5 12.5C23.2 12.5 22.2 13.5 22.2 14.8V17.5H25.5V20.5H22.2V29H18.8V20.5H16.5V17.5H18.8V14.8C18.8 11.5 21 10 24.5 10V12.5Z" 
-        fill="white" 
-      />
-    </svg>
+    <img
+      src="/logo.jpg"
+      alt="Famousli Logo"
+      className={`rounded-full ${className}`}
+    />
   );
 }
 

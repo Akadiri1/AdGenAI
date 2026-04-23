@@ -2,14 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateAvatarVideo, getVideoStatus, isHeyGenConfigured } from "@/lib/heygen";
-import { generateTalkingActor, isReplicateConfigured } from "@/lib/sadtalker";
-import { generateMagicVideo, getMagicTaskStatus, isMagicConfigured } from "@/lib/magic";
-import { AVATAR_LIBRARY } from "@/lib/avatars";
+import { isHeyGenConfigured } from "@/lib/heygen";
+import { isReplicateConfigured } from "@/lib/sadtalker";
+import { isMagicConfigured } from "@/lib/magic";
 import { checkCredits, deductCredits, addCredits, COSTS } from "@/lib/credits";
-import { platformsToString } from "@/lib/adHelpers";
-import { checkBrandKit } from "@/lib/brandCheck";
-import { uploadToStorage } from "@/lib/storage";
+import { platformsToString, imagesToString } from "@/lib/adHelpers";
+import { enqueueVideoGeneration } from "@/lib/queue";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
@@ -28,6 +26,8 @@ const bodySchema = z.object({
   }).optional(),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   speechToSpeechAudioUrl: z.string().url().optional(),
+  productImages: z.array(z.string().url()).optional(),
+  visualInstructions: z.string().max(1000).optional(),
   headline: z.string().max(80).optional(),
   callToAction: z.string().max(40).optional(),
   platforms: z.array(z.string()).default(["INSTAGRAM", "TIKTOK"]),
@@ -45,149 +45,57 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const brandCheck = await checkBrandKit(userId);
-  if (!brandCheck.complete) {
-    return NextResponse.json({ error: "Complete Brand Kit first", missing: brandCheck.missing }, { status: 400 });
-  }
-
-  const body = bodySchema.parse(await req.json());
-
   const cost = COSTS.TALKING_ACTOR;
   if (!(await checkCredits(userId, cost))) {
-    return NextResponse.json({ error: "Insufficient credits", required: cost }, { status: 402 });
+    return NextResponse.json({ error: `Need ${cost} credits for a talking actor video` }, { status: 402 });
   }
 
-  // Deduct credits BEFORE the API call (atomic — refund on failure)
-  await deductCredits(userId, cost);
-
-  let videoUrl: string | undefined;
-
   try {
-    if (isHeyGenConfigured()) {
-      // ── PREMIUM PATH: HeyGen ──────────────────────────────
-      const result = await generateAvatarVideo({
-        avatarId: body.avatarId,
-        script: body.script,
-        voiceId: body.voiceId,
-        voiceSettings: body.voiceSettings,
-        aspectRatio: body.aspectRatio,
-        speechToSpeechAudioUrl: body.speechToSpeechAudioUrl,
-      });
-      videoUrl = result.videoUrl;
-      if (!videoUrl && result.videoId) {
-        for (let i = 0; i < 12; i++) {
-          await new Promise((r) => setTimeout(r, 5000));
-          const status = await getVideoStatus(result.videoId);
-          if (status.status === "completed" && status.videoUrl) {
-            try {
-              const videoRes = await fetch(status.videoUrl);
-              const buf = await videoRes.arrayBuffer();
-              videoUrl = await uploadToStorage({
-                bytes: Buffer.from(buf),
-                contentType: "video/mp4",
-                extension: "mp4",
-                folder: "ads/avatar-videos",
-              });
-            } catch {
-              videoUrl = status.videoUrl;
-            }
-            break;
-          }
-          if (status.status === "failed") {
-            await addCredits(userId, cost); // refund
-            return NextResponse.json({ error: "Avatar video generation failed" }, { status: 500 });
-          }
-        }
-      }
-    } else if (isMagicConfigured()) {
-      // ── SECONDARY PATH: Magic AI (Minimax) ─────────────────
-      const taskId = await generateMagicVideo({
-        prompt: `A talking head video of the actor "${body.avatarId}" speaking this script clearly: "${body.script}"`,
-        model_id: "minimax_hailuo_02_standard",
-        aspect_ratio: body.aspectRatio ?? "9:16",
-      });
+    const body = bodySchema.parse(await req.json());
+    await deductCredits(userId, cost);
 
-      for (let i = 0; i < 20; i++) {
-        await new Promise((r) => setTimeout(r, 6000));
-        const status = await getMagicTaskStatus(taskId);
-        if (status.status === "completed" && status.videoUrl) {
-          const videoRes = await fetch(status.videoUrl);
-          const buf = await videoRes.arrayBuffer();
-          videoUrl = await uploadToStorage({
-            bytes: Buffer.from(buf),
-            contentType: "video/mp4",
-            extension: "mp4",
-            folder: "ads/avatars",
-          });
-          break;
-        }
-        if (status.status === "failed") throw new Error("Magic Avatar failed");
-      }
-    } else if (isReplicateConfigured()) {
-      // ── SCRAPPY PATH: Sadtalker via Replicate ──────────────
-      const actor = AVATAR_LIBRARY.find((a) => a.id === body.avatarId);
-      if (!actor || !actor.thumbnailUrl) {
-        await addCredits(userId, cost);
-        return NextResponse.json({ error: "Selected actor has no source image" }, { status: 400 });
-      }
-      videoUrl = await generateTalkingActor({
-        sourceImageUrl: actor.thumbnailUrl,
-        script: body.script,
-        voice: {
-          speed: body.voiceSettings?.speed,
-          presetVoice: actor.gender === "male" ? "male" : "female",
-        },
-      });
-    } else {
-      // No backend configured — refund and inform
-      await addCredits(userId, cost);
-      return NextResponse.json(
-        { error: "Talking actor generation is not yet enabled. Set REPLICATE_API_TOKEN or HEYGEN_API_KEY." },
-        { status: 503 },
-      );
-    }
-
-    // Create ad record
+    // 1. Create ad record in GENERATING state
     const ad = await prisma.ad.create({
       data: {
         userId,
         type: "VIDEO",
         platform: platformsToString(body.platforms),
-        status: videoUrl ? "READY" : "GENERATING",
+        status: "GENERATING",
         headline: body.headline,
-        bodyText: body.script,
+        bodyText: "Queued for generation...",
         callToAction: body.callToAction,
         script: body.script,
-        videoUrl,
-        thumbnailUrl: videoUrl, // HeyGen provides a thumbnail from the first frame
+        images: body.productImages && body.productImages.length > 0 ? imagesToString(body.productImages) : null,
+        visualInstructions: body.visualInstructions || null,
         aspectRatio: body.aspectRatio,
       },
+    });
+
+    // 2. Enqueue the heavy lifting (HeyGen + Visuals + FFmpeg)
+    await enqueueVideoGeneration({
+      adId: ad.id,
+      userId,
+      avatarId: body.avatarId,
+      script: body.script,
+      visualInstructions: body.visualInstructions,
+      productImages: body.productImages,
+      aspectRatio: body.aspectRatio,
     });
 
     await logAudit({
       userId,
       action: "ad_created",
       resource: ad.id,
-      metadata: {
-        kind: "talking_actor",
-        backend: isHeyGenConfigured() ? "heygen" : "sadtalker",
-        avatarId: body.avatarId,
-        creditsSpent: cost,
-      },
+      metadata: { kind: "talking_actor_queued", cost },
       ...getRequestContext(req),
     });
 
-    return NextResponse.json({
-      success: true,
-      adId: ad.id,
-      videoUrl,
-      backend: isHeyGenConfigured() ? "heygen" : "sadtalker",
-    });
+    return NextResponse.json({ adId: ad.id, status: "GENERATING" });
+
   } catch (err) {
-    // Refund credits on any uncaught failure
-    await addCredits(userId, cost);
+    console.error("Avatar API error:", err);
     return NextResponse.json(
-      { error: "Talking actor generation failed", details: (err as Error).message },
+      { error: "Failed to queue video generation", details: (err as Error).message },
       { status: 500 },
     );
   }

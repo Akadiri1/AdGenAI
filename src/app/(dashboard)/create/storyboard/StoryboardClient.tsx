@@ -94,8 +94,6 @@ export function StoryboardClient({ credits }: { credits: number }) {
             prompt: s.prompt,
             duration: s.duration,
           })),
-          headline,
-          callToAction,
           musicGenre,
           aspectRatio,
         }),
@@ -229,24 +227,6 @@ export function StoryboardClient({ credits }: { credits: number }) {
         <div className="space-y-4">
           <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-3">
             <h3 className="font-heading font-bold text-text-primary text-sm">Video settings</h3>
-
-            <AIRephraseField
-              label="Headline overlay"
-              value={headline}
-              onChange={setHeadline}
-              placeholder="Your app, simplified."
-              fieldType="headline"
-              maxLength={80}
-            />
-
-            <AIRephraseField
-              label="Call to action"
-              value={callToAction}
-              onChange={setCallToAction}
-              placeholder="Try it free today"
-              fieldType="cta"
-              maxLength={40}
-            />
 
             <div>
               <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">Music</div>

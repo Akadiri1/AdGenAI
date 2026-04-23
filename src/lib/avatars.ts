@@ -1,7 +1,5 @@
 /**
  * AI Avatar system — built-in library + HeyGen API integration.
- * When HEYGEN_API_KEY is set, uses real AI avatars with lip-sync.
- * Without it, the UI is fully functional but generation returns a placeholder.
  */
 
 export type AvatarGender = "male" | "female" | "non-binary";
@@ -19,52 +17,104 @@ export type Avatar = {
   situation: AvatarSituation;
   ethnicity: string;
   thumbnailUrl: string;
-  isPro: boolean; // requires paid plan
+  isPro: boolean;
   isHD: boolean;
   tags: string[];
+  audioSamples?: {
+    us?: string;
+    uk?: string;
+    ng?: string;
+  };
 };
 
-// Built-in avatar library — these map to HeyGen avatar IDs when API is connected
-// Thumbnails are placeholders until real avatar previews are added
 export const AVATAR_LIBRARY: Avatar[] = [
-  // Female - Young
-  { id: "ava-001", name: "Sofia", gender: "female", age: "young", situation: "studio", ethnicity: "latina", thumbnailUrl: "", isPro: false, isHD: true, tags: ["casual", "friendly", "beauty"] },
-  { id: "ava-002", name: "Aisha", gender: "female", age: "young", situation: "office", ethnicity: "african", thumbnailUrl: "", isPro: false, isHD: true, tags: ["professional", "tech", "business"] },
-  { id: "ava-003", name: "Emma", gender: "female", age: "young", situation: "cafe", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["lifestyle", "casual", "food"] },
-  { id: "ava-004", name: "Yuki", gender: "female", age: "young", situation: "home", ethnicity: "asian", thumbnailUrl: "", isPro: false, isHD: true, tags: ["cozy", "wellness", "skincare"] },
-  { id: "ava-005", name: "Nicole", gender: "female", age: "young", situation: "airport", ethnicity: "european", thumbnailUrl: "", isPro: true, isHD: true, tags: ["travel", "fashion", "luxury"] },
-  { id: "ava-006", name: "Priya", gender: "female", age: "young", situation: "gym", ethnicity: "south-asian", thumbnailUrl: "", isPro: false, isHD: true, tags: ["fitness", "health", "active"] },
-  { id: "ava-007", name: "Megan", gender: "female", age: "young", situation: "outdoor", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: false, tags: ["nature", "adventure", "sport"] },
-  { id: "ava-008", name: "Zara", gender: "female", age: "young", situation: "interview", ethnicity: "middle-eastern", thumbnailUrl: "", isPro: true, isHD: true, tags: ["interview", "podcast", "professional"] },
+  { 
+    id: "ava-001", name: "Sofia", gender: "female", age: "young", situation: "studio", ethnicity: "latina", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["casual", "friendly", "beauty"],
+    audioSamples: { 
+      us: "https://famousli-assets.s3.amazonaws.com/samples/sofia-us.mp3",
+      uk: "https://famousli-assets.s3.amazonaws.com/samples/sofia-uk.mp3"
+    } 
+  },
+  { 
+    id: "ava-002", name: "Aisha", gender: "female", age: "young", situation: "office", ethnicity: "african", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["professional", "tech", "business"],
+    audioSamples: { 
+      ng: "https://famousli-assets.s3.amazonaws.com/samples/aisha-ng.mp3",
+      us: "https://famousli-assets.s3.amazonaws.com/samples/aisha-us.mp3"
+    }
+  },
+  { 
+    id: "ava-003", name: "Emma", gender: "female", age: "young", situation: "cafe", ethnicity: "european", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["lifestyle", "casual", "food"],
+    audioSamples: { uk: "https://famousli-assets.s3.amazonaws.com/samples/emma-uk.mp3" }
+  },
+  { 
+    id: "ava-004", name: "Yuki", gender: "female", age: "young", situation: "home", ethnicity: "asian", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["cozy", "wellness", "skincare"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/yuki-us.mp3" }
+  },
+  { 
+    id: "ava-005", name: "Nicole", gender: "female", age: "young", situation: "airport", ethnicity: "european", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop", 
+    isPro: true, isHD: true, tags: ["travel", "fashion", "luxury"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/nicole-us.mp3" }
+  },
+  { 
+    id: "ava-006", name: "Priya", gender: "female", age: "young", situation: "gym", ethnicity: "south-asian", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["fitness", "health", "active"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/priya-us.mp3" }
+  },
+  
+  { 
+    id: "ava-011", name: "Marcus", gender: "male", age: "young", situation: "studio", ethnicity: "african-american", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["casual", "music", "streetwear"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/marcus-us.mp3" }
+  },
+  { 
+    id: "ava-012", name: "Caleb", gender: "male", age: "young", situation: "gaming", ethnicity: "european", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["gaming", "tech", "esports"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/caleb-us.mp3" }
+  },
+  { 
+    id: "ava-014", name: "Kenji", gender: "male", age: "young", situation: "cafe", ethnicity: "asian", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["lifestyle", "coffee", "creative"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/kenji-us.mp3" }
+  },
+  { 
+    id: "ava-015", name: "Diego", gender: "male", age: "young", situation: "car", ethnicity: "latino", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop", 
+    isPro: true, isHD: true, tags: ["automotive", "luxury", "lifestyle"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/diego-us.mp3" }
+  },
 
-  // Female - Middle
-  { id: "ava-009", name: "Jennifer", gender: "female", age: "middle", situation: "office", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["corporate", "leadership", "finance"] },
-  { id: "ava-010", name: "Amara", gender: "female", age: "middle", situation: "kitchen", ethnicity: "african", thumbnailUrl: "", isPro: false, isHD: true, tags: ["food", "cooking", "family"] },
-
-  // Male - Young
-  { id: "ava-011", name: "Marcus", gender: "male", age: "young", situation: "studio", ethnicity: "african-american", thumbnailUrl: "", isPro: false, isHD: true, tags: ["casual", "music", "streetwear"] },
-  { id: "ava-012", name: "Caleb", gender: "male", age: "young", situation: "gaming", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["gaming", "tech", "esports"] },
-  { id: "ava-013", name: "Robert", gender: "male", age: "young", situation: "outdoor", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["casual", "sport", "hat"] },
-  { id: "ava-014", name: "Kenji", gender: "male", age: "young", situation: "cafe", ethnicity: "asian", thumbnailUrl: "", isPro: false, isHD: true, tags: ["lifestyle", "coffee", "creative"] },
-  { id: "ava-015", name: "Diego", gender: "male", age: "young", situation: "car", ethnicity: "latino", thumbnailUrl: "", isPro: true, isHD: true, tags: ["automotive", "luxury", "lifestyle"] },
-  { id: "ava-016", name: "Ahmed", gender: "male", age: "young", situation: "interview", ethnicity: "middle-eastern", thumbnailUrl: "", isPro: false, isHD: true, tags: ["interview", "business", "startup"] },
-  { id: "ava-017", name: "Kevin", gender: "male", age: "young", situation: "home", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: false, tags: ["casual", "home", "review"] },
-
-  // Male - Middle
-  { id: "ava-018", name: "David", gender: "male", age: "middle", situation: "office", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["professional", "finance", "consulting"] },
-  { id: "ava-019", name: "James", gender: "male", age: "middle", situation: "podcast", ethnicity: "african-american", thumbnailUrl: "", isPro: true, isHD: true, tags: ["podcast", "thought-leader", "speaker"] },
-  { id: "ava-020", name: "Chen", gender: "male", age: "middle", situation: "studio", ethnicity: "asian", thumbnailUrl: "", isPro: false, isHD: true, tags: ["professional", "education", "tech"] },
-
-  // Senior
-  { id: "ava-021", name: "Margaret", gender: "female", age: "senior", situation: "home", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["trusted", "testimonial", "healthcare"] },
-  { id: "ava-022", name: "William", gender: "male", age: "senior", situation: "office", ethnicity: "european", thumbnailUrl: "", isPro: false, isHD: true, tags: ["authority", "finance", "insurance"] },
+  { 
+    id: "ava-018", name: "David", gender: "male", age: "middle", situation: "office", ethnicity: "european", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["professional", "finance", "consulting"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/david-us.mp3" }
+  },
+  { 
+    id: "ava-021", name: "Margaret", gender: "female", age: "senior", situation: "home", ethnicity: "european", 
+    thumbnailUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop", 
+    isPro: false, isHD: true, tags: ["trusted", "testimonial", "healthcare"],
+    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/margaret-us.mp3" }
+  },
 ];
 
 export type VoiceSettings = {
-  speed: number; // 0.5 - 2.0 (1.0 = normal)
-  stability: number; // 0.0 - 1.0 (lower = more dynamic/natural, higher = consistent)
-  similarity: number; // 0.0 - 1.0 (how closely it matches punctuation)
-  styleExaggeration: number; // 0.0 - 1.0 (0 = neutral, 1 = dramatic)
+  speed: number;
+  stability: number;
+  similarity: number;
+  styleExaggeration: number;
 };
 
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {

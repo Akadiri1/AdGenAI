@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft, Download, Send, Clock, Save, SlidersHorizontal,
   Image as ImageIcon, Music, Languages, Palette, Type,
   Sparkles, Upload, Lock, Film, CheckCircle2, BookTemplate, X,
-  Users, Copy, Mic, Loader2, Plus,
+  Users, Copy, Mic, Loader2, Plus, Play, ShieldAlert,
+  MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { Watermark } from "@/components/Logo";
-import { AVATAR_LIBRARY, SITUATIONS, filterAvatars } from "@/lib/avatars";
+import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, type Avatar } from "@/lib/avatars";
+import { groupWordsIntoChunks, type WordTimestamp, type CaptionChunk, type CaptionStyle } from "@/lib/captions";
+import { KaraokeCaptions } from "@/components/studio/KaraokeCaptions";
 
 type Ad = {
   id: string;
@@ -32,6 +35,7 @@ type Ad = {
   language: string;
   score: number | null;
   platform: string[];
+  captionData?: WordTimestamp[];
 };
 
 const LANGUAGES = [
@@ -89,24 +93,68 @@ export function StudioClient({
   const [videoDuration, setVideoDuration] = useState("15s");
   const [generatingVariants, setGeneratingVariants] = useState(false);
   const [variantCount, setVariantCount] = useState(5);
+  const [sceneCount, setSceneCount] = useState(3);
   const [varyWhat, setVaryWhat] = useState<"actors" | "scripts" | "both">("both");
-  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
-  const [voiceStability, setVoiceStability] = useState(0.5);
-  const [voiceStyle, setVoiceStyle] = useState(0.1);
   const [ugcGenerating, setUgcGenerating] = useState(false);
   const [selectedUgcTemplate, setSelectedUgcTemplate] = useState("");
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedActorId, setSelectedActorId] = useState<string>("");
-  const [actorScript, setActorScript] = useState<string>("");
-  const [actorFilters, setActorFilters] = useState<{ gender: string; age: string; situation: string; search: string }>({
-    gender: "", age: "", situation: "", search: "",
-  });
+  const [selectedAccent, setSelectedAccent] = useState<"us" | "uk" | "ng">("us");
+  const [showSafeZone, setShowSafeZone] = useState(false);
+  
+  // Captions state
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [captionStyle, setCaptionStyle] = useState<CaptionStyle>("viral");
+  const [currentTime, setCurrentTime] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+
+  const captionChunks = ad.captionData ? groupWordsIntoChunks(ad.captionData) : [];
+
+  function playSample(actor: Avatar, accent: "us" | "uk" | "ng") {
+    const url = actor.audioSamples?.[accent];
+    if (!url) return;
+    
+    if (playingSampleId === `${actor.id}-${accent}`) {
+      audioRef.current?.pause();
+      setPlayingSampleId(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.src = url;
+      audioRef.current.play();
+      setPlayingSampleId(`${actor.id}-${accent}`);
+    }
+  }
+
+  useEffect(() => {
+    audioRef.current = new Audio();
+    audioRef.current.onended = () => setPlayingSampleId(null);
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onTimeUpdate = () => setCurrentTime(video.currentTime);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    return () => video.removeEventListener("timeupdate", onTimeUpdate);
+  }, [ad.videoUrl]);
 
   function update<K extends keyof Ad>(key: K, val: Ad[K]) {
     setAd({ ...ad, [key]: val });
     setDirty(true);
   }
+
+  const filteredPlatforms = ad.platform.filter(p => p !== "PINTEREST");
 
   async function save() {
     if (!isPaid) { toastError("Upgrade to edit ads"); return; }
@@ -124,17 +172,24 @@ export function StudioClient({
           scriptFramework: ad.scriptFramework,
           musicGenre: ad.musicGenre,
           aspectRatio: ad.aspectRatio,
+          platform: filteredPlatforms,
           ...(customImageUrl && { customImageUrl }),
-          ...(imagePrompt && { regenerateImage: true, newImagePrompt: imagePrompt, numScenes: variantCount }),
-          // If no prompt but dirty in Scenes tab, generate batch from brief
-          ...(!imagePrompt && dirty && activeTab === "visuals" && { regenerateImage: true, numScenes: variantCount }),
+          ...(imagePrompt && { regenerateImage: true, newImagePrompt: imagePrompt, numScenes: sceneCount }),
+          ...(!imagePrompt && dirty && activeTab === "visuals" && { regenerateImage: true, numScenes: sceneCount }),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Save failed");
+
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      }
+
+      if (!res.ok) throw new Error(data.error ?? `Save failed (${res.status})`);
       
       const updatedAd = { 
         ...ad, 
+        platform: filteredPlatforms,
         ...(data.ad?.thumbnailUrl && { thumbnailUrl: data.ad.thumbnailUrl, videoUrl: null }),
         ...(data.ad?.images && { images: data.ad.images })
       };
@@ -175,36 +230,22 @@ export function StudioClient({
     }
   }
 
-  async function saveAsTemplate() {
-    setSavingTemplate(true);
-    try {
-      const res = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adId: ad.id, ...templateForm }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed");
-      success(templateForm.isPublic ? "Template published to marketplace!" : "Template saved!");
-      setShowTemplateModal(false);
-    } catch (err) {
-      toastError((err as Error).message);
-    } finally {
-      setSavingTemplate(false);
-    }
-  }
-
   async function handleGenerateVideo() {
     setGeneratingVideo(true);
     try {
       const res = await fetch(`/api/ads/${ad.id}/video`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duration: videoDuration }),
+        body: JSON.stringify({ 
+          duration: videoDuration,
+          captions: captionsOn ? captionStyle : null,
+          accent: selectedAccent,
+          avatarId: selectedActorId
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Video generation failed");
-      setAd({ ...ad, videoUrl: data.videoUrl, type: "VIDEO" });
+      setAd({ ...ad, videoUrl: data.videoUrl, type: "VIDEO", captionData: data.captionData });
       success(`${videoDuration} video created`);
     } catch (err) {
       toastError((err as Error).message);
@@ -249,31 +290,6 @@ export function StudioClient({
     }
   }
 
-  async function generateUgcScript() {
-    if (!selectedUgcTemplate) return;
-    setUgcGenerating(true);
-    try {
-      const res = await fetch("/api/ai/ugc-script", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: selectedUgcTemplate,
-          productName: ad.headline,
-          additionalContext: ad.bodyText,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed");
-      update("script", data.script);
-      update("scriptFramework", data.template.name);
-      success(`"${data.template.name}" script generated`);
-    } catch (err) {
-      toastError((err as Error).message);
-    } finally {
-      setUgcGenerating(false);
-    }
-  }
-
   const TABS = [
     { key: "copy" as const, label: "Copy", icon: Type },
     { key: "visuals" as const, label: "Scenes", icon: Film },
@@ -282,9 +298,10 @@ export function StudioClient({
     { key: "settings" as const, label: "Settings", icon: Palette },
   ];
 
+  const videoCost = 2;
+
   return (
     <div className="mx-auto max-w-7xl pb-28 overflow-x-hidden">
-      {/* Header — clean: just back, title, and unsaved indicator */}
       <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
@@ -307,7 +324,6 @@ export function StudioClient({
         </div>
       </div>
 
-      {/* Variant picker — shown when multiple variants exist */}
       {hasVariants && (
         <div className="mb-6 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
@@ -354,8 +370,6 @@ export function StudioClient({
                     </div>
                   </div>
                 </button>
-
-                {/* Individual download button on variant */}
                 <button
                   onClick={(e) => { e.stopPropagation(); downloadAd(v); }}
                   className="absolute left-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all hover:bg-primary shadow-lg"
@@ -363,7 +377,6 @@ export function StudioClient({
                 >
                   <Download className="h-3.5 w-3.5" />
                 </button>
-
                 {ad.id === v.id && (
                   <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -375,7 +388,6 @@ export function StudioClient({
         </div>
       )}
 
-      {/* Mobile-only: collapse preview toggle */}
       <button
         type="button"
         onClick={() => setPreviewCollapsed(!previewCollapsed)}
@@ -389,14 +401,13 @@ export function StudioClient({
       </button>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
-        {/* Preview — left side (collapsible on mobile) */}
         <div className={`lg:col-span-2 ${previewCollapsed ? "hidden lg:block" : ""}`}>
           <div className="lg:sticky lg:top-20 space-y-4">
             <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-4 shadow-sm">
               <div className={`relative mx-auto w-full max-w-[200px] sm:max-w-xs lg:max-w-sm ${aspectClass} overflow-hidden rounded-xl bg-bg-secondary shadow-lg`}>
                 {ad.videoUrl ? (
                   // eslint-disable-next-line jsx-a11y/media-has-caption
-                  <video src={ad.videoUrl} controls className="h-full w-full object-cover" />
+                  <video ref={videoRef} src={ad.videoUrl} controls className="h-full w-full object-cover" />
                 ) : ad.thumbnailUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={ad.thumbnailUrl} alt={ad.headline ?? ""} className="h-full w-full object-cover" />
@@ -404,46 +415,67 @@ export function StudioClient({
                   <div className="flex h-full items-center justify-center"><Film className="h-12 w-12 text-text-secondary" /></div>
                 )}
 
-                {/* Generating Overlay */}
+                {/* Safe Zone Overlay */}
+                {showSafeZone && ad.aspectRatio === "9:16" && (
+                  <div className="absolute inset-0 pointer-events-none z-10 border-x-[40px] border-b-[80px] border-t-[20px] border-transparent">
+                    <div className="absolute bottom-4 left-4 right-20 h-10 border-2 border-dashed border-warning/40 rounded flex items-center justify-center text-[8px] font-bold text-warning/60 bg-warning/5">DESCRIPTIONS</div>
+                    <div className="absolute top-4 right-2 bottom-20 w-12 border-2 border-dashed border-warning/40 rounded flex items-center justify-center text-[8px] font-bold text-warning/60 bg-warning/5 [writing-mode:vertical-lr]">BUTTONS</div>
+                  </div>
+                )}
+
+                {/* Viral Karaoke Captions */}
+                {captionsOn && (ad.videoUrl || ad.thumbnailUrl) && captionChunks.length > 0 && (
+                  <KaraokeCaptions currentTime={currentTime} chunks={captionChunks} style={captionStyle} />
+                )}
+
                 {generatingVideo && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white p-6 text-center">
                     <div className="relative mb-4">
                       <div className="h-16 w-16 rounded-full border-4 border-white/20 border-t-primary animate-spin" />
                       <Film className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-primary" />
                     </div>
-                    <div className="font-heading font-bold text-sm">Assembling Video...</div>
-                    <p className="mt-1 text-[10px] text-white/70">Adding music, transitions, and overlays. This usually takes 30-60 seconds.</p>
-                    <div className="mt-4 w-full max-w-[120px] h-1 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary animate-[gradient_2s_infinite]" style={{ width: "60%" }} />
-                    </div>
+                    <div className="font-heading font-bold text-sm">Veo is dreaming up your ad...</div>
+                    <p className="mt-1 text-[10px] text-white/70">Assembling scenes, high-end FX, and voiceover.</p>
                   </div>
                 )}
 
-                {ad.headline && !generatingVideo && (
-                  <div className="absolute left-0 right-0 top-3 px-3 text-center">
-                    <span className="inline-block rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                {/* Real-time Headline/CTA preview only when video/captions are off */}
+                {!captionsOn && ad.headline && !generatingVideo && (
+                  <div className="absolute left-0 right-0 top-6 px-4 text-center z-10">
+                    <span className="inline-block rounded-lg bg-black/70 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10 shadow-xl">
                       {ad.headline}
                     </span>
                   </div>
                 )}
-                {ad.callToAction && !generatingVideo && (
-                  <div className="absolute bottom-3 left-0 right-0 px-3 text-center">
-                    <span className="inline-block rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-lg" style={{ backgroundColor: brandColors.primary }}>
+                {!captionsOn && ad.callToAction && !generatingVideo && (
+                  <div className="absolute bottom-6 left-0 right-0 px-4 text-center z-10">
+                    <span className="inline-block rounded-lg px-4 py-2 text-xs font-bold text-white shadow-2xl border border-white/10" style={{ backgroundColor: brandColors.primary }}>
                       {ad.callToAction}
                     </span>
                   </div>
                 )}
                 {!isPaid && <div className="absolute bottom-2 right-2"><Watermark /></div>}
               </div>
+
+              <div className="mt-3 flex items-center justify-between">
+                <button
+                  onClick={() => setShowSafeZone(!showSafeZone)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                    showSafeZone ? "bg-warning/10 text-warning" : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80"
+                  }`}
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  {showSafeZone ? "Safe Zones: ON" : "Show Safe Zones"}
+                </button>
+                <div className="text-[10px] font-semibold text-text-secondary">Preview (Estimated)</div>
+              </div>
             </div>
 
-            {/* Video generation */}
             <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 {ad.videoUrl ? "Video" : "Create video"}
               </div>
 
-              {/* Aspect ratio — moved here */}
               <div>
                 <div className="mb-2 text-[10px] font-bold uppercase text-text-secondary">Aspect ratio</div>
                 <div className="grid grid-cols-4 gap-1.5">
@@ -463,13 +495,12 @@ export function StudioClient({
 
               {!ad.videoUrl && !generatingVideo && (
                 <>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {[
                       { id: "6s", label: "6s", sub: "Bumper" },
                       { id: "15s", label: "15s", sub: "Short" },
                       { id: "30s", label: "30s", sub: "Standard" },
                       { id: "60s", label: "60s", sub: "Extended" },
-                      { id: "3m", label: "3m", sub: "Story" },
                     ].map((d) => (
                       <button
                         key={d.id}
@@ -486,10 +517,10 @@ export function StudioClient({
                   <button
                     onClick={handleGenerateVideo}
                     disabled={generatingVideo}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-warning text-sm font-semibold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-warning text-sm font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
                   >
                     <Film className="h-4 w-4" />
-                    {videoDuration === "3m" ? "Generate (5 credits)" : "Generate (2 credits)"}
+                    Generate ({videoCost} credits)
                   </button>
                 </>
               )}
@@ -500,8 +531,8 @@ export function StudioClient({
                     <Loader2 className="h-6 w-6 text-primary animate-spin" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-text-primary">Production in Progress</div>
-                    <div className="text-[10px] text-text-secondary">Rendering transitions & audio...</div>
+                    <div className="text-xs font-bold text-text-primary">Veo is dreaming...</div>
+                    <div className="text-[10px] text-text-secondary">Adding music & professional voiceover</div>
                   </div>
                 </div>
               )}
@@ -513,21 +544,18 @@ export function StudioClient({
               )}
             </div>
 
-            {/* Platforms */}
             <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Platforms</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Target Platforms</div>
               <div className="flex flex-wrap gap-1.5">
-                {ad.platform.map((p) => (
-                  <span key={p} className="rounded-lg bg-bg-secondary px-2 py-1 text-xs font-semibold text-text-primary">{p}</span>
+                {filteredPlatforms.map((p) => (
+                  <span key={p} className="rounded-lg bg-bg-secondary px-2 py-1 text-[10px] font-bold text-text-primary uppercase tracking-tight">{p.replace("_", " ")}</span>
                 ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Editor — right side */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Tabs — horizontal scroll on mobile, evenly spaced on desktop */}
           <div className="flex gap-1 rounded-xl bg-bg-secondary p-1 overflow-x-auto scrollbar-hide -mx-1 sm:mx-0">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -553,33 +581,74 @@ export function StudioClient({
             </div>
           )}
 
-          {/* Copy tab */}
           {activeTab === "copy" && (
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
               <div className="space-y-4">
                 <AIRephraseField
-                  label="Headline"
+                  label="Headline (Text Overlay)"
                   hint={`${(ad.headline ?? "").length}/80`}
                   value={ad.headline ?? ""}
                   onChange={(v) => update("headline", v)}
                   maxLength={80}
-                  placeholder="Your hook"
+                  placeholder="Appears at the top..."
                   fieldType="headline"
                   businessContext={ad.bodyText ?? undefined}
                 />
                 <AIRephraseField
                   kind="textarea"
-                  label="Body text"
-                  hint={`${(ad.bodyText ?? "").length}/300`}
-                  value={ad.bodyText ?? ""}
-                  onChange={(v) => update("bodyText", v)}
-                  maxLength={300}
-                  placeholder="What problem does this solve?"
+                  label="Script for Voiceover"
+                  hint={`${(ad.script ?? "").length}/800`}
+                  value={ad.script ?? ""}
+                  onChange={(v) => update("script", v)}
+                  maxLength={800}
+                  placeholder="What should the AI voice say?"
                   fieldType="body"
-                  rows={4}
+                  rows={6}
                 />
+                
+                {/* Viral Captions Toggle & Styles */}
+                <div className="pt-4 border-t border-black/5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <MessageSquare className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-text-primary">Viral Karaoke Captions</div>
+                        <div className="text-[10px] text-text-secondary uppercase font-bold tracking-wider">TikTok & Reels Style</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setCaptionsOn(!captionsOn)}
+                      className={`h-6 w-11 rounded-full transition-colors ${captionsOn ? "bg-primary" : "bg-bg-secondary"}`}
+                    >
+                      <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${captionsOn ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+
+                  {captionsOn && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["classic", "viral", "cyber"] as const).map((style) => (
+                        <button
+                          key={style}
+                          onClick={() => setCaptionStyle(style)}
+                          className={`rounded-xl border-2 p-2.5 text-center transition-all ${
+                            captionStyle === style ? "border-primary bg-primary/5 shadow-sm scale-[1.02]" : "border-black/10 bg-white hover:border-black/20"
+                          }`}
+                        >
+                          <div className={`text-[10px] font-black uppercase italic ${
+                            style === 'viral' ? 'text-yellow-500' : style === 'cyber' ? 'text-green-500' : 'text-text-primary'
+                          }`}>
+                            {style}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <AIRephraseField
-                  label="Call to action"
+                  label="Call to Action (Button)"
                   value={ad.callToAction ?? ""}
                   onChange={(v) => update("callToAction", v)}
                   maxLength={50}
@@ -590,469 +659,139 @@ export function StudioClient({
             </div>
           )}
 
-          {/* Visuals tab (now Scenes) */}
           {activeTab === "visuals" && (
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
               <h3 className="font-heading font-bold text-text-primary">Video Scenes</h3>
-
-              {/* Current images */}
+              
               {ad.images.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {ad.images.map((img, i) => (
                     <div key={i} className="aspect-square overflow-hidden rounded-xl bg-bg-secondary group relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={`Scene ${i + 1}`} className="h-full w-full object-cover" />
-                      <div className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white backdrop-blur-sm">
-                        SCENE {i + 1}
-                      </div>
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <div className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white">#{i + 1}</div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Upload custom image — file picker only */}
-              <div className="rounded-xl border-2 border-dashed border-black/15 bg-bg-secondary/30 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                  <Upload className="h-3.5 w-3.5" /> Upload your own image
-                </div>
-
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {uploading ? "Uploading..." : "Choose image from your device"}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploading(true);
-                      try {
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("folder", "ads/uploads");
-                        const res = await fetch("/api/upload", { method: "POST", body: fd });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error ?? "Upload failed");
-                        setCustomImageUrl(data.url);
-                        setDirty(true);
-                        success("Image uploaded — click Save to apply");
-                      } catch (err) {
-                        toastError((err as Error).message);
-                      } finally {
-                        setUploading(false);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                </label>
-
-                {customImageUrl && (
-                  <div className="rounded-lg border-2 border-primary/20 bg-white p-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary mb-1">Preview (click Save to apply)</div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={customImageUrl} alt="Preview" className="w-full max-h-48 object-contain rounded" />
-                  </div>
-                )}
-
-                <p className="text-[10px] text-text-secondary">Max 10MB. PNG, JPG, or WebP.</p>
-              </div>
-
-              <div className="pt-4 border-t border-black/5 space-y-4">
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-secondary flex items-center gap-2">
-                    <SlidersHorizontal className="h-3.5 w-3.5" /> AI Production Brief
-                  </h3>
-                  <p className="text-[10px] text-text-secondary">Describe the visual style, colors, and content you want for ALL scenes.</p>
-                </div>
-                <textarea
-                  value={ad.visualInstructions ?? ""}
-                  onChange={(e) => update("visualInstructions", e.target.value)}
-                  rows={3}
-                  placeholder="e.g. Cinematic lighting, warm colors, minimalist aesthetic. Show happy people using the product in a bright modern kitchen..."
-                  className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-                />
-                <div className="mt-2 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setUgcGenerating(true);
-                      try {
-                        const res = await fetch("/api/ai/rephrase", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            text: ad.bodyText || ad.headline || "our product",
-                            fieldType: "imagePrompt",
-                            mode: "generate",
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error ?? "Failed");
-                        update("visualInstructions", data.text);
-                        success("Production Brief written!");
-                      } catch (err) {
-                        toastError((err as Error).message);
-                      } finally {
-                        setUgcGenerating(false);
-                      }
-                    }}
-                    disabled={ugcGenerating}
-                    className="flex h-8 items-center gap-1.5 rounded-lg bg-accent/10 px-3 text-[10px] font-bold text-accent hover:bg-accent/20 transition-all disabled:opacity-50"
-                  >
-                    {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                    {ugcGenerating ? "Writing..." : "Write with AI (1 token)"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!ad.visualInstructions?.trim()) return;
-                      setUgcGenerating(true);
-                      try {
-                        const res = await fetch("/api/ai/rephrase", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            text: ad.visualInstructions,
-                            fieldType: "imagePrompt",
-                            mode: "rewrite",
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error ?? "Failed");
-                        update("visualInstructions", data.text);
-                        success("Brief polished!");
-                      } catch (err) {
-                        toastError((err as Error).message);
-                      } finally {
-                        setUgcGenerating(false);
-                      }
-                    }}
-                    disabled={ugcGenerating || !ad.visualInstructions?.trim()}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 text-[10px] font-bold text-text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
-                  >
-                    {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {ugcGenerating ? "Rewriting..." : "Rewrite (1 token)"}
-                  </button>
-                </div>
-              </div>
-
-              {/* AI regenerate */}
               <div className="rounded-xl border-2 border-dashed border-black/15 bg-bg-secondary/30 p-4">
-                <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                  <Sparkles className="h-3.5 w-3.5" /> Create New Scenes
-                </div>
-                <p className="text-[10px] text-text-secondary mb-3">AI will generate a fresh set of images using your Production Brief above.</p>
-                
-                <AIRephraseField
-                  kind="textarea"
-                  label="Specific scene prompt (optional)"
-                  value={imagePrompt}
-                  onChange={(v) => { setImagePrompt(v); setDirty(true); }}
-                  placeholder="Override the brief for this specific generation..."
-                  fieldType="imagePrompt"
-                  rows={2}
-                />
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-[10px] font-bold uppercase text-text-secondary">How many scenes?</div>
-                  <div className="flex flex-wrap gap-1.5 justify-end max-w-[200px]">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setVariantCount(n)}
-                        className={`h-7 w-7 rounded-lg border-2 text-[10px] font-bold transition-all ${
-                          variantCount === n ? "border-primary bg-primary text-white shadow-md scale-110" : "border-black/10 bg-white text-text-secondary hover:border-black/20"
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-text-primary">How many scenes?</div>
+                    <div className="text-[10px] text-text-secondary">
+                      {isPaid ? "Up to 10 allowed (Pro)" : "Starter plan limited to 4 scenes"}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 justify-end max-w-[200px]">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => {
+                      const disabled = !isPaid && n > 4;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setSceneCount(n)}
+                          className={`h-7 w-7 rounded-lg border-2 text-[10px] font-bold transition-all ${
+                            sceneCount === n ? "border-primary bg-primary text-white" : "border-black/10 bg-white text-text-secondary hover:border-black/20"
+                          } ${disabled ? "opacity-30 grayscale cursor-not-allowed" : ""}`}
+                        >
+                          {n}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="mt-3 text-[9px] text-text-secondary text-right">
-                  Cost: <strong>{variantCount} credit{variantCount > 1 ? "s" : ""}</strong>
-                </div>
-              </div>
-
-              {/* Aspect ratio */}
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">Aspect ratio</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["1:1", "9:16", "16:9", "4:5"] as const).map((ar) => (
-                    <button
-                      key={ar}
-                      onClick={() => update("aspectRatio", ar)}
-                      className={`rounded-xl border-2 p-2 text-center transition-all ${
-                        ad.aspectRatio === ar ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
-                      }`}
-                    >
-                      <div className="font-heading text-sm font-bold text-text-primary">{ar}</div>
-                    </button>
-                  ))}
-                </div>
+                
+                <button
+                  onClick={save}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white shadow-md"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate {sceneCount} Scenes ({sceneCount} credits)
+                </button>
               </div>
             </div>
           )}
 
-          {/* Actors tab */}
           {activeTab === "actors" && (
             <div className="space-y-4">
-              {/* Selected actor + script */}
               {selectedActorId && (
-                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-3 sm:p-5">
+                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-5">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-accent to-secondary text-2xl font-bold text-white">
-                      {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name?.[0] ?? "?"}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-heading font-bold text-text-primary">
-                          {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}
-                        </h3>
-                        <span className="text-[10px] font-bold uppercase text-text-secondary">
-                          {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.ethnicity} • {AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.situation}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedActorId("")}
-                        className="text-xs text-text-secondary hover:text-danger underline"
-                      >
-                        Change actor
-                      </button>
-                    </div>
+                    {(() => {
+                      const actor = AVATAR_LIBRARY.find(a => a.id === selectedActorId);
+                      return (
+                        <>
+                          <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-white shadow-xl">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={actor?.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-heading font-bold text-text-primary text-lg">{actor?.name}</h3>
+                            <p className="text-xs text-text-secondary uppercase font-bold tracking-wider">{actor?.ethnicity} • {actor?.situation}</p>
+                            
+                            <div className="mt-4 space-y-3">
+                              <div className="text-[10px] font-bold text-text-secondary uppercase">Choose Accent</div>
+                              <div className="flex gap-2">
+                                {["us", "uk", "ng"].map((acc) => {
+                                  const hasSample = actor?.audioSamples?.[acc as keyof typeof actor.audioSamples];
+                                  return (
+                                    <button
+                                      key={acc}
+                                      onClick={() => setSelectedAccent(acc as any)}
+                                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${
+                                        selectedAccent === acc ? "border-primary bg-primary text-white" : "border-black/10 bg-white hover:border-black/20"
+                                      } ${!hasSample ? "opacity-30 grayscale cursor-not-allowed" : ""}`}
+                                      disabled={!hasSample}
+                                    >
+                                      <span className="text-xs font-bold uppercase">{acc}</span>
+                                      {hasSample && (
+                                        <div 
+                                          onClick={(e) => { e.stopPropagation(); playSample(actor!, acc as any); }}
+                                          className={`p-1 rounded-full ${selectedAccent === acc ? "bg-white/20" : "bg-primary/10 text-primary"}`}
+                                        >
+                                          {playingSampleId === `${actor?.id}-${acc}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
-
-                  {/* Viral Script Templates — Moved here */}
-                  <div className="mt-6 pt-4 border-t border-black/5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
-                        <Sparkles className="h-3 w-3 text-primary" /> Viral Formats
-                      </h3>
-                      {selectedUgcTemplate && (
-                        <button
-                          onClick={generateUgcScript}
-                          disabled={ugcGenerating}
-                          className="text-[10px] font-bold text-accent hover:underline disabled:opacity-50"
-                        >
-                          {ugcGenerating ? "Generating..." : "Apply format →"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid gap-1.5 grid-cols-3">
-                      {[
-                        { id: "honest-review", label: "Review" },
-                        { id: "problem-solution", label: "Solution" },
-                        { id: "unboxing", label: "Unboxing" },
-                        { id: "day-in-life", label: "Daily" },
-                        { id: "hot-take", label: "Hook" },
-                        { id: "comparison", label: "Vs" },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setSelectedUgcTemplate(selectedUgcTemplate === t.id ? "" : t.id)}
-                          className={`rounded-lg border px-2 py-1.5 text-center transition-all ${
-                            selectedUgcTemplate === t.id ? "border-primary bg-primary/5 text-primary" : "border-black/10 hover:border-black/20 text-text-secondary"
-                          }`}
-                        >
-                          <div className="text-[10px] font-bold">{t.label}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                      What should this actor say?
-                    </label>
-                    <textarea
-                      value={ad.script ?? ""}
-                      onChange={(e) => update("script", e.target.value)}
-                      rows={4}
-                      maxLength={800}
-                      placeholder="Type the exact words..."
-                      className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-                    />
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setUgcGenerating(true);
-                            try {
-                              const res = await fetch("/api/ai/ugc-script", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  templateId: "honest-review",
-                                  productName: ad.headline,
-                                  additionalContext: ad.bodyText,
-                                }),
-                              });
-                              const data = await res.json();
-                              if (!res.ok) throw new Error(data.error ?? "Failed");
-                              update("script", data.script);
-                              success("AI script written!");
-                            } catch (err) {
-                              toastError("Could not write script — try writing a headline first");
-                            } finally {
-                              setUgcGenerating(false);
-                            }
-                          }}
-                          disabled={ugcGenerating}
-                          className="flex h-8 items-center gap-1.5 rounded-lg bg-accent/10 px-3 text-[10px] font-bold text-accent hover:bg-accent/20 transition-all disabled:opacity-50"
-                        >
-                          {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                          {ugcGenerating ? "Writing..." : "Write with AI"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!ad.script?.trim()) return;
-                            setUgcGenerating(true);
-                            try {
-                              const res = await fetch("/api/ai/rephrase", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  text: ad.script,
-                                  fieldType: "script",
-                                  mode: "improve",
-                                }),
-                              });
-                              const data = await res.json();
-                              if (!res.ok) throw new Error(data.error ?? "Failed");
-                              update("script", data.text);
-                              success("Script polished!");
-                            } catch (err) {
-                              toastError("Rewrite failed");
-                            } finally {
-                              setUgcGenerating(false);
-                            }
-                          }}
-                          disabled={ugcGenerating || !ad.script?.trim()}
-                          className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 text-[10px] font-bold text-text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
-                        >
-                          {ugcGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                          {ugcGenerating ? "Rewriting..." : "Rewrite"}
-                        </button>
-                      </div>
-                      <span className="text-[10px] text-text-secondary">{(ad.script ?? "").length}/800</span>
-                    </div>
-                  </div>
-
-                  {/* Voice Controls — Integrated into Actors tab */}
-                  <div className="mt-4 space-y-4 border-t border-black/5 pt-4">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-text-secondary">
-                      <Mic className="h-3.5 w-3.5" /> Voice Tuning
-                    </div>
-                    <VoiceSlider label="Speed" value={voiceSpeed} min={0.5} max={2.0} step={0.1}
-                      onChange={setVoiceSpeed} hint={voiceSpeed < 0.9 ? "Relaxed" : voiceSpeed > 1.2 ? "Energetic" : "Normal"} />
-                    <VoiceSlider label="Stability" value={voiceStability} min={0} max={1} step={0.05}
-                      onChange={setVoiceStability} hint={voiceStability < 0.3 ? "Dynamic" : voiceStability > 0.7 ? "Consistent" : "Balanced"} />
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={!actorScript.trim() || ugcGenerating}
-                    onClick={async () => {
-                      setUgcGenerating(true);
-                      try {
-                        const res = await fetch("/api/generate/avatar", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            adId: ad.id,
-                            avatarId: selectedActorId,
-                            script: actorScript,
-                            voice: { speed: voiceSpeed, stability: voiceStability, styleExaggeration: voiceStyle },
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error ?? "Generation failed");
-                        success("AI Video started — check back in 1-2 mins");
-                      } catch (err) {
-                        toastError((err as Error).message);
-                      } finally {
-                        setUgcGenerating(false);
-                      }
-                    }}
-                    className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-40 transition-all shadow-lg shadow-primary/20"
-                  >
-                    {ugcGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {ugcGenerating ? "Generating..." : `Create AI Video with ${AVATAR_LIBRARY.find((a) => a.id === selectedActorId)?.name}`}
-                  </button>
                 </div>
               )}
 
-              {/* Filters */}
-              <div className="rounded-2xl border border-black/5 bg-white p-3 sm:p-5 shadow-sm">
-                <h3 className="font-heading font-bold text-text-primary mb-3">Choose an AI Actor</h3>
-                
-                <div className="grid gap-2 sm:grid-cols-4 mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search vibe..."
-                    value={actorFilters.search}
-                    onChange={(e) => setActorFilters({ ...actorFilters, search: e.target.value })}
-                    className="sm:col-span-2 rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                  <select
-                    value={actorFilters.gender}
-                    onChange={(e) => setActorFilters({ ...actorFilters, gender: e.target.value })}
-                    className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  >
-                    <option value="">Genders</option>
-                    <option value="female">Female</option>
-                    <option value="male">Male</option>
-                  </select>
-                  <select
-                    value={actorFilters.situation}
-                    onChange={(e) => setActorFilters({ ...actorFilters, situation: e.target.value })}
-                    className="rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                  >
-                    <option value="">Settings</option>
-                    {SITUATIONS.slice(0, 5).map((s) => (
-                      <option key={s} value={s}>{s.replace("-", " ")}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Actor grid */}
+              <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+                <h3 className="font-heading font-bold text-text-primary mb-4">Select AI Actor & Voice</h3>
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-                  {filterAvatars({
-                    gender: actorFilters.gender as "male" | "female" | "non-binary" | undefined || undefined,
-                    age: actorFilters.age as "young" | "middle" | "senior" | undefined || undefined,
-                    situation: actorFilters.situation as never || undefined,
-                    search: actorFilters.search || undefined,
-                  }).slice(0, 12).map((actor) => {
+                  {AVATAR_LIBRARY.map((actor) => {
                     const isSelected = selectedActorId === actor.id;
                     const locked = actor.isPro && !isPaid;
                     return (
                       <button
                         key={actor.id}
                         type="button"
-                        onClick={() => {
-                          if (locked) {
-                            toastError("Pro actor — Upgrade to use");
-                            return;
-                          }
-                          setSelectedActorId(actor.id);
-                        }}
+                        onClick={() => !locked && setSelectedActorId(actor.id)}
                         className={`relative rounded-2xl border-2 p-3 text-left transition-all ${
-                          isSelected
-                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                            : "border-black/10 hover:border-primary/40 bg-white"
-                        } ${locked ? "opacity-60" : ""}`}
+                          isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-black/10 bg-white"
+                        } ${locked ? "opacity-50" : ""}`}
                       >
-                        <div className="aspect-square mb-2 flex items-center justify-center rounded-xl bg-bg-secondary text-2xl font-bold text-text-primary">
-                          {actor.name[0]}
+                        <div className="aspect-square mb-2 overflow-hidden rounded-xl bg-bg-secondary">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={actor.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                         </div>
                         <div className="font-bold text-xs text-text-primary truncate">{actor.name}</div>
-                        <div className="text-[9px] text-text-secondary capitalize truncate">{actor.situation.replace("-", " ")}</div>
+                        {actor.audioSamples && (
+                          <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+                            <Mic className="h-2.5 w-2.5" />
+                          </div>
+                        )}
                         {locked && <Lock className="absolute top-2 right-2 h-3 w-3 text-warning" />}
                       </button>
                     );
@@ -1062,324 +801,98 @@ export function StudioClient({
             </div>
           )}
 
-          {/* Music tab */}
-          {activeTab === "music" && (
+          {activeTab === "music" && (activeTab === "music" && (
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <div>
-                <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
-                <p className="text-xs text-text-secondary">Optional: Pick a genre or sound vibe for your video ads</p>
-              </div>
-
+              <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {MUSIC_OPTIONS.map((g) => {
-                  const isSelected = (ad.musicGenre === g) || (g === "none" && !ad.musicGenre);
-                  return (
-                    <button
-                      key={g}
-                      onClick={() => update("musicGenre", g === "none" ? null : g)}
-                      className={`rounded-xl border-2 px-3 py-2.5 text-[10px] sm:text-xs font-semibold capitalize transition-all ${
-                        isSelected
-                          ? "border-primary bg-primary/5 text-primary shadow-sm"
-                          : "border-black/10 hover:border-black/20 text-text-primary bg-white"
-                      }`}
-                    >
-                      {g === "none" ? "🚫 No Music" : g.replace(/-/g, " ")}
-                    </button>
-                  );
-                })}
+                {MUSIC_OPTIONS.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => update("musicGenre", g === "none" ? null : g)}
+                    className={`rounded-xl border-2 px-3 py-2.5 text-[10px] sm:text-xs font-semibold capitalize transition-all ${
+                      (ad.musicGenre === g) || (g === "none" && !ad.musicGenre)
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-black/10 bg-white"
+                    }`}
+                  >
+                    {g.replace(/-/g, " ")}
+                  </button>
+                ))}
               </div>
-              
-              {ad.musicGenre && (
-                <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs sm:text-sm">
-                  <CheckCircle2 className="inline h-4 w-4 text-primary mr-1.5" />
-                  Selected: <strong className="text-primary capitalize">{ad.musicGenre.replace(/-/g, " ")}</strong>
-                </div>
-              )}
-              {!ad.musicGenre && (
-                <div className="rounded-xl bg-bg-secondary p-3 text-xs text-text-secondary">
-                  No music selected. Ad will use actor voice/sound effects only.
-                </div>
-              )}
             </div>
-          )}
+          ))}
 
-          {/* Settings tab */}
           {activeTab === "settings" && (
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                    <Languages className="inline h-3.5 w-3.5 mr-1" /> Language
-                  </div>
-                  <select
-                    value={ad.language}
-                    onChange={(e) => update("language", e.target.value)}
-                    className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                  >
-                    {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                    <Palette className="inline h-3.5 w-3.5 mr-1" /> Brand Colors
-                  </div>
-                  <div className="flex gap-2 rounded-xl overflow-hidden h-10 border border-black/5">
-                    <div className="flex-1" style={{ backgroundColor: brandColors.primary }} />
-                    <div className="flex-1" style={{ backgroundColor: brandColors.secondary }} />
-                    <div className="flex-1" style={{ backgroundColor: brandColors.accent }} />
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <Copy className="h-5 w-5 text-primary" />
+                <h3 className="font-heading font-bold text-text-primary">A/B Testing (Batch Generate)</h3>
+              </div>
+              <p className="text-xs text-text-secondary">Generate up to 10 variants to find the winning combination.</p>
+
+              <div className="flex items-center justify-between border-t border-black/5 pt-6">
+                <span className="text-xs font-bold text-text-primary">{variantCount} Variants</span>
+                <input
+                  type="range"
+                  min={2}
+                  max={isPaid ? 10 : 3}
+                  value={variantCount}
+                  onChange={(e) => setVariantCount(Number(e.target.value))}
+                  className="w-32 accent-primary"
+                />
               </div>
 
-              {/* Mass Variant Generation — Integrated into Settings tab */}
-              <div className="pt-6 border-t border-black/5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Copy className="h-5 w-5 text-primary" />
-                  <h3 className="font-heading font-bold text-text-primary">A/B Testing (Mass Generation)</h3>
-                </div>
-                <p className="text-xs text-text-secondary">Generate multiple variants to find the winning ad.</p>
-
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {(["actors", "scripts", "both"] as const).map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setVaryWhat(v)}
-                      className={`rounded-xl border-2 p-3 text-left transition-all ${
-                        varyWhat === v ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"
-                      }`}
-                    >
-                      <div className="text-xs font-bold text-text-primary capitalize">{v}</div>
-                      <div className="text-[9px] text-text-secondary">
-                        {v === "actors" ? "New people, same script" : v === "scripts" ? "New copy, same look" : "Randomize all"}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-text-primary">{variantCount} Variants</span>
-                  <input
-                    type="range"
-                    min={2}
-                    max={10}
-                    value={variantCount}
-                    onChange={(e) => setVariantCount(Number(e.target.value))}
-                    className="w-32 accent-primary"
-                  />
-                </div>
-
-                <button
-                  onClick={generateVariants}
-                  disabled={generatingVariants}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
-                >
-                  {generatingVariants ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                  {generatingVariants ? "Generating..." : `Generate ${variantCount} Variants (${variantCount} credits)`}
-                </button>
-              </div>
+              <button
+                onClick={generateVariants}
+                disabled={generatingVariants}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-white shadow-lg shadow-primary/20"
+              >
+                {generatingVariants ? "Creating Batch..." : `Generate ${variantCount} Variants (${variantCount} credits)`}
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Save as Template modal */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-              <h2 className="font-heading text-lg font-bold text-text-primary">Save as Template</h2>
-              <button onClick={() => setShowTemplateModal(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-secondary hover:bg-black/10">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">Template name</label>
-                <input
-                  type="text"
-                  value={templateForm.name}
-                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                  placeholder="Summer Sale Fashion Ad"
-                  className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">Description</label>
-                <textarea
-                  value={templateForm.description}
-                  onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                  rows={2}
-                  placeholder="Great for fashion brands running seasonal promotions..."
-                  className="w-full resize-none rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">Category</label>
-                <select
-                  value={templateForm.category}
-                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
-                  className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                >
-                  {["restaurant", "fashion", "tech", "real-estate", "fitness", "beauty", "education", "e-commerce", "travel", "finance", "other"].map((c) => (
-                    <option key={c} value={c} className="capitalize">{c.replace("-", " ")}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl border-2 border-black/10 p-3">
-                <div>
-                  <div className="font-heading text-sm font-semibold text-text-primary">Publish to marketplace</div>
-                  <div className="text-xs text-text-secondary">Other users can find and use this template</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTemplateForm({ ...templateForm, isPublic: !templateForm.isPublic })}
-                  className={`h-6 w-11 rounded-full transition-colors ${templateForm.isPublic ? "bg-primary" : "bg-bg-secondary"}`}
-                >
-                  <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${templateForm.isPublic ? "translate-x-5" : "translate-x-0.5"}`} />
-                </button>
-              </div>
-
-              {templateForm.isPublic && (
-                <div className="flex items-center justify-between rounded-xl border-2 border-black/10 p-3">
-                  <div>
-                    <div className="font-heading text-sm font-semibold text-text-primary">Sell this template</div>
-                    <div className="text-xs text-text-secondary">Earn 70% of each sale (30% platform fee)</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTemplateForm({ ...templateForm, isPremium: !templateForm.isPremium })}
-                    className={`h-6 w-11 rounded-full transition-colors ${templateForm.isPremium ? "bg-primary" : "bg-bg-secondary"}`}
-                  >
-                    <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${templateForm.isPremium ? "translate-x-5" : "translate-x-0.5"}`} />
-                  </button>
-                </div>
-              )}
-
-              {templateForm.isPublic && templateForm.isPremium && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">Price (credits)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={templateForm.price}
-                    onChange={(e) => setTemplateForm({ ...templateForm, price: Number(e.target.value) })}
-                    className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                  <p className="mt-1 text-xs text-text-secondary">
-                    You earn {Math.round(templateForm.price * 0.7)} credits per sale
-                  </p>
-                </div>
-              )}
-
-              <button
-                onClick={saveAsTemplate}
-                disabled={savingTemplate || !templateForm.name.trim()}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50 transition-colors"
-              >
-                <BookTemplate className="h-4 w-4" />
-                {savingTemplate ? "Saving..." : templateForm.isPublic ? "Publish to marketplace" : "Save template"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sticky bottom action bar — Master Controller */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 dark:border-white/10 bg-white/95 dark:bg-bg-dark/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:left-64">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 bg-white/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:left-64">
         <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Status & Secondary (left) */}
           <div className="flex w-full sm:w-auto items-center justify-between sm:justify-start gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={downloadAd}
-                className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 dark:!border-white/20 bg-white dark:!bg-white/10 px-3 text-xs font-semibold text-text-primary dark:!text-white hover:bg-bg-secondary"
-                title="Download current version"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Download</span>
-              </button>
-              <button
-                onClick={() => setShowTemplateModal(true)}
-                className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-accent/20 bg-accent/5 px-3 text-xs font-semibold text-accent hover:bg-accent/10 transition-colors"
-                title="Save as reusable template"
-              >
-                <BookTemplate className="h-4 w-4" />
-                <span className="hidden sm:inline">Save as Template</span>
-              </button>
-            </div>
+            <button
+              onClick={() => downloadAd()}
+              className="flex h-10 items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white px-3 text-xs font-semibold"
+            >
+              <Download className="h-4 w-4" /> Download
+            </button>
             {dirty && (
               <div className="flex items-center gap-1.5 text-xs font-bold text-warning animate-pulse">
-                <span className="h-2 w-2 rounded-full bg-warning" />
-                Unsaved Changes
+                <span className="h-2 w-2 rounded-full bg-warning" /> Unsaved Changes
               </div>
             )}
           </div>
 
-          {/* Primary Actions (right) */}
           <div className="flex w-full sm:w-auto items-center gap-2">
             {dirty ? (
               <button
                 onClick={save}
                 disabled={saving}
-                className="flex h-12 w-full sm:w-auto flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-primary px-8 text-sm font-bold text-white shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="flex h-12 w-full sm:w-auto flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-8 text-sm font-bold text-white shadow-lg"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {saving ? "Saving..." : "Save & Apply Changes"}
+                Save & Apply Changes
               </button>
             ) : (
-              <div className="flex w-full sm:w-auto items-center gap-2">
-                <div className="relative flex-1 sm:flex-none">
-                  <input
-                    type="datetime-local"
-                    value={scheduleDate}
-                    onChange={(e) => setScheduleDate(e.target.value)}
-                    className="h-11 w-full sm:w-44 rounded-xl border-2 border-black/10 bg-white pl-9 pr-3 text-[11px] outline-none focus:border-primary transition-all"
-                  />
-                  <Clock className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-secondary" />
-                </div>
-                
-                <button
-                  onClick={() => handleSchedule(!!scheduleDate ? false : true)}
-                  disabled={scheduling}
-                  className={`flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-all shadow-lg ${
-                    scheduleDate 
-                      ? "bg-accent shadow-accent/20" 
-                      : "bg-gradient-to-r from-primary to-accent shadow-primary/25 hover:scale-[1.02]"
-                  }`}
-                >
-                  {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {scheduling ? "Processing..." : scheduleDate ? "Schedule Post" : "Publish Now"}
-                </button>
-              </div>
+              <button
+                onClick={() => handleSchedule(true)}
+                disabled={scheduling}
+                className="flex h-12 w-full sm:w-auto flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 text-sm font-bold text-white shadow-lg"
+              >
+                {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Publish Now
+              </button>
             )}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function VoiceSlider({ label, value, min, max, step, onChange, hint }: {
-  label: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; hint: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-semibold text-text-primary">{label}</span>
-        <span className="text-[10px] font-semibold text-primary">{value.toFixed(1)} — {hint}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-primary"
-      />
     </div>
   );
 }

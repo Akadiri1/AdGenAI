@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Search, Play, Mic, Volume2, Film,
-  Loader2, Crown, SlidersHorizontal, User2,
+  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
+import { MultiFileUpload } from "@/components/ui/MultiFileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, DEFAULT_VOICE_SETTINGS, type Avatar, type AvatarGender, type AvatarAge, type AvatarSituation, type VoiceSettings } from "@/lib/avatars";
 
 type Step = "select-avatar" | "write-script" | "voice-settings" | "generate";
@@ -22,11 +24,42 @@ export function UGCCreatorClient() {
   const [step, setStep] = useState<Step>("select-avatar");
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [script, setScript] = useState("");
-  const [headline, setHeadline] = useState("");
-  const [callToAction, setCallToAction] = useState("");
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [visualInstructions, setVisualInstructions] = useState("");
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(DEFAULT_VOICE_SETTINGS);
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "1:1" | "16:9">("9:16");
   const [generating, setGenerating] = useState(false);
+
+  const [customActorImage, setCustomActorImage] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio();
+    audioRef.current.onended = () => setPlayingSampleId(null);
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  function playSample(e: React.MouseEvent, avatar: Avatar) {
+    e.preventDefault();
+    e.stopPropagation();
+    const sampleUrl = avatar.audioSamples?.us || avatar.audioSamples?.uk || avatar.audioSamples?.ng;
+    if (!sampleUrl) return;
+
+    if (playingSampleId === avatar.id) {
+      audioRef.current?.pause();
+      setPlayingSampleId(null);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.src = sampleUrl;
+      audioRef.current.play().catch(console.error);
+      setPlayingSampleId(avatar.id);
+    }
+  }
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,8 +84,8 @@ export function UGCCreatorClient() {
         body: JSON.stringify({
           avatarId: selectedAvatar.id,
           script,
-          headline,
-          callToAction,
+          productImages: productImages.length > 0 ? productImages : undefined,
+          visualInstructions: visualInstructions || undefined,
           voiceSettings,
           aspectRatio,
         }),
@@ -71,10 +104,6 @@ export function UGCCreatorClient() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Link href="/create" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-text-secondary hover:text-text-primary">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Link>
-
       <div className="mb-6">
         <h1 className="font-heading text-3xl font-bold text-text-primary">AI UGC Creator</h1>
         <p className="text-text-secondary mt-1">Pick an AI actor, write a script, and generate a realistic UGC video ad</p>
@@ -84,7 +113,7 @@ export function UGCCreatorClient() {
       <div className="flex items-center gap-2 mb-6">
         {[
           { key: "select-avatar", label: "1. Pick actor", icon: User2 },
-          { key: "write-script", label: "2. Write script", icon: Film },
+          { key: "write-script", label: "2. Script & Visuals", icon: Film },
           { key: "voice-settings", label: "3. Voice settings", icon: Volume2 },
           { key: "generate", label: "4. Generate", icon: Play },
         ].map((s, i) => {
@@ -168,6 +197,71 @@ export function UGCCreatorClient() {
 
           {/* Avatar grid */}
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+            {/* Custom Avatar Upload Card */}
+            <div className={`group relative overflow-hidden rounded-2xl border-2 transition-all flex flex-col ${
+              selectedAvatar?.id.startsWith('custom-') ? "border-primary shadow-lg ring-2 ring-primary/20" : "border-dashed border-black/15 hover:border-primary/50"
+            }`}>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) {
+                    toastError("File too large (max 5MB)");
+                    return;
+                  }
+                  try {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    fd.append("folder", "uploads");
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                    setCustomActorImage(data.url);
+                    setSelectedAvatar({
+                      id: "custom-" + Date.now(),
+                      name: "Custom Actor",
+                      gender: "female",
+                      age: "young",
+                      situation: "studio",
+                      ethnicity: "custom",
+                      thumbnailUrl: data.url,
+                      isPro: false,
+                      isHD: true,
+                      tags: []
+                    });
+                  } catch (err) {
+                    toastError((err as Error).message);
+                  }
+                }}
+              />
+              <div className="aspect-[3/4] bg-bg-secondary/30 relative flex flex-col items-center justify-center">
+                {customActorImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={customActorImage} alt="Custom" className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center p-2 text-center">
+                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                      <Upload className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-[10px] font-bold text-text-primary uppercase tracking-wider">Upload Actor</span>
+                    <span className="text-[9px] text-text-secondary mt-1">Your own photo</span>
+                  </div>
+                )}
+              </div>
+              <div className="p-2 border-t border-black/5 bg-white relative z-20">
+                <div className="text-xs font-semibold text-text-primary truncate">Your Actor</div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[9px] text-text-secondary capitalize">Custom photo</span>
+                </div>
+              </div>
+              {selectedAvatar?.id.startsWith('custom-') && (
+                <div className="absolute inset-0 border-2 border-primary rounded-2xl pointer-events-none z-30" />
+              )}
+            </div>
+
             {filteredAvatars.map((avatar) => {
               const isSelected = selectedAvatar?.id === avatar.id;
               return (
@@ -259,9 +353,27 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
             </div>
 
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm space-y-4">
-              <AIRephraseField label="Headline overlay (optional)" value={headline} onChange={setHeadline} placeholder="Your brand. Simplified." fieldType="headline" maxLength={80} />
-              <AIRephraseField label="Call to action" value={callToAction} onChange={setCallToAction} placeholder="Try it free today" fieldType="cta" maxLength={40} />
+              <h3 className="font-heading text-sm font-bold text-text-primary">Visuals (Optional)</h3>
+              
+              <MultiFileUpload 
+                values={productImages} 
+                onChange={setProductImages} 
+                label="Add product photo(s)"
+                previewSize="lg"
+                maxFiles={5}
+              />
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Visual instructions / Prompts</label>
+                <textarea
+                  value={visualInstructions}
+                  onChange={(e) => setVisualInstructions(e.target.value)}
+                  placeholder="E.g., Show the product floating in space, or make the background a sunny beach."
+                  className="w-full rounded-xl border border-black/10 bg-white p-3 text-sm outline-none focus:border-primary min-h-[80px]"
+                />
+              </div>
             </div>
+
           </div>
 
           <div className="space-y-4">

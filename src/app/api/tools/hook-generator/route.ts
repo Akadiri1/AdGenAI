@@ -84,14 +84,3 @@ Return JSON array of 8 hook strings. Each hook is 1-2 sentences. Different angle
     );
   }
 }
-= raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-
-    const hooks = JSON.parse(raw) as string[];
-    return NextResponse.json({ hooks: hooks.slice(0, 8) });
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Generation failed", details: (err as Error).message },
-      { status: 500 },
-    );
-  }
-}

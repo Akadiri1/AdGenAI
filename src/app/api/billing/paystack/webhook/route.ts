@@ -49,11 +49,12 @@ export async function POST(req: Request) {
 
   switch (event.event) {
     case "charge.success": {
-      const { reference, amount, currency, metadata } = event.data;
+      const { reference, amount, currency, metadata, authorization, customer } = event.data as any;
       const userId = metadata?.userId as string | undefined;
       const plan = metadata?.plan as PlanKey | undefined;
       const type = (metadata?.type as string | undefined) ?? (plan ? "subscription" : "credit_purchase");
       const credits = Number(metadata?.credits ?? 0);
+      const usdAmount = Number(metadata?.usdAmount ?? 0);
       const paidAmount = amount / 100;
 
       if (!userId) break;
@@ -64,22 +65,21 @@ export async function POST(req: Request) {
       });
       if (existing) break;
 
-      // Update user
-      if (plan && PLAN_DEFS[plan]) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
+      // Update user with plan/credits AND tokenization info
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(plan && PLAN_DEFS[plan] ? {
             plan,
             credits: { increment: PLAN_DEFS[plan].monthlyCredits },
             creditsExpiry: null,
-          },
-        });
-      } else if (credits > 0) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { credits: { increment: credits } },
-        });
-      }
+          } : credits > 0 ? {
+            credits: { increment: credits }
+          } : {}),
+          paystackAuthCode: authorization?.authorization_code,
+          paystackCustomerId: customer?.customer_code,
+        },
+      });
 
       // Record transaction
       await prisma.transaction.create({
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
       });
 
       // Referral commission
-      await creditReferralCommission(userId, paidAmount, reference);
+      await creditReferralCommission(userId, usdAmount > 0 ? usdAmount : paidAmount, reference);
       break;
     }
 

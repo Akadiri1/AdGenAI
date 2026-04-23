@@ -45,6 +45,8 @@ model User {
   referredBy     String?
   stripeConnectAccountId String? @unique
   stripeConnectPayoutsEnabled Boolean @default(false)
+  paystackAuthCode String?
+  paystackCustomerId String?
   isAdmin        Boolean   @default(false)
   isSuspended    Boolean   @default(false)
   lastLoginAt    DateTime?

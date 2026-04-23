@@ -6,9 +6,9 @@
 export type AIProvider = "groq" | "gemini" | "claude";
 
 export function getActiveProvider(): AIProvider {
-  if (process.env.GROQ_API_KEY) return "groq";
-  if (process.env.GEMINI_API_KEY) return "gemini";
-  if (process.env.ANTHROPIC_API_KEY) return "claude";
+  if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== "") return "groq";
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "") return "gemini";
+  if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim() !== "") return "claude";
   throw new Error("No AI provider configured. Set GROQ_API_KEY (free), GEMINI_API_KEY (free), or ANTHROPIC_API_KEY in .env");
 }
 

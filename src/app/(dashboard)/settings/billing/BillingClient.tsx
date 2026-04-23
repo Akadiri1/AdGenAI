@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Sparkles } from "lucide-react";
 import { PLAN_DEFS, type PlanKey, type BillingCycle } from "@/lib/plans";
+
+const USD_TO: Record<string, number> = {
+  NGN: 1500,
+  GHS: 12,
+  ZAR: 18,
+  KES: 130,
+  EGP: 48,
+  RWF: 1300,
+  XOF: 600,
+};
 
 type Transaction = {
   id: string;
@@ -30,12 +40,14 @@ export function BillingClient({
   message: string | null;
 }) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const [currency, setCurrency] = useState<string>("NGN");
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [canceling, setCanceling] = useState(false);
 
   const showPaystack = country ? AFRICAN_COUNTRIES.includes(country) : false;
+  const isLowCredits = message === "low_credits" || (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("low_credits") === "1");
 
   async function handleCancel() {
     setCanceling(true);
@@ -60,7 +72,7 @@ export function BillingClient({
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, cycle, ...(provider === "paystack" && { currency: "NGN" }) }),
+        body: JSON.stringify({ plan, cycle, ...(provider === "paystack" && { currency }) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Checkout failed");
@@ -71,6 +83,42 @@ export function BillingClient({
     }
   }
 
+  async function buyCredits(provider: "stripe" | "paystack") {
+    setProcessing(`credits-${provider}`);
+    setError(null);
+    try {
+      const endpoint =
+        provider === "stripe" ? "/api/billing/credits" : "/api/billing/paystack/credits";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packs: 1, ...(provider === "paystack" && { currency }) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Purchase failed");
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.success) {
+        window.location.href = "/settings/billing?success=1&credits_purchased=20";
+      }
+    } catch (err) {
+      setError((err as Error).message);
+      setProcessing(null);
+    }
+  }
+
+  const getLocalPrice = (usd: number) => {
+    if (!showPaystack) return null;
+    const rate = USD_TO[currency] ?? 1;
+    const amount = usd * rate;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
@@ -78,9 +126,34 @@ export function BillingClient({
         <p className="text-text-secondary">Manage your subscription and credits</p>
       </div>
 
+      {isLowCredits && (
+        <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-heading font-bold text-text-primary text-lg">You have a killer script ready!</h3>
+              <p className="text-sm text-text-secondary text-pretty">But you need credits to bring it to life with Veo 3.1. Grab 20 credits for just $10 and start creating.</p>
+            </div>
+            <button 
+              onClick={() => buyCredits(showPaystack ? "paystack" : "stripe")}
+              className="w-full sm:w-auto rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-primary-dark transition-all hover:scale-[1.02]"
+            >
+              Get Credits Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {message === "success" && (
         <div className="rounded-2xl border border-success/20 bg-success/10 p-4 text-sm text-success font-semibold">
-          <CheckCircle className="inline h-4 w-4" /> Payment successful! Your plan has been upgraded.
+          <CheckCircle className="inline h-4 w-4" /> Payment successful! Your account has been updated.
+        </div>
+      )}
+      {message?.includes("credits_purchased") && (
+        <div className="rounded-2xl border border-success/20 bg-success/10 p-4 text-sm text-success font-semibold">
+          <CheckCircle className="inline h-4 w-4" /> Credits added successfully!
         </div>
       )}
       {message === "canceled" && (
@@ -101,8 +174,21 @@ export function BillingClient({
         </div>
         <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Credits</div>
-          <div className="font-heading text-2xl font-bold text-text-primary">{credits}</div>
-          <div className="text-xs text-text-secondary mt-1">Roll over monthly</div>
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="font-heading text-2xl font-bold text-text-primary">{credits}</div>
+              <div className="text-xs text-text-secondary mt-1">1 credit ≈ 1 sec of video</div>
+            </div>
+            {currentPlan !== "FREE" && (
+              <button
+                onClick={() => buyCredits(showPaystack ? "paystack" : "stripe")}
+                disabled={processing?.startsWith("credits")}
+                className="text-xs font-bold text-primary hover:underline disabled:opacity-50"
+              >
+                {processing?.startsWith("credits") ? "Processing..." : "+ Buy 20 Credits"}
+              </button>
+            )}
+          </div>
         </div>
         <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Auto-renew</div>
@@ -160,26 +246,43 @@ export function BillingClient({
       )}
 
       <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <h2 className="font-heading text-xl font-bold text-text-primary">Upgrade your plan</h2>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-black/10 bg-white p-1">
-            <button
-              onClick={() => setCycle("monthly")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                cycle === "monthly" ? "bg-primary text-white" : "text-text-secondary"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setCycle("yearly")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                cycle === "yearly" ? "bg-primary text-white" : "text-text-secondary"
-              }`}
-            >
-              Yearly
-              <span className="rounded bg-success/20 px-1 py-0.5 text-[9px] font-bold text-success">-20%</span>
-            </button>
+          <div className="flex items-center gap-3">
+            {showPaystack && (
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary outline-none focus:border-primary"
+              >
+                <option value="NGN">NGN (Nigeria)</option>
+                <option value="GHS">GHS (Ghana)</option>
+                <option value="ZAR">ZAR (South Africa)</option>
+                <option value="KES">KES (Kenya)</option>
+                <option value="EGP">EGP (Egypt)</option>
+                <option value="RWF">RWF (Rwanda)</option>
+                <option value="XOF">XOF (Côte d&apos;Ivoire)</option>
+              </select>
+            )}
+            <div className="inline-flex items-center gap-1 rounded-xl border border-black/10 bg-white p-1">
+              <button
+                onClick={() => setCycle("monthly")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                  cycle === "monthly" ? "bg-primary text-white" : "text-text-secondary"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setCycle("yearly")}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                  cycle === "yearly" ? "bg-primary text-white" : "text-text-secondary"
+                }`}
+              >
+                Yearly
+                <span className="rounded bg-success/20 px-1 py-0.5 text-[9px] font-bold text-success">-20%</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -189,6 +292,7 @@ export function BillingClient({
             const price = cycle === "monthly" ? def.priceMonthlyUsd : def.priceYearlyUsd / 12;
             const isCurrent = currentPlan === planKey;
             const popular = planKey === "PRO";
+            const localPrice = getLocalPrice(price);
 
             return (
               <div
@@ -205,17 +309,20 @@ export function BillingClient({
                 <div className="mb-4">
                   <h3 className="font-heading text-xl font-bold text-text-primary">{def.name}</h3>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="font-heading text-3xl font-extrabold text-text-primary">${price.toFixed(0)}</span>
+                    <span className="font-heading text-3xl font-extrabold text-text-primary">{"$"}{price.toFixed(0)}</span>
                     <span className="text-sm text-text-secondary">/mo</span>
+                    {localPrice && (
+                      <span className="ml-2 text-xs font-bold text-primary">≈ {localPrice}</span>
+                    )}
                   </div>
                   {cycle === "yearly" && (
-                    <div className="text-xs text-text-secondary">Billed ${def.priceYearlyUsd}/year</div>
+                    <div className="text-xs text-text-secondary">Billed {"$"}{def.priceYearlyUsd}/year</div>
                   )}
                 </div>
 
                 <ul className="mb-5 space-y-2 text-sm">
                   {def.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-text-secondary">
+                    <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
                       <svg className="h-4 w-4 flex-shrink-0 text-success mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
@@ -231,25 +338,19 @@ export function BillingClient({
                 ) : (
                   <div className="space-y-2">
                     <button
-                      onClick={() => subscribe(planKey, "stripe")}
-                      disabled={processing === `${planKey}-stripe`}
-                      className={`flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${
+                      onClick={() => subscribe(planKey, "paystack")}
+                      disabled={processing === `${planKey}-paystack`}
+                      className={`flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold shadow-lg transition-all disabled:opacity-50 ${
                         popular
-                          ? "bg-primary text-white hover:bg-primary-dark"
-                          : "bg-text-primary text-white hover:bg-text-primary/90"
+                          ? "bg-primary text-white shadow-primary/20 hover:scale-[1.02]"
+                          : "bg-text-primary text-white hover:bg-black"
                       }`}
                     >
-                      {processing === `${planKey}-stripe` ? "Loading..." : "Pay with Card (Stripe)"}
+                      {processing === `${planKey}-paystack` ? "Initializing..." : "Upgrade plan"}
                     </button>
-                    {showPaystack && (
-                      <button
-                        onClick={() => subscribe(planKey, "paystack")}
-                        disabled={processing === `${planKey}-paystack`}
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-black/10 bg-white text-sm font-semibold text-text-primary transition-all hover:bg-bg-secondary disabled:opacity-50"
-                      >
-                        {processing === `${planKey}-paystack` ? "Loading..." : "Pay with Paystack (NGN)"}
-                      </button>
-                    )}
+                    <p className="text-[10px] text-center text-text-secondary">
+                      Secure payment via <strong>Paystack</strong>
+                    </p>
                   </div>
                 )}
               </div>
@@ -267,16 +368,15 @@ export function BillingClient({
               isCurrent ? "border-success bg-success/5" : "border-black/10 bg-gradient-to-r from-secondary/5 via-primary/5 to-accent/5"
             }`}>
               <div className="flex flex-col md:flex-row gap-6">
-                {/* Left: name + price + CTA */}
                 <div className="md:w-48 flex-shrink-0 flex flex-col justify-between">
                   <div>
                     <h3 className="font-heading text-xl font-bold text-text-primary">{def.name}</h3>
                     <div className="flex items-baseline gap-1 mt-1">
-                      <span className="font-heading text-3xl font-extrabold text-text-primary">${price.toFixed(0)}</span>
+                      <span className="font-heading text-3xl font-extrabold text-text-primary">{"$"}{price.toFixed(0)}</span>
                       <span className="text-sm text-text-secondary">/mo</span>
                     </div>
                     {cycle === "yearly" && (
-                      <div className="text-xs text-text-secondary mt-0.5">Billed ${def.priceYearlyUsd}/year</div>
+                      <div className="text-xs text-text-secondary mt-0.5">Billed {"$"}{def.priceYearlyUsd}/year</div>
                     )}
                   </div>
                   <div className="mt-4">
@@ -295,7 +395,6 @@ export function BillingClient({
                   </div>
                 </div>
 
-                {/* Right: features in 3 columns */}
                 <div className="flex-1">
                   <ul className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
                     {def.features.map((f) => (

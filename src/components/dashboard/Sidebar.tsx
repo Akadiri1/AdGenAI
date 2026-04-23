@@ -37,7 +37,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto p-4">
         <Link
-          href="/create/magic"
+          href="/create"
           className="mb-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-md shadow-primary/30 transition-all hover:bg-primary-dark hover:shadow-lg"
         >
           <Plus className="h-4 w-4" />

@@ -108,7 +108,9 @@ IMAGE PROMPT GUIDELINES:
 - For product ads: show the product in USE, not just sitting there
 - For service ads: show the RESULT/TRANSFORMATION, not the process
 - Specify "photorealistic, 8K, commercial photography" for quality
-- Avoid: text in images, multiple focal points, cluttered compositions
+- CRITICAL: NO TEXT, NO LOGOS, NO HEADLINES, NO BUTTONS, NO UI ELEMENTS in the image.
+- Visuals only. No "Sale" signs or "Buy Now" overlays. The marketing copy is handled elsewhere.
+- Avoid multiple focal points or cluttered compositions.
 
 SCORING METHODOLOGY:
 Score each ad honestly from 0-100. Most ads should score 60-85. A 90+ is genuinely exceptional.

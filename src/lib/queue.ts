@@ -32,12 +32,31 @@ export type PostAdJobData = {
   userId: string;
 };
 
+export type GenerateVideoJobData = {
+  adId: string;
+  userId: string;
+  avatarId: string;
+  script: string;
+  visualInstructions?: string;
+  productImages?: string[];
+  aspectRatio: "1:1" | "9:16" | "16:9";
+};
+
 const DEFAULT_JOB_OPTS: JobsOptions = {
   attempts: 3,
   backoff: { type: "exponential", delay: 30_000 },
   removeOnComplete: { age: 7 * 24 * 3600, count: 1000 },
   removeOnFail: { age: 30 * 24 * 3600 },
 };
+
+export function getGenerateQueue(): Queue {
+  return new Queue(QUEUE_NAMES.GENERATE_VIDEO, { connection: getRedis() });
+}
+
+export async function enqueueVideoGeneration(data: GenerateVideoJobData) {
+  const queue = getGenerateQueue();
+  return queue.add("generate-video", data, DEFAULT_JOB_OPTS);
+}
 
 export async function enqueuePostAd(data: PostAdJobData, scheduledAt?: Date) {
   const queue = getPostQueue();

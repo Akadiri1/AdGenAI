@@ -29,7 +29,7 @@ export default async function InfrastructurePage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {providers.map((p) => {
+        {providers.map((p: any) => {
           const isOnline = p.status === "online";
           const isDegraded = p.status === "degraded";
           const StatusIcon = isOnline ? CheckCircle2 : isDegraded ? Activity : AlertCircle;

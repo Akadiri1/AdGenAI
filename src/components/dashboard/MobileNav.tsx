@@ -72,7 +72,7 @@ export function MobileNav() {
               {/* New Ad button */}
               <div className="p-4">
                 <Link
-                  href="/create/magic"
+                  href="/create"
                   onClick={() => setOpen(false)}
                   className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-md shadow-primary/30 hover:bg-primary-dark"
                 >

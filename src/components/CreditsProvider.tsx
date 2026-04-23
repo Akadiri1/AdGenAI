@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 type Ctx = {
   credits: number;
   setCredits: (n: number) => void;
-  refreshCredits: () => Promise<void>;
+  refreshCredits: () => Promise<number | void>;
 };
 
 const CreditsCtx = createContext<Ctx | null>(null);
@@ -29,7 +29,10 @@ export function CreditsProvider({
     try {
       const res = await fetch("/api/settings/credits");
       const data = await res.json();
-      if (data.credits !== undefined) setCredits(data.credits);
+      if (data.credits !== undefined) {
+        setCredits(data.credits);
+        return data.credits as number;
+      }
     } catch { /* ignore */ }
   }, []);
 

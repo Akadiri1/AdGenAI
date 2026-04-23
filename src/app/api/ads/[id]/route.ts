@@ -6,6 +6,7 @@ import { generateImage } from "@/lib/images";
 import { imagesToString, stringToImages } from "@/lib/adHelpers";
 import { logAudit, getRequestContext } from "@/lib/audit";
 import { buildUserContext } from "@/lib/aiContext";
+import { checkCredits, deductCredits } from "@/lib/credits";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -19,6 +20,7 @@ const patchSchema = z.object({
   aspectRatio: z.enum(["1:1", "9:16", "16:9", "4:5"]).optional(),
   regenerateImage: z.boolean().optional(),
   newImagePrompt: z.string().max(1000).optional(),
+  numScenes: z.number().min(1).max(10).optional(),
   customImageUrl: z.string().url().optional(),
 });
 
@@ -57,102 +59,98 @@ export async function PATCH(
       { status: 400 },
     );
   }
-const body = patchSchema.parse(await req.json());
 
-let newImages: string[] = [];
-if (body.customImageUrl) {
-  newImages = [body.customImageUrl];
-} else if (body.regenerateImage) {
-  const count = body.numScenes ?? 1;
-  // Each scene costs 1 credit
-  const { checkCredits, deductCredits } = await import("@/lib/credits");
-  if (!(await checkCredits(session.user.id, count))) {
-    return NextResponse.json({ error: `Need ${count} credits to generate ${count} scenes.` }, { status: 402 });
-  }
-  await deductCredits(session.user.id, count);
+  const body = patchSchema.parse(await req.json());
 
-  try {
-    const promptBase = body.newImagePrompt || ad.bodyText || ad.headline || brandContext;
-    let scenePrompts = [promptBase];
-
-    // If more than 1 scene, use AI to break down the story into distinct prompts
-    if (count > 1) {
-      const { generateText } = await import("@/lib/ai");
-      const expansionRes = await generateText({
-        system: `You are a film director and storyboard artist. Break down the user's creative direction into ${count} distinct, sequential, and visually diverse scenes for a video ad. 
-        Return ONLY a JSON array of strings. Each string must be a detailed image-generation prompt for that specific scene.
-        Maintain consistent characters and style across all scenes.`,
-        prompt: `Expand this brief into ${count} unique scenes: "${promptBase}"\n\nBrand Context:\n${brandContext}`,
-        maxTokens: 1000,
-      });
-
-      try {
-        // Attempt to extract array if AI wraps it in text
-        const jsonMatch = expansionRes.match(/\[.*\]/s);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : expansionRes);
-        if (Array.isArray(parsed)) scenePrompts = parsed.slice(0, count);
-      } catch {
-        // Fallback to simple variations if JSON fails
-        scenePrompts = Array.from({ length: count }, (_, i) => `${promptBase} - Scene ${i + 1}`);
-      }
+  let newImages: string[] = [];
+  if (body.customImageUrl) {
+    newImages = [body.customImageUrl];
+  } else if (body.regenerateImage) {
+    const count = body.numScenes ?? 1;
+    if (!(await checkCredits(session.user.id, count))) {
+      return NextResponse.json({ error: `Need ${count} credits to generate ${count} scenes.` }, { status: 402 });
     }
+    await deductCredits(session.user.id, count);
 
-    const results = await Promise.all(
-      scenePrompts.map(async (scenePrompt, i) => {
-        return generateImage({
-          prompt: scenePrompt,
-          aspectRatio: (body.aspectRatio ?? ad.aspectRatio) as "1:1" | "9:16" | "16:9" | "4:5",
-          quality: "high",
+    try {
+      const promptBase = body.newImagePrompt || ad.visualInstructions || ad.bodyText || ad.headline || brandContext;
+      let scenePrompts = [promptBase];
+
+      if (count > 1) {
+        const { generateText } = await import("@/lib/ai");
+        const expansionRes = await generateText({
+          system: `You are a film director and storyboard artist. Break down the user's creative direction into ${count} distinct, sequential, and visually diverse scenes for a video ad. 
+          Return ONLY a JSON array of strings. Each string must be a detailed image-generation prompt for that specific scene.
+          Maintain style consistency.`,
+          prompt: `Expand this brief into ${count} unique scenes: "${promptBase}"\n\nBrand Context:\n${brandContext}`,
+          maxTokens: 1000,
         });
-      })
-    );
-    newImages = results;
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Image generation failed", details: (err as Error).message },
-      { status: 500 },
-    );
-  }}
 
-// Add new images to the list (keep most recent at start, max 20)
-const currentImages = stringToImages(ad.images);
-const updatedImages = [...newImages, ...currentImages].slice(0, 20);
+        try {
+          const jsonMatch = expansionRes.match(/\[[\s\S]*\]/);
+          const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : expansionRes);
+          if (Array.isArray(parsed)) scenePrompts = parsed.slice(0, count);
+        } catch {
+          scenePrompts = Array.from({ length: count }, (_, i) => `${promptBase} - Scene ${i + 1}`);
+        }
+      }
 
-const updated = await prisma.ad.update({
-  where: { id },
-  data: {
-    headline: body.headline ?? undefined,
-    bodyText: body.bodyText ?? undefined,
-    callToAction: body.callToAction ?? undefined,
-    script: body.script ?? undefined,
-    visualInstructions: body.visualInstructions ?? undefined,
-    scriptFramework: body.scriptFramework ?? undefined,
-    musicGenre: body.musicGenre ?? undefined,
-    aspectRatio: body.aspectRatio ?? undefined,
-    ...(newImages.length > 0 && {
-      images: imagesToString(updatedImages),
-      thumbnailUrl: newImages[0],
-      videoUrl: null,
-    }),
-  },
-});
+      const results = await Promise.all(
+        scenePrompts.map(async (scenePrompt) => {
+          return generateImage({
+            prompt: scenePrompt,
+            aspectRatio: (body.aspectRatio ?? ad.aspectRatio) as "1:1" | "9:16" | "16:9" | "4:5",
+            quality: "high",
+          });
+        })
+      );
+      newImages = results;
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Image generation failed", details: (err as Error).message },
+        { status: 500 },
+      );
+    }
+  }
 
-await logAudit({
-  userId: session.user.id,
-  action: "ad_edited",
-  resource: id,
-  metadata: {
-    regeneratedImages: newImages.length,
-    changed: Object.keys(body).filter((k) => body[k as keyof typeof body] !== undefined),
-  },
-  ...getRequestContext(req),
-});
+  const currentImages = stringToImages(ad.images);
+  const updatedImages = [...newImages, ...currentImages].slice(0, 20);
 
-return NextResponse.json({ 
-  success: true, 
-  ad: { ...updated, images: updatedImages },
-  message: newImages.length > 1 ? `${newImages.length} scenes generated!` : undefined
-});
+  const updated = await prisma.ad.update({
+    where: { id },
+    data: {
+      headline: body.headline ?? undefined,
+      bodyText: body.bodyText ?? undefined,
+      callToAction: body.callToAction ?? undefined,
+      script: body.script ?? undefined,
+      visualInstructions: body.visualInstructions ?? undefined,
+      scriptFramework: body.scriptFramework ?? undefined,
+      musicGenre: body.musicGenre ?? undefined,
+      aspectRatio: body.aspectRatio ?? undefined,
+      ...(newImages.length > 0 && {
+        images: imagesToString(updatedImages),
+        thumbnailUrl: newImages[0],
+        videoUrl: null,
+      }),
+    },
+  });
+
+  await logAudit({
+    userId: session.user.id,
+    action: "ad_edited",
+    resource: id,
+    metadata: {
+      regeneratedImages: newImages.length,
+      changed: Object.keys(body).filter((k) => body[k as keyof typeof body] !== undefined),
+    },
+    ...getRequestContext(req),
+  });
+
+  return NextResponse.json({ 
+    success: true, 
+    ad: { ...updated, images: updatedImages },
+    message: newImages.length > 1 ? `${newImages.length} scenes generated!` : "Changes saved"
+  });
 }
 
 export async function DELETE(
@@ -180,5 +178,3 @@ export async function DELETE(
   });
   return NextResponse.json({ success: true });
 }
-// Force re-build
-re-build

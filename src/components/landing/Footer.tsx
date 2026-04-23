@@ -18,7 +18,8 @@ export function Footer() {
     Legal: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Cookies", href: "/cookies" },
+      { label: "Refund Policy", href: "/terms#refunds" },
+      { label: "Support: support@famousli.com", href: "mailto:support@famousli.com" },
     ],
   };
 

@@ -4,9 +4,11 @@ import { authOptions } from "@/lib/auth";
 import { checkBrandKit } from "@/lib/brandCheck";
 import { prisma } from "@/lib/prisma";
 import { LiveActivityFeed } from "@/components/LiveActivityFeed";
+import { SuccessCelebration } from "@/components/SuccessCelebration";
 import {
   Film, Megaphone, Eye, DollarSign, Sparkles, Sliders,
   Link2, Palette, Gift, Paintbrush, ChevronRight, AlertTriangle, ShieldCheck,
+  Globe,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,7 @@ export default async function DashboardPage() {
   let brandPercentage = 100;
 
   let isAdmin = false;
+  let credits = 0;
   let totalAds = 0;
   let activeCampaigns = 0;
   let impressions = 0;
@@ -31,7 +34,7 @@ export default async function DashboardPage() {
     const [u, adsCount, campaignsCount, adAgg] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { isAdmin: true },
+        select: { isAdmin: true, credits: true },
       }),
       prisma.ad.count({ where: { userId: session.user.id } }),
       prisma.campaign.count({
@@ -43,6 +46,7 @@ export default async function DashboardPage() {
       }),
     ]);
     isAdmin = u?.isAdmin ?? false;
+    credits = u?.credits ?? 0;
     totalAds = adsCount;
     activeCampaigns = campaignsCount;
     impressions = adAgg._sum.impressions ?? 0;
@@ -50,14 +54,22 @@ export default async function DashboardPage() {
   }
 
   const stats = [
-    { label: "Total Ads", value: totalAds.toLocaleString(), icon: Film, color: "text-primary bg-primary/10" },
-    { label: "Active Campaigns", value: activeCampaigns.toLocaleString(), icon: Megaphone, color: "text-secondary bg-secondary/10" },
+    { 
+      label: "Available Credits", 
+      value: credits.toLocaleString(), 
+      icon: Sparkles, 
+      color: "text-primary bg-primary/10",
+      cta: { label: "Create Ad", href: "/create" }
+    },
+    { label: "Total Ads", value: totalAds.toLocaleString(), icon: Film, color: "text-secondary bg-secondary/10" },
     { label: "Impressions", value: impressions.toLocaleString(), icon: Eye, color: "text-accent bg-accent/10" },
-    { label: "Revenue Generated", value: `$${revenueGenerated.toFixed(2)}`, icon: DollarSign, color: "text-success bg-success/10" },
+    { label: "Revenue", value: `$${revenueGenerated.toFixed(0)}`, icon: DollarSign, color: "text-success bg-success/10" },
   ];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <SuccessCelebration />
+      
       {/* Admin shortcut */}
       {isAdmin && (
         <Link
@@ -120,22 +132,13 @@ export default async function DashboardPage() {
         </p>
         <div className="flex flex-wrap gap-3">
           {brandComplete ? (
-            <>
-              <Link
-                href="/create/magic"
-                className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 font-semibold text-primary transition-all hover:-translate-y-0.5 hover:shadow-xl"
-              >
-                <Sparkles className="h-4 w-4" />
-                Magic Mode
-              </Link>
-              <Link
-                href="/create/advanced"
-                className="inline-flex h-12 items-center gap-2 rounded-xl border-2 border-white/30 px-6 font-semibold text-white transition-all hover:bg-white/10"
-              >
-                <Sliders className="h-4 w-4" />
-                Advanced Mode
-              </Link>
-            </>
+            <Link
+              href="/create"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 font-semibold text-primary transition-all hover:-translate-y-0.5 hover:shadow-xl"
+            >
+              <Sparkles className="h-4 w-4" />
+              Create Ad Draft
+            </Link>
           ) : (
             <Link
               href="/settings/brand"
@@ -156,10 +159,18 @@ export default async function DashboardPage() {
               key={stat.label}
               className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm"
             >
-              <div className="mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
+                {stat.cta && (
+                  <Link
+                    href={stat.cta.href}
+                    className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors"
+                  >
+                    {stat.cta.label} →
+                  </Link>
+                )}
               </div>
               <div className="font-heading text-2xl font-bold text-text-primary">
                 {stat.value}
@@ -190,7 +201,7 @@ export default async function DashboardPage() {
               {brandComplete ? "Create your first ad in 30 seconds" : "Complete your Brand Kit first"}
             </p>
             <Link
-              href={brandComplete ? "/create/magic" : "/settings/brand"}
+              href="/create"
               className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition-colors"
             >
               {brandComplete ? "Create ad" : "Set up Brand Kit"}
@@ -203,6 +214,7 @@ export default async function DashboardPage() {
           <div className="space-y-2">
             {[
               { icon: Paintbrush, label: brandComplete ? "Update brand kit" : "Complete brand kit (required)", href: "/settings/brand", highlight: !brandComplete },
+              { icon: Globe, label: "URL-to-Ad Engine", href: "/create", highlight: true },
               { icon: Link2, label: "Connect social accounts", href: "/connect", highlight: false },
               { icon: Palette, label: "Browse templates", href: "/templates", highlight: false },
               { icon: Gift, label: "Invite friends, earn 20%", href: "/referral", highlight: false },
