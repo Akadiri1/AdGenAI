@@ -29,8 +29,6 @@ export function StoryboardClient({ credits }: { credits: number }) {
   const [slides, setSlides] = useState<Slide[]>([
     { id: crypto.randomUUID(), imageUrl: "", prompt: "", duration: 5 },
   ]);
-  const [headline, setHeadline] = useState("");
-  const [callToAction, setCallToAction] = useState("");
   const [musicGenre, setMusicGenre] = useState("cinematic");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "1:1" | "16:9" | "4:5">("9:16");
   const [generating, setGenerating] = useState(false);

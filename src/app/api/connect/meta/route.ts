@@ -16,8 +16,11 @@ export async function GET(req: Request) {
     );
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).trim().replace(/\/$/, "");
   const redirectUri = `${baseUrl}/api/connect/meta/callback`;
+  
+  console.log("[MetaOAuth] Sending redirect_uri:", redirectUri);
+
   const state = crypto.randomBytes(16).toString("hex") + ":" + session.user.id;
 
   const res = NextResponse.redirect(META_AUTH_URL(redirectUri, state));

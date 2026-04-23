@@ -72,7 +72,7 @@ export function StudioClient({
   const [ad, setAd] = useState(initialAd);
   const [allVariants, setAllVariants] = useState(variants);
   const hasVariants = allVariants.length > 1;
-  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "actors" | "music" | "settings">("copy");
+  const [activeTab, setActiveTab] = useState<"copy" | "visuals" | "actors">("copy");
   const [saving, setSaving] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -294,8 +294,6 @@ export function StudioClient({
     { key: "copy" as const, label: "Copy", icon: Type },
     { key: "visuals" as const, label: "Scenes", icon: Film },
     { key: "actors" as const, label: "Actors", icon: Users },
-    { key: "music" as const, label: "Music", icon: Music },
-    { key: "settings" as const, label: "Settings", icon: Palette },
   ];
 
   const videoCost = 2;
@@ -439,21 +437,7 @@ export function StudioClient({
                   </div>
                 )}
 
-                {/* Real-time Headline/CTA preview only when video/captions are off */}
-                {!captionsOn && ad.headline && !generatingVideo && (
-                  <div className="absolute left-0 right-0 top-6 px-4 text-center z-10">
-                    <span className="inline-block rounded-lg bg-black/70 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10 shadow-xl">
-                      {ad.headline}
-                    </span>
-                  </div>
-                )}
-                {!captionsOn && ad.callToAction && !generatingVideo && (
-                  <div className="absolute bottom-6 left-0 right-0 px-4 text-center z-10">
-                    <span className="inline-block rounded-lg px-4 py-2 text-xs font-bold text-white shadow-2xl border border-white/10" style={{ backgroundColor: brandColors.primary }}>
-                      {ad.callToAction}
-                    </span>
-                  </div>
-                )}
+                {/* Real-time Headline/CTA preview removed */}
                 {!isPaid && <div className="absolute bottom-2 right-2"><Watermark /></div>}
               </div>
 
@@ -585,16 +569,6 @@ export function StudioClient({
             <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
               <div className="space-y-4">
                 <AIRephraseField
-                  label="Headline (Text Overlay)"
-                  hint={`${(ad.headline ?? "").length}/80`}
-                  value={ad.headline ?? ""}
-                  onChange={(v) => update("headline", v)}
-                  maxLength={80}
-                  placeholder="Appears at the top..."
-                  fieldType="headline"
-                  businessContext={ad.bodyText ?? undefined}
-                />
-                <AIRephraseField
                   kind="textarea"
                   label="Script for Voiceover"
                   hint={`${(ad.script ?? "").length}/800`}
@@ -646,15 +620,6 @@ export function StudioClient({
                     </div>
                   )}
                 </div>
-
-                <AIRephraseField
-                  label="Call to Action (Button)"
-                  value={ad.callToAction ?? ""}
-                  onChange={(v) => update("callToAction", v)}
-                  maxLength={50}
-                  placeholder="Shop now"
-                  fieldType="cta"
-                />
               </div>
             </div>
           )}
@@ -798,57 +763,6 @@ export function StudioClient({
                   })}
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === "music" && (activeTab === "music" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-4">
-              <h3 className="font-heading font-bold text-text-primary">Background Music</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {MUSIC_OPTIONS.map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => update("musicGenre", g === "none" ? null : g)}
-                    className={`rounded-xl border-2 px-3 py-2.5 text-[10px] sm:text-xs font-semibold capitalize transition-all ${
-                      (ad.musicGenre === g) || (g === "none" && !ad.musicGenre)
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-black/10 bg-white"
-                    }`}
-                  >
-                    {g.replace(/-/g, " ")}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {activeTab === "settings" && (
-            <div className="rounded-2xl border border-black/5 bg-white p-4 sm:p-6 shadow-sm space-y-6">
-              <div className="flex items-center gap-2">
-                <Copy className="h-5 w-5 text-primary" />
-                <h3 className="font-heading font-bold text-text-primary">A/B Testing (Batch Generate)</h3>
-              </div>
-              <p className="text-xs text-text-secondary">Generate up to 10 variants to find the winning combination.</p>
-
-              <div className="flex items-center justify-between border-t border-black/5 pt-6">
-                <span className="text-xs font-bold text-text-primary">{variantCount} Variants</span>
-                <input
-                  type="range"
-                  min={2}
-                  max={isPaid ? 10 : 3}
-                  value={variantCount}
-                  onChange={(e) => setVariantCount(Number(e.target.value))}
-                  className="w-32 accent-primary"
-                />
-              </div>
-
-              <button
-                onClick={generateVariants}
-                disabled={generatingVariants}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-white shadow-lg shadow-primary/20"
-              >
-                {generatingVariants ? "Creating Batch..." : `Generate ${variantCount} Variants (${variantCount} credits)`}
-              </button>
             </div>
           )}
         </div>

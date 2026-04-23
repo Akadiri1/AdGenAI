@@ -277,20 +277,6 @@ export function AdDetailClient({
                 <div className="flex h-full items-center justify-center"><Film className="h-10 w-10 text-text-secondary" /></div>
               )}
 
-              {ad.headline && (
-                <div className="absolute left-0 right-0 top-4 px-4 text-center">
-                  <div className="inline-block rounded-lg bg-black/60 px-3 py-1.5 font-heading font-bold text-white backdrop-blur-sm">
-                    {ad.headline}
-                  </div>
-                </div>
-              )}
-              {ad.callToAction && (
-                <div className="absolute bottom-4 left-0 right-0 px-4 text-center">
-                  <div className="inline-block rounded-lg bg-primary px-4 py-2 font-heading text-sm font-bold text-white shadow-lg">
-                    {ad.callToAction}
-                  </div>
-                </div>
-              )}
               {!canEdit && (
                 <div className="absolute bottom-2 right-2">
                   <Watermark />
@@ -390,26 +376,12 @@ export function AdDetailClient({
             {editingCopy && canEdit ? (
               <div className="space-y-3 text-sm">
                 <PolishedField
-                  label="Headline"
-                  value={draft.headline}
-                  onChange={(v) => setDraft({ ...draft, headline: v })}
-                  fieldType="headline"
-                  maxLength={100}
-                />
-                <PolishedField
                   label="Body"
                   value={draft.bodyText}
                   onChange={(v) => setDraft({ ...draft, bodyText: v })}
                   fieldType="body"
                   multiline rows={3}
                   maxLength={500}
-                />
-                <PolishedField
-                  label="CTA"
-                  value={draft.callToAction}
-                  onChange={(v) => setDraft({ ...draft, callToAction: v })}
-                  fieldType="cta"
-                  maxLength={50}
                 />
                 <div className="flex gap-2 pt-1">
                   <button
@@ -430,16 +402,8 @@ export function AdDetailClient({
             ) : (
               <div className="space-y-3 text-sm">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">Headline</div>
-                  <div className="text-text-primary">{ad.headline ?? "—"}</div>
-                </div>
-                <div>
                   <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">Body</div>
                   <div className="text-text-primary">{ad.bodyText ?? "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1">CTA</div>
-                  <div className="text-text-primary">{ad.callToAction ?? "—"}</div>
                 </div>
               </div>
             )}

@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/connect?error=missing_code", req.url));
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, "");
   const redirectUri = `${baseUrl}/api/connect/meta/callback`;
 
   try {
