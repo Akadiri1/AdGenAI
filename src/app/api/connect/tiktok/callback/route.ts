@@ -12,7 +12,8 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   if (!code) return NextResponse.redirect(new URL("/connect?error=invalid", req.url));
 
-  const redirectUri = `${url.origin}/api/connect/tiktok/callback`;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const redirectUri = `${baseUrl}/api/connect/tiktok/callback`;
   const { accessToken, refreshToken, openId, expiresIn } = await exchangeTikTokCode(code, redirectUri);
 
   await prisma.socialAccount.upsert({

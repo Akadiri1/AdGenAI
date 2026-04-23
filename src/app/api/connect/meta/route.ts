@@ -16,8 +16,8 @@ export async function GET(req: Request) {
     );
   }
 
-  const url = new URL(req.url);
-  const redirectUri = `${url.origin}/api/connect/meta/callback`;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const redirectUri = `${baseUrl}/api/connect/meta/callback`;
   const state = crypto.randomBytes(16).toString("hex") + ":" + session.user.id;
 
   const res = NextResponse.redirect(META_AUTH_URL(redirectUri, state));

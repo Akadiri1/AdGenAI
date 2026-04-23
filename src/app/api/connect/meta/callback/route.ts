@@ -22,7 +22,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/connect?error=missing_code", req.url));
   }
 
-  const redirectUri = `${url.origin}/api/connect/meta/callback`;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const redirectUri = `${baseUrl}/api/connect/meta/callback`;
 
   try {
     const { accessToken, expiresIn, igUserId, username } = await exchangeMetaCode(code, redirectUri);

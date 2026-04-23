@@ -8,8 +8,8 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const url = new URL(req.url);
-  const redirectUri = `${url.origin}/api/connect/tiktok/callback`;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const redirectUri = `${baseUrl}/api/connect/tiktok/callback`;
   const state = crypto.randomBytes(16).toString("hex") + ":" + session.user.id;
 
   const res = NextResponse.redirect(TIKTOK_AUTH_URL(redirectUri, state));
