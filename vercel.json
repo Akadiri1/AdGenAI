@@ -3,19 +3,6 @@
   "framework": "nextjs",
   "buildCommand": "npx prisma generate && next build",
   "regions": ["iad1"],
-  "functions": {
-    "src/app/api/generate/magic/route.ts": { "maxDuration": 60 },
-    "src/app/api/generate/advanced/route.ts": { "maxDuration": 60 },
-    "src/app/api/generate/avatar/route.ts": { "maxDuration": 60 },
-    "src/app/api/generate/storyboard/route.ts": { "maxDuration": 60 },
-    "src/app/api/generate/variants/route.ts": { "maxDuration": 60 },
-    "src/app/api/ads/[id]/video/route.ts": { "maxDuration": 60 },
-    "src/app/api/ai/rephrase/route.ts": { "maxDuration": 30 },
-    "src/app/api/ai/ugc-script/route.ts": { "maxDuration": 30 },
-    "src/app/api/tools/hook-generator/route.ts": { "maxDuration": 30 },
-    "src/app/api/billing/webhook/route.ts": { "maxDuration": 60 },
-    "src/app/api/billing/paystack/webhook/route.ts": { "maxDuration": 60 }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
