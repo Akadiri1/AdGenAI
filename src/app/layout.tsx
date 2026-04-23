@@ -38,6 +38,10 @@ export const viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://famousli.com"),
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.jpg",
+    apple: "/apple-icon.jpg",
+  },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Famousli" },
   title: {
     default: "Famousli — Create Professional Ads in 30 Seconds with AI",
