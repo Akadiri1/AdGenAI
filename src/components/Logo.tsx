@@ -6,7 +6,7 @@
 type Size = "sm" | "md" | "lg" | "xl";
 
 const SIZES: Record<Size, { box: string; text: string }> = {
-  sm: { box: "h-7 w-auto", text: "text-base" },
+  sm: { box: "h-5 w-auto", text: "text-sm" },
   md: { box: "h-9 w-auto", text: "text-xl" },
   lg: { box: "h-12 w-auto", text: "text-2xl" },
   xl: { box: "h-16 w-auto", text: "text-4xl" },

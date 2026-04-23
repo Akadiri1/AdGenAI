@@ -11,8 +11,9 @@ export async function GET(req: Request) {
 
   const check = await canConnectSocialAccount(session.user.id, "INSTAGRAM");
   if (!check.allowed) {
+    const url = new URL(req.url);
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(check.reason ?? "Limit reached")}`, req.url),
+      new URL(`/connect?error=${encodeURIComponent(check.reason ?? "Limit reached")}`, url.origin),
     );
   }
 

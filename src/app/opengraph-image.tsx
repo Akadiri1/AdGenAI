@@ -26,25 +26,21 @@ export default async function OGImage() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 16,
+            gap: 20,
             marginBottom: 32,
           }}
         >
-          {/* 4-shape geometric logo mark inline */}
-          <div
+          {/* Brand Logo */}
+          <img
+            src={`${process.env.NEXT_PUBLIC_APP_URL || "https://famousli.vercel.app"}/logo.jpg`}
+            alt="Logo"
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              width: 68,
-              gap: 4,
+              width: 80,
+              height: 80,
+              borderRadius: 40,
             }}
-          >
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#FF6B35" }} />
-            <div style={{ width: 32, height: 32, borderRadius: "8px 10px 10px 8px", background: "#F39C12" }} />
-            <div style={{ width: 32, height: 32, borderRadius: "8px 8px 8px 10px", background: "#A855F7" }} />
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#2EC4B6" }} />
-          </div>
-          <div style={{ fontSize: 56, fontWeight: 900, color: "white" }}>Famousli</div>
+          />
+          <div style={{ fontSize: 60, fontWeight: 900, color: "white" }}>Famousli</div>
         </div>
         <div
           style={{

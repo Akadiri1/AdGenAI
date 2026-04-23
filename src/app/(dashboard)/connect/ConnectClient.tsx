@@ -5,6 +5,7 @@ import {
   LinkedInIcon, WhatsAppIcon, YouTubeIcon, PinterestIcon, SnapchatIcon,
 } from "@/components/icons/SocialIcons";
 import { ExternalLink, Clock, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 
 type Account = {
   id: string;
@@ -59,12 +60,15 @@ export function ConnectClient({
   accounts,
   success,
   error,
+  userPlan,
 }: {
   accounts: Account[];
   success: string | null;
   error: string | null;
+  userPlan: string;
 }) {
   const connectedPlatforms = new Set(accounts.filter((a) => a.isActive).map((a) => a.platform));
+  const isPro = ["PRO", "BUSINESS", "ENTERPRISE"].includes(userPlan);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -115,20 +119,29 @@ export function ConnectClient({
                     </div>
                     <div>
                       <h3 className="font-heading font-bold text-text-primary">{p.name}</h3>
-                      {connected && (
+                      {connected ? (
                         <div className="flex items-center gap-1 text-xs text-success font-semibold">
                           <CheckCircle2 className="h-3 w-3" />
                           Connected
+                        </div>
+                      ) : !isPro && (
+                        <div className="flex items-center gap-1 text-[10px] text-warning font-bold uppercase tracking-wider">
+                          <Clock className="h-3 w-3" />
+                          Pro Only
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {!p.available && (
+                  {!p.available ? (
                     <span className="flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-warning">
                       <Clock className="h-3 w-3" />
                       Soon
                     </span>
+                  ) : !isPro && (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/5 text-text-secondary">
+                      <Clock className="h-3.5 w-3.5" />
+                    </div>
                   )}
                 </div>
 
@@ -155,7 +168,15 @@ export function ConnectClient({
                   </div>
                 )}
 
-                {p.available ? (
+                {!p.available ? (
+                  <button
+                    disabled
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border-2 border-black/5 bg-bg-secondary text-sm font-semibold text-text-secondary cursor-not-allowed"
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    Coming soon
+                  </button>
+                ) : isPro ? (
                   <a
                     href={p.href}
                     className={`flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all ${
@@ -168,13 +189,12 @@ export function ConnectClient({
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 ) : (
-                  <button
-                    disabled
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border-2 border-black/5 bg-bg-secondary text-sm font-semibold text-text-secondary cursor-not-allowed"
+                  <Link
+                    href="/settings/billing"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border-2 border-primary/20 bg-primary/5 text-sm font-bold text-primary hover:bg-primary/10 transition-all"
                   >
-                    <Clock className="h-3.5 w-3.5" />
-                    Coming soon
-                  </button>
+                    Upgrade to Pro
+                  </Link>
                 )}
               </div>
             </div>

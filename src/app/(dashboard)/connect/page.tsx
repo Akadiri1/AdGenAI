@@ -13,6 +13,13 @@ export default async function ConnectPage({
   const session = await getServerSession(authOptions);
   const params = await searchParams;
 
+  const user = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { plan: true },
+      })
+    : null;
+
   const accounts = session?.user?.id
     ? await prisma.socialAccount.findMany({
         where: { userId: session.user.id },
@@ -25,6 +32,7 @@ export default async function ConnectPage({
       accounts={JSON.parse(JSON.stringify(accounts))}
       success={params.success ?? null}
       error={params.error ?? null}
+      userPlan={user?.plan ?? "FREE"}
     />
   );
 }

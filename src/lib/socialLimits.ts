@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 /**
- * Free users can connect only 1 social account total (+ WhatsApp).
- * PRO/BUSINESS get unlimited.
+ * Only PRO, BUSINESS, and ENTERPRISE users can connect social accounts.
  */
 export async function canConnectSocialAccount(
   userId: string,
@@ -14,22 +13,14 @@ export async function canConnectSocialAccount(
   });
   if (!user) return { allowed: false, reason: "User not found" };
 
-  const paidPlans = ["STARTER", "PRO", "BUSINESS", "ENTERPRISE"];
-  if (paidPlans.includes(user.plan)) return { allowed: true };
+  const allowedPlans = ["PRO", "BUSINESS", "ENTERPRISE"];
+  if (allowedPlans.includes(user.plan)) return { allowed: true };
 
-  // Free users: allow WhatsApp always, limit other platforms to 1 total
-  if (platform === "WHATSAPP") return { allowed: true };
-
-  const existingCount = await prisma.socialAccount.count({
-    where: { userId, isActive: true, platform: { not: "WHATSAPP" } },
-  });
-
-  if (existingCount >= 1) {
-    return {
-      allowed: false,
-      reason: "Free plan allows 1 connected account. Upgrade to Pro to connect more.",
-    };
-  }
-
-  return { allowed: true };
+  // Allow WhatsApp for all paid plans if it was previously allowed, 
+  // but following the strict rule: only Pro+
+  
+  return {
+    allowed: false,
+    reason: "Social account connection is a Pro feature. Upgrade to connect your accounts.",
+  };
 }
