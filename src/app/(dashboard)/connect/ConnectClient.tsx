@@ -41,7 +41,7 @@ const PROVIDERS: ProviderConfig[] = [
     icon: FacebookIcon,
     description: "Publish to your Facebook Pages with photos and videos",
     href: "/api/connect/facebook",
-    available: false,
+    available: true,
     bgClass: "from-blue-600 to-blue-700",
   },
   {
@@ -50,7 +50,7 @@ const PROVIDERS: ProviderConfig[] = [
     icon: TikTokIcon,
     description: "Upload short-form video ads directly to TikTok",
     href: "/api/connect/tiktok",
-    available: false,
+    available: true,
     bgClass: "from-gray-900 via-gray-800 to-pink-500",
   },
 ];
