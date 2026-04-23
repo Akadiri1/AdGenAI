@@ -12,7 +12,7 @@ import { checkBrandKit } from "@/lib/brandCheck";
 import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const PlatformEnum = z.enum([
   "FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE",

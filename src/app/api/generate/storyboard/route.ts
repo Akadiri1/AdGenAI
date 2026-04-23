@@ -13,7 +13,7 @@ import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { z } from "zod";
 import fs from "fs";
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const slideSchema = z.object({
   imageUrl: z.string().url(),

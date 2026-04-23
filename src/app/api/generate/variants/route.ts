@@ -9,7 +9,7 @@ import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { anthropic, CLAUDE_MODEL } from "@/lib/claude";
 import { z } from "zod";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   sourceAdId: z.string(),

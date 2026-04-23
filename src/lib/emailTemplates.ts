@@ -67,11 +67,17 @@ function emailShell(opts: {
             <td align="center" style="padding:40px 32px 24px 32px;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="padding-right:10px;vertical-align:middle;">
-                    <div style="width:42px;height:42px;background:linear-gradient(135deg,${BRAND.primary},${BRAND.accent},${BRAND.secondary});border-radius:11px;text-align:center;line-height:42px;color:${BRAND.white};font-weight:900;font-size:22px;">F</div>
-                  </td>
                   <td style="vertical-align:middle;">
-                    <span style="font-size:24px;font-weight:800;letter-spacing:-0.5px;color:${BRAND.dark};">Famous<span style="background:linear-gradient(135deg,${BRAND.primary},${BRAND.accent},${BRAND.secondary});-webkit-background-clip:text;background-clip:text;color:transparent;">li</span></span>
+                    <img 
+                      src="${process.env.NEXT_PUBLIC_APP_URL || "https://famousli.vercel.app"}/logo.jpg" 
+                      alt="Famousli" 
+                      width="48" 
+                      height="48" 
+                      style="display:block;width:48px;height:48px;border-radius:24px;"
+                    />
+                  </td>
+                  <td style="padding-left:12px;vertical-align:middle;">
+                    <span style="font-size:24px;font-weight:800;letter-spacing:-0.5px;color:${BRAND.dark};">Famousli</span>
                   </td>
                 </tr>
               </table>

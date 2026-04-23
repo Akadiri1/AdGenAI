@@ -17,7 +17,7 @@ import { checkCredits, deductCredits, addCredits } from "@/lib/credits";
 import { z } from "zod";
 import fs from "fs";
 
-export const maxDuration = 600;
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   duration: z.enum(["6s", "15s", "30s", "60s", "3m"]).default("15s"),

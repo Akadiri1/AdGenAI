@@ -12,7 +12,7 @@ import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { logAudit, getRequestContext } from "@/lib/audit";
 import { z } from "zod";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   avatarId: z.string(),
