@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
+import { Logo } from "@/components/Logo";
 
 function SignupInner() {
   const params = useSearchParams();
@@ -33,11 +34,8 @@ function SignupInner() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-secondary/30">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-12">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-bg">
-            <span className="text-lg font-bold text-white">A</span>
-          </div>
-          <span className="font-heading text-2xl font-bold text-text-primary">Famousli</span>
+        <Link href="/" className="mb-8 flex items-center justify-center">
+          <Logo size="lg" />
         </Link>
 
         <div className="rounded-3xl border border-black/5 bg-white p-8 shadow-xl">
