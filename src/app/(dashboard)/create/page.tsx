@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkBrandKit } from "@/lib/brandCheck";
 import Link from "next/link";
-import { EcommerceCreator } from "./EcommerceCreator";
+import { UGCCreatorClient } from "./ugc/UGCCreatorClient";
 import { canGenerateVideo, type PlanKey } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function CreatePage() {
   const isPaid = canGenerateVideo(plan);
   const isFree = plan === "FREE";
 
-  // Brand kit only required for paid users — free users just need a product name
+  // Brand kit only required for paid users
   if (isPaid) {
     const brandCheck = await checkBrandKit(session.user.id);
     if (!brandCheck.complete) {
@@ -41,5 +41,5 @@ export default async function CreatePage() {
     }
   }
 
-  return <EcommerceCreator isPaid={isPaid} isFree={isFree} />;
+  return <UGCCreatorClient isFree={isFree} />;
 }

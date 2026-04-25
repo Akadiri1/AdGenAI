@@ -5,8 +5,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const result = await prisma.user.updateMany({
-  data: { plan: "PRO", credits: 100 },
+  data: { plan: "PRO", credits: 500 },
 });
 
-console.log(`Upgraded ${result.count} user(s) to PRO with 100 credits.`);
+console.log(`Upgraded ${result.count} user(s) to PRO with 500 credits.`);
+console.log("(A 15s video costs ~24 credits, 30s ~45, 60s ~90.)");
 await prisma.$disconnect();

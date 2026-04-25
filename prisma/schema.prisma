@@ -170,7 +170,9 @@ model Ad {
   actor           Actor?            @relation(fields: [actorId], references: [id])
 
   images          String?           // JSON array as string (composited scene images)
-  videoUrl        String?
+  videoUrl        String?           // FINAL stitched + lipsynced ad MP4
+  finalVideoStatus String?          // null | "GENERATING" | "READY" | "FAILED"
+  finalVideoError  String?          // Last error message if finalization failed
   thumbnailUrl    String?
   musicTrack      String?
   musicGenre      String?
@@ -220,7 +222,8 @@ model Scene {
 
   // Outputs
   compositeImageUrl String? // Image after Nano Banana composites actor + product
-  videoClipUrl    String?   // Final 5-10s clip from Kling
+  videoClipUrl    String?   // Raw 5-10s clip from Kling (silent)
+  voiceoverUrl    String?   // TTS audio for this scene's spokenLine
   klingTaskId     String?   // Async job tracking
 
   // User edits (instruction-based)

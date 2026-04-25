@@ -155,8 +155,67 @@ export async function lipSyncVideo(params: {
       audio: params.audioUrl,
     },
   );
-  const output = await waitForPrediction(prediction.id, 180_000);
+  const output = await waitForPrediction(prediction.id, 240_000);
   const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
   if (typeof url !== "string") throw new Error("Lip-sync produced no URL");
+  return url;
+}
+
+// =====================================================================
+// TTS — Kokoro 82M (multi-voice, fast, ~$0.0005 per call)
+// =====================================================================
+export async function generateVoiceover(params: {
+  text: string;
+  voice?: "af_bella" | "af_heart" | "af_sarah" | "af_alloy" | "am_adam" | "am_michael" | "am_echo" | "bf_emma" | "bm_george";
+  speed?: number;
+}): Promise<string> {
+  if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
+
+  const prediction = await createPrediction(
+    "jaaari/kokoro-82m",
+    undefined,
+    {
+      text: params.text,
+      voice: params.voice ?? "af_bella",
+      speed: params.speed ?? 1.0,
+    },
+  );
+  const output = await waitForPrediction(prediction.id, 120_000);
+  const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
+  if (typeof url !== "string") throw new Error("TTS produced no URL");
+  return url;
+}
+
+/** Pick a Kokoro voice ID that roughly matches the actor's gender. */
+export function pickVoiceForActor(gender: string | null | undefined): "af_bella" | "am_michael" {
+  return gender === "male" ? "am_michael" : "af_bella";
+}
+
+// =====================================================================
+// Video concat — stitches N clips into one MP4
+// Uses lucataco/ffmpeg-concat which accepts an array of video URLs.
+// =====================================================================
+export async function concatVideos(params: {
+  videoUrls: string[];
+  audioUrl?: string; // optional voiceover layered on top of the concat
+}): Promise<string> {
+  if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
+  if (params.videoUrls.length === 0) throw new Error("No videos to concat");
+  if (params.videoUrls.length === 1 && !params.audioUrl) {
+    // Trivial — just return the single clip
+    return params.videoUrls[0];
+  }
+
+  const prediction = await createPrediction(
+    "lucataco/ffmpeg-concat",
+    undefined,
+    {
+      videos: params.videoUrls,
+      ...(params.audioUrl && { audio: params.audioUrl }),
+    },
+  );
+  const output = await waitForPrediction(prediction.id, 300_000);
+  const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
+  if (typeof url !== "string") throw new Error("Concat produced no URL");
   return url;
 }

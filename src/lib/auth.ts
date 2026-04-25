@@ -36,20 +36,31 @@ export const authOptions: NextAuthOptions = {
               },
             },
             from: process.env.EMAIL_FROM ?? process.env.SMTP_USER,
-            // Custom branded magic link email
             async sendVerificationRequest({ identifier: email, url }) {
-              // Detect if this is a new user (no row in DB yet)
-              const existing = await prisma.user.findUnique({
-                where: { email },
-                select: { id: true },
-              });
-              const { subject, html, text } = magicLinkEmail({
-                url,
-                host: new URL(url).host,
-                isNewUser: !existing,
-              });
-              const ok = await sendEmail({ to: email, subject, html, text });
-              if (!ok) throw new Error("Failed to send magic link email");
+              const isDev = process.env.NODE_ENV !== "production";
+              if (isDev) {
+                // Always log to terminal in dev so you can copy-paste even if SMTP fails
+                console.log("\n========================================");
+                console.log("MAGIC LINK FOR:", email);
+                console.log(url);
+                console.log("========================================\n");
+              }
+              try {
+                const existing = await prisma.user.findUnique({
+                  where: { email },
+                  select: { id: true },
+                });
+                const { subject, html, text } = magicLinkEmail({
+                  url,
+                  host: new URL(url).host,
+                  isNewUser: !existing,
+                });
+                const ok = await sendEmail({ to: email, subject, html, text });
+                if (!ok && !isDev) throw new Error("Failed to send magic link email");
+              } catch (err) {
+                if (!isDev) throw err;
+                console.warn("[auth] SMTP failed in dev — use the link above to sign in:", (err as Error).message);
+              }
             },
           }),
         ]
@@ -60,7 +71,21 @@ export const authOptions: NextAuthOptions = {
               from: process.env.EMAIL_FROM ?? "noreply@famousli.com",
             }),
           ]
-        : []),
+        : process.env.NODE_ENV !== "production"
+          ? [
+              // Dev fallback: no SMTP configured — print the link to the terminal
+              EmailProvider({
+                server: { host: "localhost", port: 25, auth: { user: "dev", pass: "dev" } },
+                from: "dev@localhost",
+                async sendVerificationRequest({ identifier: email, url }) {
+                  console.log("\n========================================");
+                  console.log("MAGIC LINK FOR:", email);
+                  console.log(url);
+                  console.log("========================================\n");
+                },
+              }),
+            ]
+          : []),
   ],
   callbacks: {
     async jwt({ token, user }) {

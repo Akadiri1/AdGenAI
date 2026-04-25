@@ -22,6 +22,11 @@ const patchSchema = z.object({
   newImagePrompt: z.string().max(1000).optional(),
   numScenes: z.number().min(1).max(10).optional(),
   customImageUrl: z.string().url().optional(),
+  // Ecommerce brief fields (only editable while DRAFT)
+  productName: z.string().max(120).nullable().optional(),
+  productOffer: z.string().max(200).nullable().optional(),
+  productImageUrls: z.array(z.string().url()).max(20).optional(),
+  actorId: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -116,6 +121,27 @@ export async function PATCH(
   const currentImages = stringToImages(ad.images);
   const updatedImages = [...newImages, ...currentImages].slice(0, 20);
 
+  // Ecommerce brief fields — only allowed while ad is still a DRAFT
+  const briefFieldsProvided =
+    body.productName !== undefined ||
+    body.productOffer !== undefined ||
+    body.productImageUrls !== undefined ||
+    body.actorId !== undefined;
+  if (briefFieldsProvided && ad.status !== "DRAFT") {
+    return NextResponse.json({
+      error: "Brief fields (product / actor / images) can only be edited while the ad is a DRAFT",
+    }, { status: 409 });
+  }
+
+  // If they're swapping the actor, validate access
+  if (body.actorId) {
+    const actorRow = await prisma.actor.findUnique({ where: { id: body.actorId } });
+    if (!actorRow) return NextResponse.json({ error: "Actor not found" }, { status: 404 });
+    if (!actorRow.isStock && actorRow.userId !== session.user.id) {
+      return NextResponse.json({ error: "Actor not accessible" }, { status: 403 });
+    }
+  }
+
   const updated = await prisma.ad.update({
     where: { id },
     data: {
@@ -127,6 +153,12 @@ export async function PATCH(
       scriptFramework: body.scriptFramework ?? undefined,
       musicGenre: body.musicGenre ?? undefined,
       aspectRatio: body.aspectRatio ?? undefined,
+      productName: body.productName ?? undefined,
+      productOffer: body.productOffer ?? undefined,
+      ...(body.productImageUrls !== undefined && {
+        productImages: body.productImageUrls.length > 0 ? imagesToString(body.productImageUrls) : null,
+      }),
+      ...(body.actorId !== undefined && { actorId: body.actorId }),
       ...(newImages.length > 0 && {
         images: imagesToString(updatedImages),
         thumbnailUrl: newImages[0],

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Play, Loader2, Wand2, Check, AlertCircle, RotateCcw,
-  Image as ImageIcon, Mic, Lightbulb,
+  Image as ImageIcon, Mic, Lightbulb, Pencil,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
@@ -38,12 +38,19 @@ export function SceneEditor({ adId }: { adId: string }) {
   const { refreshCredits } = useCredits();
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adReady, setAdReady] = useState(false);
+  const [adStatus, setAdStatus] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<"direct" | "instruction">("instruction");
+  const [draftPrompt, setDraftPrompt] = useState("");
+  const [draftSpokenLine, setDraftSpokenLine] = useState("");
   const [instruction, setInstruction] = useState("");
   const [refining, setRefining] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [starting, setStarting] = useState(false);
 
-  // Poll scenes — every 5s while any scene is still generating
+  const isDraft = adStatus === "DRAFT";
+
+  // Poll scenes — every 5s while any scene is generating; less often when DRAFT/READY
   useEffect(() => {
     let cancelled = false;
     async function tick() {
@@ -52,7 +59,7 @@ export function SceneEditor({ adId }: { adId: string }) {
         const data = await res.json();
         if (cancelled) return;
         setScenes(data.scenes ?? []);
-        setAdReady(data.adStatus === "READY");
+        setAdStatus(data.adStatus ?? "");
       } catch { /* keep polling */ }
       finally {
         setLoading(false);
@@ -62,6 +69,50 @@ export function SceneEditor({ adId }: { adId: string }) {
     const id = setInterval(tick, 5000);
     return () => { cancelled = true; clearInterval(id); };
   }, [adId]);
+
+  function openEditor(scene: Scene, mode: "direct" | "instruction") {
+    setEditingId(scene.id);
+    setEditMode(mode);
+    setDraftPrompt(scene.prompt);
+    setDraftSpokenLine(scene.spokenLine ?? "");
+    setInstruction(mode === "instruction" ? (scene.editInstructions ?? "") : "");
+  }
+
+  function closeEditor() {
+    setEditingId(null);
+    setInstruction("");
+    setDraftPrompt("");
+    setDraftSpokenLine("");
+  }
+
+  async function saveDirectEdit(sceneId: string) {
+    if (!draftPrompt.trim()) {
+      error("Visual prompt can't be empty");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/ads/${adId}/scenes/${sceneId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: draftPrompt,
+          spokenLine: draftSpokenLine || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      setScenes((prev) => prev.map((s) => s.id === sceneId
+        ? { ...s, prompt: data.scene.prompt, spokenLine: data.scene.spokenLine }
+        : s));
+      success("Scene updated");
+      closeEditor();
+    } catch (err) {
+      error((err as Error).message);
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function refine(sceneId: string) {
     if (!instruction.trim()) {
@@ -78,13 +129,29 @@ export function SceneEditor({ adId }: { adId: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Refine failed");
       success("Re-rendering with your instruction");
-      setEditingId(null);
-      setInstruction("");
+      closeEditor();
       refreshCredits();
     } catch (err) {
       error((err as Error).message);
     } finally {
       setRefining(false);
+    }
+  }
+
+  async function startGeneration() {
+    if (!confirm("Start generation? This will charge credits and kick off video rendering for every scene.")) return;
+    setStarting(true);
+    try {
+      const res = await fetch(`/api/ads/${adId}/start-generation`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Start failed");
+      success(`Generating ${data.sceneCount} scenes — ${data.creditsCharged} credits charged`);
+      setAdStatus("GENERATING");
+      refreshCredits();
+    } catch (err) {
+      error((err as Error).message);
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -96,9 +163,36 @@ export function SceneEditor({ adId }: { adId: string }) {
     return <p className="py-12 text-center text-sm text-text-secondary">No scenes yet.</p>;
   }
 
+  // Estimated cost for DRAFT confirm CTA
+  const totalSeconds = scenes.reduce((sum, s) => sum + s.durationSeconds, 0);
+  const estimatedCost = totalSeconds + scenes.length * 3;
+
   return (
     <div className="space-y-4">
-      {!adReady && (
+      {/* Confirm & Start CTA — sticky at top of scene list when DRAFT */}
+      {isDraft && (
+        <div className="sticky top-2 z-20 rounded-2xl border-2 border-primary/30 bg-gradient-to-r from-primary/10 to-warning/10 p-4 shadow-lg backdrop-blur">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-text-primary">
+              <span className="font-heading font-bold">Ready when you are.</span>
+              <span className="text-text-secondary"> Tweak any scene prompt below, then hit start.</span>
+            </div>
+            <button
+              type="button"
+              onClick={startGeneration}
+              disabled={starting}
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50 whitespace-nowrap"
+            >
+              {starting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</>
+              ) : (
+                <><Play className="h-4 w-4" /> Confirm & Start ({estimatedCost} credits)</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+      {adStatus === "GENERATING" && (
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-accent">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -110,7 +204,9 @@ export function SceneEditor({ adId }: { adId: string }) {
         </div>
       )}
 
-      {scenes.map((s) => (
+      {scenes.map((s) => {
+        const isPending = s.status === "PENDING";
+        return (
         <div key={s.id} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[200px_1fr]">
             {/* Preview */}
@@ -131,8 +227,11 @@ export function SceneEditor({ adId }: { adId: string }) {
                   )}
                 </>
               ) : (
-                <div className="flex h-full items-center justify-center">
-                  <ImageIcon className="h-8 w-8 text-text-secondary" />
+                <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
+                  <ImageIcon className="h-8 w-8 text-text-secondary/50" />
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">
+                    {isPending ? "Will render after Confirm" : "No preview yet"}
+                  </span>
                 </div>
               )}
 
@@ -172,8 +271,53 @@ export function SceneEditor({ adId }: { adId: string }) {
                 <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{s.prompt}</p>
               </div>
 
-              {/* Edit panel */}
-              {editingId === s.id ? (
+              {/* Edit panels */}
+              {editingId === s.id && editMode === "direct" ? (
+                <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    <Pencil className="h-3 w-3" /> Edit prompt directly (free — no AI call)
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1">Spoken line</label>
+                    <textarea
+                      value={draftSpokenLine}
+                      onChange={(e) => setDraftSpokenLine(e.target.value)}
+                      placeholder="What the actor says in this scene"
+                      rows={2}
+                      maxLength={500}
+                      className="w-full resize-none rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-xs outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1">Visual prompt</label>
+                    <textarea
+                      value={draftPrompt}
+                      onChange={(e) => setDraftPrompt(e.target.value)}
+                      rows={4}
+                      maxLength={2000}
+                      className="w-full resize-none rounded-lg border-2 border-black/10 bg-white px-3 py-2 text-xs outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => saveDirectEdit(s.id)}
+                      disabled={savingEdit || !draftPrompt.trim()}
+                      className="flex h-9 flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-3 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+                    >
+                      {savingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                      {savingEdit ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeEditor}
+                      className="flex h-9 items-center rounded-lg border-2 border-black/10 px-3 text-xs font-semibold text-text-primary hover:bg-bg-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : editingId === s.id && editMode === "instruction" ? (
                 <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
                     <Lightbulb className="h-3 w-3" /> Tell AI what to change
@@ -213,7 +357,7 @@ export function SceneEditor({ adId }: { adId: string }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setEditingId(null); setInstruction(""); }}
+                      onClick={closeEditor}
                       className="flex h-9 items-center rounded-lg border-2 border-black/10 px-3 text-xs font-semibold text-text-primary hover:bg-bg-secondary"
                     >
                       Cancel
@@ -221,20 +365,31 @@ export function SceneEditor({ adId }: { adId: string }) {
                   </div>
                 </div>
               ) : (
-                <div className="mt-auto flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setEditingId(s.id); setInstruction(s.editInstructions ?? ""); }}
-                    disabled={s.status === "GENERATING_VIDEO" || s.status === "COMPOSITING"}
-                    className="flex h-9 items-center gap-1 rounded-lg border-2 border-primary/20 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
-                  >
-                    <Wand2 className="h-3.5 w-3.5" />
-                    Edit with instruction
-                  </button>
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {isPending ? (
+                    <button
+                      type="button"
+                      onClick={() => openEditor(s, "direct")}
+                      className="flex h-9 items-center gap-1 rounded-lg border-2 border-primary/20 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit prompt
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openEditor(s, "instruction")}
+                      disabled={s.status === "GENERATING_VIDEO" || s.status === "COMPOSITING"}
+                      className="flex h-9 items-center gap-1 rounded-lg border-2 border-primary/20 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      Edit with instruction
+                    </button>
+                  )}
                   {s.status === "FAILED" && (
                     <button
                       type="button"
-                      onClick={() => { setEditingId(s.id); setInstruction("retry this scene"); }}
+                      onClick={() => openEditor(s, "instruction")}
                       className="flex h-9 items-center gap-1 rounded-lg border-2 border-danger/20 bg-danger/5 px-3 text-xs font-semibold text-danger hover:bg-danger/10"
                     >
                       <RotateCcw className="h-3.5 w-3.5" /> Retry
@@ -245,7 +400,8 @@ export function SceneEditor({ adId }: { adId: string }) {
             </div>
           </div>
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 }

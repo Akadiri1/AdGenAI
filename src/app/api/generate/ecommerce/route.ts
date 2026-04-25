@@ -1,10 +1,11 @@
 /**
- * Ecommerce ad generation — POST /api/generate/ecommerce
+ * Ecommerce / UGC ad generation — POST /api/generate/ecommerce
  *
- * Step 1: Plan the ad (Claude)
- * Step 2: Composite each scene's actor + product (Nano Banana via Replicate)
- * Step 3: Kick off Kling video generation per scene (returns prediction IDs)
- * Step 4: Persist Ad + Scene rows; client polls for video readiness
+ * Behavior:
+ *   - PAID users always land in DRAFT mode: we plan + persist Ad/Scene rows but
+ *     do NOT deduct credits or call Replicate. The user lands in /studio,
+ *     reviews/edits, then hits "Confirm & Start Generation" to fire the pipeline.
+ *   - FREE users get prompts only.
  */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -12,21 +13,41 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { canGenerateVideo, type PlanKey } from "@/lib/plans";
-import { planEcommerceAd, generatePromptsOnly } from "@/lib/ecommerceAdPlanner";
-import { compositeActorWithProduct, generateKlingVideoClip, isReplicateConfigured } from "@/lib/replicate";
-import { checkCredits, deductCredits } from "@/lib/credits";
+import {
+  planEcommerceAd,
+  splitCustomScriptIntoScenes,
+  generatePromptsOnly,
+} from "@/lib/ecommerceAdPlanner";
+import { isReplicateConfigured } from "@/lib/replicate";
 import { platformsToString, imagesToString } from "@/lib/adHelpers";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
+import { AVATAR_LIBRARY } from "@/lib/avatars";
 
-export const maxDuration = 300;
+export const maxDuration = 120;
 
 const bodySchema = z.object({
-  productName: z.string().min(1).max(120),
+  productName: z.string().max(120).optional(),
   productOffer: z.string().max(200).optional(),
-  productImageUrls: z.array(z.string().url()).min(0).max(5),
-  actorId: z.string(),
+  productDescription: z.string().max(500).optional(),
+  productImageUrls: z.array(z.string().url()).max(20).default([]),
+
+  actorId: z.string().optional(),
+  avatarLibraryId: z.string().optional(),
+  customActorImageUrl: z.string().url().optional(),
+
+  customScript: z.string().max(2000).optional(),
+  visualInstructions: z.string().max(500).optional(),
+
+  voiceSettings: z.object({
+    speed: z.number().min(0.5).max(2).default(1),
+    stability: z.number().min(0).max(1).default(0.5),
+    similarity: z.number().min(0).max(1).default(0.5),
+    styleExaggeration: z.number().min(0).max(1).default(0.3),
+  }).optional(),
+
   platforms: z.array(z.string()).min(1).default(["INSTAGRAM"]),
   targetSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(15),
+  aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   language: z.string().default("en"),
 });
 
@@ -62,23 +83,23 @@ export async function POST(req: Request) {
       const plan = await generatePromptsOnly({
         productName: body.productName,
         productOffer: body.productOffer,
+        customScript: body.customScript,
         language: body.language,
         numScenes: Math.max(2, Math.round(body.targetSeconds / 6)),
       });
 
-      // Free users get the prompts as a "draft" Ad row they can browse
       const ad = await prisma.ad.create({
         data: {
           userId,
           type: "PROMPT",
           platform: platformsToString(body.platforms),
           status: "PROMPT_ONLY",
-          headline: body.productName,
+          headline: body.productName ?? "AI-generated ad",
           bodyText: plan.fullScript,
           callToAction: "Generate with AI",
           script: plan.fullScript,
           musicGenre: plan.musicGenre,
-          aspectRatio: "9:16",
+          aspectRatio: body.aspectRatio,
           language: body.language,
           productName: body.productName,
           productOffer: body.productOffer,
@@ -87,7 +108,6 @@ export async function POST(req: Request) {
         },
       });
 
-      // Save scenes as rows so user can copy individual prompts
       for (const sc of plan.scenes) {
         await prisma.scene.create({
           data: {
@@ -115,7 +135,7 @@ export async function POST(req: Request) {
   }
 
   // ============================================================
-  // PAID TIER: full pipeline
+  // PAID TIER: DRAFT mode — plan only, no credits, no Replicate
   // ============================================================
   if (!isReplicateConfigured()) {
     return NextResponse.json({
@@ -123,126 +143,143 @@ export async function POST(req: Request) {
     }, { status: 503 });
   }
 
-  // Each second of video = 1 credit. Plus 3-credit "compositing" overhead per scene.
-  const cost = body.targetSeconds + Math.round(body.targetSeconds / 6) * 3;
-  if (!(await checkCredits(userId, cost))) {
-    return NextResponse.json({
-      error: `Need ${cost} credits for a ${body.targetSeconds}s ad. You have ${user.credits}.`,
-      neededCredits: cost,
-    }, { status: 402 });
+  // Resolve / persist actor — we always end up with a DB Actor row so the
+  // start-generation + refine endpoints can read ad.actor.imageUrl.
+  let actorRow;
+  if (body.actorId) {
+    actorRow = await prisma.actor.findUnique({ where: { id: body.actorId } });
+    if (!actorRow) return NextResponse.json({ error: "Actor not found" }, { status: 404 });
+    if (!actorRow.isStock && actorRow.userId !== userId) {
+      return NextResponse.json({ error: "Actor not accessible" }, { status: 403 });
+    }
+  } else if (body.avatarLibraryId) {
+    const libAvatar = AVATAR_LIBRARY.find((a) => a.id === body.avatarLibraryId);
+    if (!libAvatar) return NextResponse.json({ error: "Library avatar not found" }, { status: 404 });
+    // Find-or-create a user-owned snapshot of the library avatar.
+    actorRow = await prisma.actor.findFirst({
+      where: { userId, name: libAvatar.name, imageUrl: libAvatar.thumbnailUrl },
+    });
+    if (!actorRow) {
+      actorRow = await prisma.actor.create({
+        data: {
+          userId,
+          name: libAvatar.name,
+          imageUrl: libAvatar.thumbnailUrl,
+          thumbnailUrl: libAvatar.thumbnailUrl,
+          gender: libAvatar.gender,
+          ageRange: libAvatar.age,
+          ethnicity: libAvatar.ethnicity,
+          vibe: libAvatar.tags.slice(0, 2).join(", ") || "natural",
+          setting: libAvatar.situation,
+        },
+      });
+    }
+  } else if (body.customActorImageUrl) {
+    actorRow = await prisma.actor.create({
+      data: {
+        userId,
+        name: "Your actor",
+        imageUrl: body.customActorImageUrl,
+        thumbnailUrl: body.customActorImageUrl,
+        vibe: "natural, authentic",
+        setting: "studio",
+      },
+    });
+  } else {
+    return NextResponse.json({ error: "Pick an actor (actorId, avatarLibraryId, or customActorImageUrl)" }, { status: 400 });
   }
 
-  // Validate actor exists and is accessible
-  const actor = await prisma.actor.findUnique({ where: { id: body.actorId } });
-  if (!actor) return NextResponse.json({ error: "Actor not found" }, { status: 404 });
-  if (!actor.isStock && actor.userId !== userId) {
-    return NextResponse.json({ error: "Actor not accessible" }, { status: 403 });
-  }
-
-  // Step 1: Plan the ad with Claude
+  // Plan/split scenes
   let plan;
   try {
-    plan = await planEcommerceAd({
-      businessName: user.businessName ?? undefined,
-      businessDescription: user.businessDescription ?? undefined,
-      brandVoice: user.brandVoice ?? undefined,
-      targetAudience: user.targetAudience ?? undefined,
-      productName: body.productName,
-      productOffer: body.productOffer,
-      productImageCount: body.productImageUrls.length,
-      actorName: actor.name,
-      actorVibe: actor.vibe ?? "natural",
-      actorSetting: actor.setting ?? "studio",
-      language: body.language,
-      targetSeconds: body.targetSeconds,
-    });
+    if (body.customScript && body.customScript.trim()) {
+      plan = await splitCustomScriptIntoScenes({
+        script: body.customScript.trim(),
+        productName: body.productName,
+        productOffer: body.productOffer,
+        productDescription: body.productDescription,
+        productImageCount: body.productImageUrls.length,
+        actorName: actorRow.name,
+        actorVibe: actorRow.vibe ?? "natural",
+        actorSetting: actorRow.setting ?? "studio",
+        visualInstructions: body.visualInstructions,
+        language: body.language,
+        targetSeconds: body.targetSeconds,
+      });
+    } else {
+      if (!body.productName) {
+        return NextResponse.json({ error: "Either a script or a product name is required" }, { status: 400 });
+      }
+      plan = await planEcommerceAd({
+        businessName: user.businessName ?? undefined,
+        businessDescription: user.businessDescription ?? undefined,
+        brandVoice: user.brandVoice ?? undefined,
+        targetAudience: user.targetAudience ?? undefined,
+        productName: body.productName,
+        productOffer: body.productOffer,
+        productDescription: body.productDescription,
+        productImageCount: body.productImageUrls.length,
+        actorName: actorRow.name,
+        actorVibe: actorRow.vibe ?? "natural",
+        actorSetting: actorRow.setting ?? "studio",
+        language: body.language,
+        targetSeconds: body.targetSeconds,
+      });
+    }
   } catch (err) {
     return NextResponse.json({ error: "AI planning failed", details: (err as Error).message }, { status: 500 });
   }
 
-  // Deduct credits up front (refund on total failure below)
-  await deductCredits(userId, cost);
-
-  // Create Ad row immediately so the client can navigate to Studio while scenes generate
+  // Persist Ad in DRAFT — user reviews + edits in Studio, then hits "Start Generation"
   const ad = await prisma.ad.create({
     data: {
       userId,
       type: "VIDEO",
       platform: platformsToString(body.platforms),
-      status: "GENERATING",
+      status: "DRAFT",
       headline: plan.headline,
       bodyText: plan.bodyText,
       callToAction: plan.callToAction,
       script: plan.fullScript,
       musicGenre: plan.musicGenre,
-      aspectRatio: "9:16",
+      aspectRatio: body.aspectRatio,
       duration: body.targetSeconds,
       language: body.language,
       productName: body.productName,
       productOffer: body.productOffer,
       productImages: body.productImageUrls.length > 0 ? imagesToString(body.productImageUrls) : null,
-      actorId: actor.id,
+      actorId: actorRow.id,
+      visualInstructions: body.visualInstructions ?? null,
       score: plan.predictedScore,
     },
   });
 
-  // Step 2 + 3: For each scene, composite then kick off Kling
-  // We do this sequentially so a failure in scene 1 doesn't burn budget on the rest
   for (const planScene of plan.scenes) {
-    try {
-      // Composite the actor with the product into a still image
-      const compositeUrl = await compositeActorWithProduct({
-        actorImageUrl: actor.imageUrl,
-        productImageUrls: body.productImageUrls,
-        prompt: `${planScene.visualPrompt}. Photorealistic, commercial photography, sharp focus, no text overlays.`,
-      });
-
-      // Start Kling video generation (async — we just store the prediction ID)
-      const { predictionId } = await generateKlingVideoClip({
-        imageUrl: compositeUrl,
-        prompt: planScene.visualPrompt,
-        durationSeconds: planScene.durationSeconds <= 5 ? 5 : 10,
-        aspectRatio: "9:16",
-      });
-
-      await prisma.scene.create({
-        data: {
-          adId: ad.id,
-          sceneNumber: planScene.sceneNumber,
-          durationSeconds: planScene.durationSeconds,
-          status: "GENERATING_VIDEO",
-          prompt: planScene.visualPrompt,
-          basePrompt: planScene.visualPrompt,
-          spokenLine: planScene.spokenLine,
-          compositeImageUrl: compositeUrl,
-          klingTaskId: predictionId,
-        },
-      });
-    } catch (err) {
-      // Record failure but keep going
-      await prisma.scene.create({
-        data: {
-          adId: ad.id,
-          sceneNumber: planScene.sceneNumber,
-          durationSeconds: planScene.durationSeconds,
-          status: "FAILED",
-          prompt: planScene.visualPrompt,
-          basePrompt: planScene.visualPrompt,
-          spokenLine: planScene.spokenLine,
-          editInstructions: `Generation error: ${(err as Error).message}`,
-        },
-      });
-    }
+    const finalPrompt = body.visualInstructions
+      ? `${planScene.visualPrompt} ${body.visualInstructions}`
+      : planScene.visualPrompt;
+    await prisma.scene.create({
+      data: {
+        adId: ad.id,
+        sceneNumber: planScene.sceneNumber,
+        durationSeconds: planScene.durationSeconds,
+        status: "PENDING",
+        prompt: finalPrompt,
+        basePrompt: planScene.visualPrompt,
+        spokenLine: planScene.spokenLine,
+      },
+    });
   }
 
   return NextResponse.json({
     success: true,
     adId: ad.id,
+    draft: true,
     plan: {
       headline: plan.headline,
       sceneCount: plan.scenes.length,
       predictedScore: plan.predictedScore,
     },
-    message: "Ad is generating. Watch progress in Studio.",
+    message: "Draft created. Review and confirm in Studio to start generation.",
   });
 }

@@ -27,87 +27,183 @@ export type Avatar = {
   };
 };
 
-export const AVATAR_LIBRARY: Avatar[] = [
-  { 
-    id: "ava-001", name: "Sofia", gender: "female", age: "young", situation: "studio", ethnicity: "latina", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["casual", "friendly", "beauty"],
-    audioSamples: { 
-      us: "https://famousli-assets.s3.amazonaws.com/samples/sofia-us.mp3",
-      uk: "https://famousli-assets.s3.amazonaws.com/samples/sofia-uk.mp3"
-    } 
-  },
-  { 
-    id: "ava-002", name: "Aisha", gender: "female", age: "young", situation: "office", ethnicity: "african", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["professional", "tech", "business"],
-    audioSamples: { 
-      ng: "https://famousli-assets.s3.amazonaws.com/samples/aisha-ng.mp3",
-      us: "https://famousli-assets.s3.amazonaws.com/samples/aisha-us.mp3"
-    }
-  },
-  { 
-    id: "ava-003", name: "Emma", gender: "female", age: "young", situation: "cafe", ethnicity: "european", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["lifestyle", "casual", "food"],
-    audioSamples: { uk: "https://famousli-assets.s3.amazonaws.com/samples/emma-uk.mp3" }
-  },
-  { 
-    id: "ava-004", name: "Yuki", gender: "female", age: "young", situation: "home", ethnicity: "asian", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["cozy", "wellness", "skincare"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/yuki-us.mp3" }
-  },
-  { 
-    id: "ava-005", name: "Nicole", gender: "female", age: "young", situation: "airport", ethnicity: "european", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop", 
-    isPro: true, isHD: true, tags: ["travel", "fashion", "luxury"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/nicole-us.mp3" }
-  },
-  { 
-    id: "ava-006", name: "Priya", gender: "female", age: "young", situation: "gym", ethnicity: "south-asian", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["fitness", "health", "active"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/priya-us.mp3" }
-  },
-  
-  { 
-    id: "ava-011", name: "Marcus", gender: "male", age: "young", situation: "studio", ethnicity: "african-american", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["casual", "music", "streetwear"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/marcus-us.mp3" }
-  },
-  { 
-    id: "ava-012", name: "Caleb", gender: "male", age: "young", situation: "gaming", ethnicity: "european", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["gaming", "tech", "esports"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/caleb-us.mp3" }
-  },
-  { 
-    id: "ava-014", name: "Kenji", gender: "male", age: "young", situation: "cafe", ethnicity: "asian", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["lifestyle", "coffee", "creative"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/kenji-us.mp3" }
-  },
-  { 
-    id: "ava-015", name: "Diego", gender: "male", age: "young", situation: "car", ethnicity: "latino", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop", 
-    isPro: true, isHD: true, tags: ["automotive", "luxury", "lifestyle"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/diego-us.mp3" }
-  },
+// Helper to keep entries terse — randomuser.me hosts ~99 stable male + 99 female portraits
+function av(
+  id: string,
+  name: string,
+  gender: AvatarGender,
+  age: AvatarAge,
+  situation: AvatarSituation,
+  ethnicity: string,
+  portrait: string, // either an unsplash id (photo-...) OR a randomuser slot like "men/12"
+  tags: string[],
+  isPro = false,
+): Avatar {
+  const thumbnailUrl = portrait.startsWith("photo-")
+    ? `https://images.unsplash.com/${portrait}?w=400&h=400&fit=crop&crop=faces`
+    : `https://randomuser.me/api/portraits/${portrait}.jpg`;
+  return { id, name, gender, age, situation, ethnicity, thumbnailUrl, isPro, isHD: true, tags };
+}
 
-  { 
-    id: "ava-018", name: "David", gender: "male", age: "middle", situation: "office", ethnicity: "european", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["professional", "finance", "consulting"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/david-us.mp3" }
-  },
-  { 
-    id: "ava-021", name: "Margaret", gender: "female", age: "senior", situation: "home", ethnicity: "european", 
-    thumbnailUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop", 
-    isPro: false, isHD: true, tags: ["trusted", "testimonial", "healthcare"],
-    audioSamples: { us: "https://famousli-assets.s3.amazonaws.com/samples/margaret-us.mp3" }
-  },
+export const AVATAR_LIBRARY: Avatar[] = [
+  // --- Female · young ---
+  av("ava-001", "Sofia",   "female", "young",  "studio", "latina",       "women/65", ["casual", "friendly", "beauty"]),
+  av("ava-002", "Aisha",   "female", "young",  "office", "african",      "women/66", ["professional", "tech", "business"]),
+  av("ava-003", "Emma",    "female", "young",  "cafe",   "european",     "women/67", ["lifestyle", "casual", "food"]),
+  av("ava-004", "Yuki",    "female", "young",  "home",   "asian",        "women/68", ["cozy", "wellness", "skincare"]),
+  av("ava-005", "Nicole",  "female", "young",  "airport","european",     "women/69", ["travel", "fashion", "luxury"], true),
+  av("ava-006", "Priya",   "female", "young",  "gym",    "south-asian",  "women/70", ["fitness", "health", "active"]),
+  av("ava-007", "Camila",  "female", "young",  "beach",  "latina",       "women/71", ["travel", "swimwear", "summer"]),
+  av("ava-008", "Mei",     "female", "young",  "outdoor","asian",        "women/72", ["nature", "wellness", "calm"]),
+  av("ava-009", "Zara",    "female", "young",  "kitchen","middle-eastern","women/73", ["food", "lifestyle", "warm"]),
+  av("ava-010", "Hannah",  "female", "young",  "balcony","european",     "women/74", ["lifestyle", "fashion", "morning"]),
+
+  // --- Female · middle ---
+  av("ava-040", "Vanessa", "female", "middle", "office", "african-american", "women/75", ["professional", "executive", "leadership"]),
+  av("ava-041", "Claire",  "female", "middle", "kitchen","european",     "women/76", ["mom", "warm", "home"]),
+  av("ava-042", "Anjali",  "female", "middle", "studio", "south-asian",  "women/77", ["confident", "wellness", "yoga"]),
+  av("ava-043", "Maya",    "female", "middle", "outdoor","latina",       "women/78", ["nature", "active", "real"]),
+
+  // --- Female · senior ---
+  av("ava-021", "Margaret","female", "senior", "home",   "european",     "women/79", ["trusted", "testimonial", "healthcare"]),
+  av("ava-022", "Helen",   "female", "senior", "kitchen","european",     "women/80", ["wholesome", "family", "warm"]),
+  av("ava-023", "Adaeze",  "female", "senior", "outdoor","african",      "women/81", ["matriarch", "wisdom", "confident"]),
+
+  // --- Male · young ---
+  av("ava-011", "Marcus",  "male",   "young",  "studio", "african-american", "men/65", ["casual", "music", "streetwear"]),
+  av("ava-012", "Caleb",   "male",   "young",  "gaming", "european",     "men/66", ["gaming", "tech", "esports"]),
+  av("ava-013", "Liam",    "male",   "young",  "outdoor","european",     "men/67", ["adventure", "travel", "active"]),
+  av("ava-014", "Kenji",   "male",   "young",  "cafe",   "asian",        "men/68", ["lifestyle", "coffee", "creative"]),
+  av("ava-015", "Diego",   "male",   "young",  "car",    "latino",       "men/69", ["automotive", "luxury", "lifestyle"], true),
+  av("ava-016", "Tunde",   "male",   "young",  "home",   "african",      "men/70", ["entrepreneur", "tech", "confident"]),
+  av("ava-017", "Arjun",   "male",   "young",  "gym",    "south-asian",  "men/71", ["fitness", "supplements", "active"]),
+  av("ava-019", "Noah",    "male",   "young",  "beach",  "european",     "men/72", ["surf", "lifestyle", "summer"]),
+  av("ava-020", "Mateo",   "male",   "young",  "podcast","latino",       "men/73", ["creator", "talk", "studio"]),
+
+  // --- Male · middle ---
+  av("ava-018", "David",   "male",   "middle", "office", "european",     "men/74", ["professional", "finance", "consulting"]),
+  av("ava-024", "Hassan",  "male",   "middle", "office", "middle-eastern","men/75", ["business", "executive", "trusted"]),
+  av("ava-025", "Ryan",    "male",   "middle", "outdoor","european",     "men/76", ["dad", "outdoor", "real"]),
+  av("ava-026", "Carlos",  "male",   "middle", "kitchen","latino",       "men/77", ["chef", "warm", "family"]),
+  av("ava-027", "Jamal",   "male",   "middle", "studio", "african-american","men/78", ["confident", "media", "speaker"]),
+
+  // --- Male · senior ---
+  av("ava-028", "Robert",  "male",   "senior", "office", "european",     "men/79", ["trusted", "expert", "consulting"]),
+  av("ava-029", "Samuel",  "male",   "senior", "home",   "african-american","men/80", ["grandpa", "wisdom", "warm"]),
+  av("ava-030", "Hiroshi", "male",   "senior", "studio", "asian",        "men/81", ["expert", "calm", "wisdom"]),
+
+  // ===========================================================================
+  // Extended pool (randomuser.me portraits — stable URLs, 200+ unique faces)
+  // Spread across every situation × age × gender so filters always have results.
+  // ===========================================================================
+
+  // FEMALE · YOUNG (15)
+  av("ava-101", "Lara",     "female", "young",  "studio",     "european",        "women/1",  ["beauty", "fresh", "casual"]),
+  av("ava-102", "Imani",    "female", "young",  "studio",     "african",         "women/2",  ["bold", "skincare", "natural"]),
+  av("ava-103", "Sienna",   "female", "young",  "office",     "european",        "women/3",  ["entrepreneur", "tech", "modern"]),
+  av("ava-104", "Naomi",    "female", "young",  "office",     "asian",           "women/4",  ["professional", "saas", "smart"]),
+  av("ava-105", "Daniela",  "female", "young",  "outdoor",    "latina",          "women/5",  ["adventure", "travel", "energetic"]),
+  av("ava-106", "Kira",     "female", "young",  "outdoor",    "european",        "women/6",  ["hiking", "active", "wholesome"]),
+  av("ava-107", "Bola",     "female", "young",  "home",       "african",         "women/7",  ["lifestyle", "cozy", "honest"]),
+  av("ava-108", "Anya",     "female", "young",  "home",       "european",        "women/8",  ["wellness", "morning", "soft"]),
+  av("ava-109", "Lin",      "female", "young",  "cafe",       "asian",           "women/9",  ["foodie", "creator", "warm"]),
+  av("ava-110", "Bianca",   "female", "young",  "cafe",       "latina",          "women/10", ["lifestyle", "drinks", "trendy"]),
+  av("ava-111", "Sade",     "female", "young",  "gym",        "african",         "women/11", ["fitness", "athleisure", "strong"]),
+  av("ava-112", "Tara",     "female", "young",  "gym",        "south-asian",     "women/12", ["yoga", "wellness", "calm"]),
+  av("ava-113", "Ines",     "female", "young",  "kitchen",    "european",        "women/13", ["recipes", "cozy", "real"]),
+  av("ava-114", "Jamie",    "female", "young",  "beach",      "european",        "women/14", ["summer", "swimwear", "fun"]),
+  av("ava-115", "Riya",     "female", "young",  "podcast",    "south-asian",     "women/15", ["talk", "creator", "smart"]),
+
+  // FEMALE · MIDDLE (12)
+  av("ava-130", "Catherine","female", "middle", "office",     "european",        "women/20", ["executive", "leadership", "trust"]),
+  av("ava-131", "Renata",   "female", "middle", "office",     "latina",          "women/21", ["finance", "professional", "warm"]),
+  av("ava-132", "Folake",   "female", "middle", "office",     "african",         "women/22", ["consulting", "smart", "polished"]),
+  av("ava-133", "Lisa",     "female", "middle", "kitchen",    "european",        "women/23", ["mom", "cooking", "warm"]),
+  av("ava-134", "Patricia", "female", "middle", "kitchen",    "latina",          "women/24", ["family", "recipes", "real"]),
+  av("ava-135", "Sandra",   "female", "middle", "home",       "european",        "women/25", ["wellness", "honest", "calm"]),
+  av("ava-136", "Megumi",   "female", "middle", "home",       "asian",           "women/26", ["lifestyle", "minimal", "soft"]),
+  av("ava-137", "Anika",    "female", "middle", "outdoor",    "south-asian",     "women/27", ["nature", "real", "active"]),
+  av("ava-138", "Heather",  "female", "middle", "outdoor",    "european",        "women/28", ["mom", "athletic", "real"]),
+  av("ava-139", "Luna",     "female", "middle", "studio",     "latina",          "women/29", ["confident", "host", "presenter"]),
+  av("ava-140", "Esther",   "female", "middle", "interview",  "african",         "women/30", ["professional", "media", "trust"]),
+  av("ava-141", "Dana",     "female", "middle", "balcony",    "european",        "women/31", ["lifestyle", "morning", "quiet"]),
+
+  // FEMALE · SENIOR (8)
+  av("ava-160", "Eleanor",  "female", "senior", "home",       "european",        "women/40", ["grandma", "trusted", "warm"]),
+  av("ava-161", "Linda",    "female", "senior", "kitchen",    "european",        "women/41", ["family", "recipes", "honest"]),
+  av("ava-162", "Beatrice", "female", "senior", "office",     "african-american","women/42", ["executive", "wisdom", "polished"]),
+  av("ava-163", "Sumi",     "female", "senior", "home",       "asian",           "women/43", ["wellness", "calm", "soft"]),
+  av("ava-164", "Carmen",   "female", "senior", "outdoor",    "latina",          "women/44", ["active", "real", "warm"]),
+  av("ava-165", "Marie",    "female", "senior", "interview",  "european",        "women/45", ["testimonial", "trust", "warm"]),
+  av("ava-166", "Olu",      "female", "senior", "studio",     "african",         "women/46", ["matriarch", "wisdom", "calm"]),
+  av("ava-167", "Joan",     "female", "senior", "home",       "european",        "women/47", ["healthcare", "trust", "warm"]),
+
+  // MALE · YOUNG (15)
+  av("ava-201", "Ethan",    "male",   "young",  "studio",     "european",        "men/1",    ["casual", "creator", "fashion"]),
+  av("ava-202", "Tre",      "male",   "young",  "studio",     "african-american","men/2",    ["streetwear", "music", "bold"]),
+  av("ava-203", "Ravi",     "male",   "young",  "office",     "south-asian",     "men/3",    ["tech", "engineer", "smart"]),
+  av("ava-204", "Daniel",   "male",   "young",  "office",     "european",        "men/4",    ["finance", "professional", "polished"]),
+  av("ava-205", "Felipe",   "male",   "young",  "outdoor",    "latino",          "men/5",    ["adventure", "travel", "energetic"]),
+  av("ava-206", "Owen",     "male",   "young",  "outdoor",    "european",        "men/6",    ["hiking", "rugged", "real"]),
+  av("ava-207", "Akin",     "male",   "young",  "home",       "african",         "men/7",    ["lifestyle", "creator", "warm"]),
+  av("ava-208", "Mason",    "male",   "young",  "home",       "european",        "men/8",    ["wellness", "morning", "calm"]),
+  av("ava-209", "Hideo",    "male",   "young",  "cafe",       "asian",           "men/9",    ["coffee", "creative", "minimal"]),
+  av("ava-210", "Andres",   "male",   "young",  "cafe",       "latino",          "men/10",   ["lifestyle", "drinks", "trendy"]),
+  av("ava-211", "Kobe",     "male",   "young",  "gym",        "african-american","men/11",   ["fitness", "athleisure", "strong"]),
+  av("ava-212", "Vihaan",   "male",   "young",  "gym",        "south-asian",     "men/12",   ["supplements", "active", "lean"]),
+  av("ava-213", "Theo",     "male",   "young",  "kitchen",    "european",        "men/13",   ["chef", "real", "warm"]),
+  av("ava-214", "Cole",     "male",   "young",  "beach",      "european",        "men/14",   ["surf", "summer", "lifestyle"]),
+  av("ava-215", "Jin",      "male",   "young",  "podcast",    "asian",           "men/15",   ["creator", "host", "studio"]),
+
+  // MALE · MIDDLE (12)
+  av("ava-230", "Michael",  "male",   "middle", "office",     "european",        "men/20",   ["executive", "trusted", "polished"]),
+  av("ava-231", "Adewale",  "male",   "middle", "office",     "african",         "men/21",   ["leadership", "consulting", "smart"]),
+  av("ava-232", "Hugo",     "male",   "middle", "office",     "latino",          "men/22",   ["finance", "real", "approachable"]),
+  av("ava-233", "Vincent",  "male",   "middle", "studio",     "european",        "men/23",   ["host", "media", "confident"]),
+  av("ava-234", "Reid",     "male",   "middle", "outdoor",    "european",        "men/24",   ["dad", "outdoor", "real"]),
+  av("ava-235", "Kabir",    "male",   "middle", "outdoor",    "south-asian",     "men/25",   ["adventure", "real", "approachable"]),
+  av("ava-236", "Marco",    "male",   "middle", "kitchen",    "latino",          "men/26",   ["chef", "family", "warm"]),
+  av("ava-237", "Greg",     "male",   "middle", "home",       "european",        "men/27",   ["dad", "honest", "real"]),
+  av("ava-238", "Chinedu",  "male",   "middle", "interview",  "african",         "men/28",   ["expert", "trusted", "warm"]),
+  av("ava-239", "Ramon",    "male",   "middle", "podcast",    "latino",          "men/29",   ["host", "media", "smart"]),
+  av("ava-240", "Tomas",    "male",   "middle", "car",        "european",        "men/30",   ["automotive", "lifestyle", "real"]),
+  av("ava-241", "Kenta",    "male",   "middle", "balcony",    "asian",           "men/31",   ["minimal", "calm", "lifestyle"]),
+
+  // MALE · SENIOR (8)
+  av("ava-260", "George",   "male",   "senior", "office",     "european",        "men/40",   ["expert", "trusted", "consulting"]),
+  av("ava-261", "Bernard",  "male",   "senior", "home",       "african-american","men/41",   ["grandpa", "wisdom", "warm"]),
+  av("ava-262", "Albert",   "male",   "senior", "outdoor",    "european",        "men/42",   ["active", "real", "approachable"]),
+  av("ava-263", "Tadao",    "male",   "senior", "studio",     "asian",           "men/43",   ["expert", "calm", "wisdom"]),
+  av("ava-264", "Patrick",  "male",   "senior", "interview",  "european",        "men/44",   ["testimonial", "trust", "warm"]),
+  av("ava-265", "Karim",    "male",   "senior", "kitchen",    "middle-eastern",  "men/45",   ["family", "warm", "real"]),
+  av("ava-266", "Stanley",  "male",   "senior", "home",       "european",        "men/46",   ["dad", "honest", "trusted"]),
+  av("ava-267", "Ade",      "male",   "senior", "office",     "african",         "men/47",   ["mentor", "wisdom", "polished"]),
+
+  // ===========================================================================
+  // Niche situations padded so they're never empty when filtered
+  // ===========================================================================
+  av("ava-301", "Fiona",    "female", "young",  "snow",       "european",        "women/50", ["winter", "lifestyle", "fresh"]),
+  av("ava-302", "Holly",    "female", "young",  "snow",       "european",        "women/51", ["winter", "ski", "active"]),
+  av("ava-303", "Kai",      "male",   "young",  "snow",       "european",        "men/50",   ["winter", "ski", "rugged"]),
+  av("ava-304", "Yusuf",    "male",   "middle", "snow",       "middle-eastern",  "men/51",   ["winter", "real", "warm"]),
+  av("ava-305", "Tessa",    "female", "young",  "interview",  "european",        "women/52", ["testimonial", "trust", "real"]),
+  av("ava-306", "Rohan",    "male",   "young",  "interview",  "south-asian",     "men/52",   ["interview", "professional", "smart"]),
+  av("ava-307", "Mira",     "female", "young",  "podcast",    "asian",           "women/53", ["host", "creator", "smart"]),
+  av("ava-308", "Wesley",   "male",   "young",  "podcast",    "african-american","men/53",   ["host", "media", "deep"]),
+  av("ava-309", "Sage",     "female", "young",  "green-screen","european",       "women/54", ["explainer", "creator", "neutral"]),
+  av("ava-310", "Reuben",   "male",   "middle", "green-screen","european",       "men/54",   ["explainer", "trust", "neutral"]),
+  av("ava-311", "Kelsey",   "female", "young",  "bathroom",   "european",        "women/55", ["skincare", "morning", "soft"]),
+  av("ava-312", "Adaora",   "female", "young",  "bathroom",   "african",         "women/56", ["beauty", "skincare", "fresh"]),
+  av("ava-313", "Nori",     "male",   "young",  "bathroom",   "asian",           "men/55",   ["grooming", "minimal", "calm"]),
+  av("ava-314", "Tia",      "female", "middle", "balcony",    "latina",          "women/57", ["lifestyle", "morning", "warm"]),
+  av("ava-315", "Pia",      "female", "young",  "nature",     "european",        "women/58", ["wellness", "outdoor", "calm"]),
+  av("ava-316", "Akira",    "male",   "young",  "nature",     "asian",           "men/56",   ["outdoor", "minimal", "calm"]),
+  av("ava-317", "Lola",     "female", "young",  "car",        "latina",          "women/59", ["automotive", "lifestyle", "energetic"]),
+  av("ava-318", "Niko",     "male",   "young",  "car",        "european",        "men/57",   ["automotive", "luxury", "lifestyle"]),
+  av("ava-319", "Riley",    "male",   "young",  "gaming",     "european",        "men/58",   ["gaming", "tech", "fun"]),
+  av("ava-320", "Mara",     "female", "young",  "gaming",     "latina",          "women/60", ["gaming", "creator", "fun"]),
+  av("ava-321", "Otto",     "male",   "young",  "airport",    "european",        "men/59",   ["travel", "lifestyle", "fashion"]),
+  av("ava-322", "Inez",     "female", "middle", "airport",    "latina",          "women/61", ["travel", "professional", "polished"]),
 ];
 
 export type VoiceSettings = {

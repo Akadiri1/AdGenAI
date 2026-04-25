@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Search, Play, Mic, Volume2, Film,
-  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause
+  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
@@ -16,7 +16,7 @@ import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, DEFAULT_VOICE_SETTINGS, type
 
 type Step = "select-avatar" | "write-script" | "voice-settings" | "generate";
 
-export function UGCCreatorClient() {
+export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const { refreshCredits } = useCredits();
@@ -33,6 +33,10 @@ export function UGCCreatorClient() {
   const [customActorImage, setCustomActorImage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+
+  const [productName, setProductName] = useState("");
+  const [productOffer, setProductOffer] = useState("");
+  const [productDescription, setProductDescription] = useState("");
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -78,23 +82,36 @@ export function UGCCreatorClient() {
     if (!selectedAvatar || !script.trim()) return;
     setGenerating(true);
     try {
-      const res = await fetch("/api/generate/avatar", {
+      const isCustomActor = selectedAvatar.id.startsWith("custom-");
+      const res = await fetch("/api/generate/ecommerce", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          avatarId: selectedAvatar.id,
-          script,
-          productImages: productImages.length > 0 ? productImages : undefined,
+          // Actor: custom upload OR library avatar
+          ...(isCustomActor
+            ? { customActorImageUrl: customActorImage }
+            : { avatarLibraryId: selectedAvatar.id }),
+          customScript: script,
+          productName: productName || undefined,
+          productOffer: productOffer || undefined,
+          productDescription: productDescription || undefined,
+          productImageUrls: productImages,
           visualInstructions: visualInstructions || undefined,
           voiceSettings,
           aspectRatio,
+          targetSeconds: 15,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
       refreshCredits();
-      success("UGC video created!");
-      router.push(`/ads/${data.adId}/studio`);
+      if (data.promptOnly) {
+        success("Prompts ready — copy them to any AI video tool");
+        router.push(`/ads/${data.adId}/prompts`);
+      } else {
+        success("Draft created — review and confirm in Studio");
+        router.push(`/ads/${data.adId}/studio`);
+      }
     } catch (err) {
       toastError((err as Error).message);
     } finally {
@@ -171,6 +188,9 @@ export function UGCCreatorClient() {
               </select>
             </div>
 
+            <div className="mt-3 rounded-lg bg-accent/5 border border-accent/20 px-3 py-2 text-[11px] text-text-secondary">
+              <strong className="text-accent">Note:</strong> these thumbnails are low-res for the picker only. When the ad is generated, <strong className="text-text-primary">Nano Banana</strong> upscales the actor + your product into a sharp 1024×1024 hero shot — final video output is full quality.
+            </div>
             {/* Situation tags */}
             <div className="mt-3 flex flex-wrap gap-1.5">
               <button
@@ -354,24 +374,66 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
 
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm space-y-4">
               <h3 className="font-heading text-sm font-bold text-text-primary">Visuals (Optional)</h3>
-              
-              <MultiFileUpload 
-                values={productImages} 
-                onChange={setProductImages} 
+
+              <MultiFileUpload
+                values={productImages}
+                onChange={setProductImages}
                 label="Add product photo(s)"
                 previewSize="lg"
-                maxFiles={5}
+                maxFiles={20}
               />
 
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Visual instructions / Prompts</label>
-                <textarea
-                  value={visualInstructions}
-                  onChange={(e) => setVisualInstructions(e.target.value)}
-                  placeholder="E.g., Show the product floating in space, or make the background a sunny beach."
-                  className="w-full rounded-xl border border-black/10 bg-white p-3 text-sm outline-none focus:border-primary min-h-[80px]"
+              {/* Product details — name + AI-assisted description + offer */}
+              <div className="rounded-xl border border-black/5 bg-bg-secondary/30 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Product details</span>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">Product name</label>
+                  <input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="e.g. AeroPods Pro, Glow Serum, Smart Bottle"
+                    className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <AIRephraseField
+                  kind="textarea"
+                  label="Description"
+                  hint={`${productDescription.length} chars`}
+                  value={productDescription}
+                  onChange={setProductDescription}
+                  placeholder="What is the product, who's it for, and what's the #1 benefit? The clearer this is, the better the script will be."
+                  fieldType="body"
+                  rows={4}
+                  maxLength={500}
+                  businessContext={productName ? `Product: ${productName}` : undefined}
                 />
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">Offer (optional)</label>
+                  <input
+                    type="text"
+                    value={productOffer}
+                    onChange={(e) => setProductOffer(e.target.value)}
+                    placeholder="e.g. 30% off launch week, Buy 2 get 1 free"
+                    className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                </div>
               </div>
+
+              <AIRephraseField
+                kind="textarea"
+                label="Visual instructions / Prompts"
+                hint={`${visualInstructions.length} chars`}
+                value={visualInstructions}
+                onChange={setVisualInstructions}
+                placeholder="E.g., Show the product floating in space, or make the background a sunny beach. Tip: describe lighting, mood, camera angle, and what's happening."
+                fieldType="imagePrompt"
+                rows={4}
+                maxLength={500}
+              />
             </div>
 
           </div>
@@ -380,12 +442,20 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
             <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
               <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Selected actor</div>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-bg-secondary overflow-hidden flex-shrink-0">
-                  <div className="flex h-full items-center justify-center"><User2 className="h-6 w-6 text-text-secondary" /></div>
+                <div className="h-16 w-16 rounded-xl bg-bg-secondary overflow-hidden flex-shrink-0 ring-2 ring-primary/20">
+                  {selectedAvatar?.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={selectedAvatar.thumbnailUrl} alt={selectedAvatar.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center"><User2 className="h-6 w-6 text-text-secondary" /></div>
+                  )}
                 </div>
-                <div>
-                  <div className="font-semibold text-text-primary">{selectedAvatar?.name}</div>
-                  <button onClick={() => setStep("select-avatar")} className="text-xs text-primary hover:underline">Change actor</button>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-text-primary truncate">{selectedAvatar?.name}</div>
+                  <div className="text-[11px] text-text-secondary capitalize truncate">
+                    {selectedAvatar?.gender} · {selectedAvatar?.age} · {selectedAvatar?.situation}
+                  </div>
+                  <button onClick={() => setStep("select-avatar")} className="text-xs text-primary hover:underline mt-0.5">Change actor</button>
                 </div>
               </div>
             </div>
@@ -489,9 +559,17 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
             <h2 className="font-heading text-lg font-bold text-text-primary mb-4">Review your UGC ad</h2>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-bg-secondary p-3">
                 <span className="text-text-secondary">Actor</span>
-                <span className="font-semibold text-text-primary">{selectedAvatar?.name} ({selectedAvatar?.situation})</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg overflow-hidden bg-white flex-shrink-0">
+                    {selectedAvatar?.thumbnailUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={selectedAvatar.thumbnailUrl} alt={selectedAvatar.name} className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <span className="font-semibold text-text-primary">{selectedAvatar?.name} ({selectedAvatar?.situation})</span>
+                </div>
               </div>
               <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
                 <span className="text-text-secondary">Aspect ratio</span>
@@ -507,8 +585,20 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
               </div>
               <div className="flex justify-between rounded-xl bg-primary/5 border border-primary/20 p-3">
                 <span className="text-text-secondary">Cost</span>
-                <span className="font-semibold text-primary">2 credits</span>
+                <span className="font-semibold text-primary">
+                  {isFree ? "Free — prompts only" : "Free — draft only (you confirm in Studio)"}
+                </span>
               </div>
+              {!isFree && (
+                <div className="rounded-xl bg-accent/5 border border-accent/20 p-3 text-xs text-text-secondary">
+                  We&rsquo;ll create a <strong className="text-text-primary">draft</strong> in Studio. Nothing is charged until you click <strong className="text-text-primary">Confirm &amp; Start</strong> there. Estimated ~24 credits for a 15s video.
+                </div>
+              )}
+              {isFree && (
+                <div className="rounded-xl bg-warning/5 border border-warning/20 p-3 text-xs text-text-secondary">
+                  You&rsquo;re on the free plan. We&rsquo;ll generate copy-paste-ready prompts you can drop into Kling, Veo, or Sora. Upgrade to Starter for real video output.
+                </div>
+              )}
             </div>
           </div>
 
@@ -521,7 +611,11 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
               disabled={generating}
               className="flex flex-1 h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-warning text-sm font-semibold text-white shadow-lg hover:shadow-xl disabled:opacity-50 transition-all"
             >
-              {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating UGC video...</> : <><Play className="h-4 w-4" /> Generate UGC Video</>}
+              {generating ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> {isFree ? "Generating prompts..." : "Building draft..."}</>
+              ) : (
+                <><Play className="h-4 w-4" /> {isFree ? "Generate Prompts" : "Build Draft → Studio"}</>
+              )}
             </button>
           </div>
         </div>
