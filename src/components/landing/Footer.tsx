@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { CONTACT } from "@/lib/contact";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -15,11 +16,17 @@ export function Footer() {
       { label: "Sign up free", href: "/auth/signup" },
       { label: "Sign in", href: "/auth/login" },
     ],
+    Contact: [
+      { label: `Email: ${CONTACT.supportEmail}`, href: `mailto:${CONTACT.supportEmail}` },
+      { label: `WhatsApp ${CONTACT.whatsappDisplay}`, href: CONTACT.whatsappLink },
+      { label: "TikTok @famouslihq", href: CONTACT.tiktokLink },
+      { label: "Instagram @famouslihq", href: CONTACT.instagramLink },
+      { label: "YouTube @famouslihq", href: CONTACT.youtubeLink },
+    ],
     Legal: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
       { label: "Refund Policy", href: "/terms#refunds" },
-      { label: "Support: support@famousli.com", href: "mailto:support@famousli.com" },
     ],
   };
 

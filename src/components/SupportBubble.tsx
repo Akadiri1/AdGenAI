@@ -6,9 +6,9 @@ import {
   MessageCircle, X, Send, Mail, ExternalLink, Minus,
 } from "lucide-react";
 import {
-  InstagramIcon, FacebookIcon, TikTokIcon, XTwitterIcon,
-  WhatsAppIcon, LinkedInIcon, YouTubeIcon, DiscordIcon,
+  InstagramIcon, TikTokIcon, WhatsAppIcon, YouTubeIcon,
 } from "@/components/icons/SocialIcons";
+import { CONTACT } from "@/lib/contact";
 
 type SocialLink = {
   name: string;
@@ -20,14 +20,10 @@ type SocialLink = {
 };
 
 const SOCIAL_LINKS: SocialLink[] = [
-  { name: "WhatsApp", icon: WhatsAppIcon, href: "https://wa.me/2348000000000", color: "hover:bg-green-500/10", sub: "Chat with us", group: "chat" },
-  { name: "Discord", icon: DiscordIcon, href: "https://discord.gg/famousli", color: "hover:bg-indigo-500/10", sub: "Join community", group: "chat" },
-  { name: "YouTube", icon: YouTubeIcon, href: "https://youtube.com/@famousli", color: "hover:bg-red-500/10", sub: "Tutorials & podcasts", group: "chat" },
-  { name: "Instagram", icon: InstagramIcon, href: "https://instagram.com/famousli", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
-  { name: "X (Twitter)", icon: XTwitterIcon, href: "https://x.com/famousli", color: "hover:bg-gray-500/10", sub: "Follow us", group: "follow" },
-  { name: "Facebook", icon: FacebookIcon, href: "https://facebook.com/famousli", color: "hover:bg-blue-500/10", sub: "Follow us", group: "follow" },
-  { name: "LinkedIn", icon: LinkedInIcon, href: "https://linkedin.com/company/famousli", color: "hover:bg-blue-700/10", sub: "Follow us", group: "follow" },
-  { name: "TikTok", icon: TikTokIcon, href: "https://tiktok.com/@famousli", color: "hover:bg-pink-500/10", sub: "Follow us", group: "follow" },
+  { name: "WhatsApp", icon: WhatsAppIcon, href: CONTACT.whatsappLink, color: "hover:bg-green-500/10", sub: `Chat with us · ${CONTACT.whatsappDisplay}`, group: "chat" },
+  { name: "YouTube", icon: YouTubeIcon, href: CONTACT.youtubeLink, color: "hover:bg-red-500/10", sub: "Tutorials & demos", group: "chat" },
+  { name: "Instagram", icon: InstagramIcon, href: CONTACT.instagramLink, color: "hover:bg-pink-500/10", sub: `@${CONTACT.handle}`, group: "follow" },
+  { name: "TikTok", icon: TikTokIcon, href: CONTACT.tiktokLink, color: "hover:bg-pink-500/10", sub: `@${CONTACT.handle}`, group: "follow" },
 ];
 
 export function SupportBubble() {
@@ -294,7 +290,7 @@ export function SupportBubble() {
 
                 <div className="mt-4 pt-3 border-t border-black/5">
                   <a
-                    href="mailto:support@famousli.com"
+                    href={`mailto:${CONTACT.supportEmail}`}
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-bg-secondary transition-colors"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -302,7 +298,7 @@ export function SupportBubble() {
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold text-text-primary">Email us</div>
-                      <div className="text-[10px] text-text-secondary">support@famousli.com</div>
+                      <div className="text-[10px] text-text-secondary">{CONTACT.supportEmail}</div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-text-secondary" />
                   </a>

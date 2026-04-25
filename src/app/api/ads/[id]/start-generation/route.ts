@@ -65,16 +65,19 @@ export async function POST(
   const productImages = stringToImages(ad.productImages);
   const aspectRatio = (ad.aspectRatio as "9:16" | "1:1" | "16:9") ?? "9:16";
 
-  // Composite + Kling per scene, sequentially so a failure in scene 1 doesn't burn the rest
-  for (const scene of pendingScenes) {
+  // Composite + Kling per scene — run all in parallel for ~3× speedup.
+  // Per-scene try/catch ensures one failure doesn't kill the others.
+  if (!ad.actor) throw new Error("Ad actor missing");
+  const actorImageUrl = ad.actor.imageUrl;
+  await Promise.all(pendingScenes.map(async (scene) => {
     try {
       const compositeUrl = productImages.length > 0
         ? await compositeActorWithProduct({
-            actorImageUrl: ad.actor.imageUrl,
+            actorImageUrl,
             productImageUrls: productImages,
             prompt: `${scene.prompt}. Photorealistic, commercial photography, sharp focus, no text overlays.`,
           })
-        : ad.actor.imageUrl;
+        : actorImageUrl;
 
       const { predictionId } = await generateKlingVideoClip({
         imageUrl: compositeUrl,
@@ -100,7 +103,7 @@ export async function POST(
         },
       });
     }
-  }
+  }));
 
   return NextResponse.json({
     success: true,

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
 import { creditReferralCommission } from "@/lib/referrals";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminsOfPayment } from "@/lib/adminNotify";
 import crypto from "crypto";
 
 /**
@@ -103,6 +104,19 @@ export async function POST(req: Request) {
 
       // Referral commission
       await creditReferralCommission(userId, usdAmount > 0 ? usdAmount : paidAmount, reference);
+
+      // Notify admins
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+      await notifyAdminsOfPayment({
+        userEmail: u?.email ?? customer?.email ?? null,
+        userName: u?.name ?? null,
+        type,
+        plan: plan ?? null,
+        amount: paidAmount,
+        currency,
+        provider: "paystack",
+        providerId: reference,
+      });
       break;
     }
 

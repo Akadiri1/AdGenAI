@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
 import { creditReferralCommission } from "@/lib/referrals";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminsOfPayment } from "@/lib/adminNotify";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -54,6 +55,16 @@ export async function POST(req: Request) {
           metadata: { type: "credit_purchase", amount: amountUsd, credits: creditsToAdd, provider: "stripe" },
         });
         await creditReferralCommission(userId, amountUsd, s.id);
+        const u1 = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+        await notifyAdminsOfPayment({
+          userEmail: u1?.email ?? null,
+          userName: u1?.name ?? null,
+          type: "credit_purchase",
+          amount: amountUsd,
+          currency: (s.currency ?? "usd").toUpperCase(),
+          provider: "stripe",
+          providerId: s.id,
+        });
         break;
       }
 
@@ -89,6 +100,17 @@ export async function POST(req: Request) {
         });
         // Credit the referrer 20% on this first payment
         await creditReferralCommission(userId, amountUsd, s.id);
+        const u2 = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+        await notifyAdminsOfPayment({
+          userEmail: u2?.email ?? null,
+          userName: u2?.name ?? null,
+          type: "subscription",
+          plan,
+          amount: amountUsd,
+          currency: (s.currency ?? "usd").toUpperCase(),
+          provider: "stripe",
+          providerId: s.id,
+        });
       }
       break;
     }
@@ -127,6 +149,16 @@ export async function POST(req: Request) {
         metadata: { type: "subscription_renewal", amount: amountUsd, provider: "stripe" },
       });
       await creditReferralCommission(userId, amountUsd, inv.id);
+      const u3 = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+      await notifyAdminsOfPayment({
+        userEmail: u3?.email ?? null,
+        userName: u3?.name ?? null,
+        type: "subscription_renewal",
+        amount: amountUsd,
+        currency: (inv.currency ?? "usd").toUpperCase(),
+        provider: "stripe",
+        providerId: inv.id,
+      });
       break;
     }
     case "customer.subscription.deleted": {
