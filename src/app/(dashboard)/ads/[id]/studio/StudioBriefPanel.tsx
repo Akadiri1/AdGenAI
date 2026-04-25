@@ -261,7 +261,7 @@ export function StudioBriefPanel({ initialAd }: { initialAd: BriefAd }) {
           )}
 
           {isDraft && (
-            <div className="sticky bottom-2 z-10 flex justify-end pt-2">
+            <div className="sticky bottom-20 md:bottom-2 z-10 flex justify-end pt-2">
               <button
                 type="button"
                 onClick={save}

@@ -84,7 +84,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             <a
               href={state.videoUrl}
               download
-              className="flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-dark"
+              className="flex h-10 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-dark"
             >
               <Download className="h-4 w-4" /> Download MP4
             </a>
@@ -92,10 +92,10 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
               type="button"
               onClick={startFinalize}
               disabled={starting}
-              className="flex h-10 items-center gap-2 rounded-xl border-2 border-black/10 bg-white px-4 text-sm font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
+              className="flex h-10 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border-2 border-black/10 bg-white px-4 text-sm font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
             >
               {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Re-render ({cost} credits)
+              Re-render <span className="opacity-70">({cost}cr)</span>
             </button>
           </div>
         </div>
@@ -130,18 +130,18 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
       ) : (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">
-            All {state.sceneCount} scenes are ready. Render the final stitched ad with voiceover and lip-sync.
+            All {state.sceneCount} scenes are ready. Render the final ad with voiceover and lip-sync — <strong className="text-text-primary">~2 min</strong>.
           </p>
           <button
             type="button"
             onClick={startFinalize}
             disabled={starting}
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50 whitespace-nowrap"
+            className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-success px-4 sm:px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50"
           >
             {starting ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</>
             ) : (
-              <><Play className="h-4 w-4" /> Render Final Video ({cost} credits)</>
+              <><Play className="h-4 w-4" /> Render Final Video <span className="opacity-80">({cost}cr)</span></>
             )}
           </button>
         </div>

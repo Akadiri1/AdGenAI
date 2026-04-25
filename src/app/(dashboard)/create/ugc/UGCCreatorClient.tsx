@@ -19,11 +19,25 @@ type Step = "select-avatar" | "write-script" | "voice-settings" | "generate";
 type Duration = 5 | 10 | 15 | 30 | 60;
 
 /** Mirror of server-side cost math (start-generation + finalize). */
-function estimateCredits(targetSeconds: Duration): { sceneCount: number; render: number; finalize: number; total: number } {
+function estimateCredits(targetSeconds: Duration): {
+  sceneCount: number;
+  render: number;
+  finalize: number;
+  total: number;
+  renderMinutes: string; // e.g. "~2", "~5–7"
+} {
   const sceneCount = targetSeconds <= 10 ? 1 : Math.max(2, Math.min(6, Math.round(targetSeconds / 6)));
-  const render = targetSeconds + sceneCount * 3;       // Kling + composite per scene
-  const finalize = 5 + sceneCount * 2;                  // TTS + concat + lipsync
-  return { sceneCount, render, finalize, total: render + finalize };
+  const render = targetSeconds + sceneCount * 3;
+  const finalize = 5 + sceneCount * 2;
+  // Each Kling clip ~45-60s + composite ~10s. Scenes run sequentially. Finalize adds ~90s (TTS + concat + lipsync).
+  const minPerScene = 1;          // Kling best case
+  const maxPerScene = 1.5;        // worst case
+  const finalizeMin = 1.5;
+  const finalizeMax = 2.5;
+  const lo = Math.ceil(sceneCount * minPerScene + finalizeMin);
+  const hi = Math.ceil(sceneCount * maxPerScene + finalizeMax);
+  const renderMinutes = lo === hi ? `~${lo}` : `~${lo}–${hi}`;
+  return { sceneCount, render, finalize, total: render + finalize, renderMinutes };
 }
 
 const DURATIONS: Duration[] = [5, 10, 15, 30, 60];
@@ -515,7 +529,8 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
                 ) : (
                   <>{cost.sceneCount} scenes · ~{Math.round(targetSeconds / cost.sceneCount)}s each</>
                 )}
-                {" "}· <strong className="text-text-primary">{cost.total} credits total</strong> ({cost.render} render + {cost.finalize} stitch)
+                {" "}· <strong className="text-text-primary">{cost.total} credits</strong>
+                {" "}· <strong className="text-text-primary">{cost.renderMinutes} min</strong> render time
               </p>
             </div>
 
@@ -627,6 +642,10 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
                 <span className="font-semibold text-text-primary">
                   {targetSeconds}s · {cost.sceneCount === 1 ? "single shot" : `${cost.sceneCount} scenes`}
                 </span>
+              </div>
+              <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
+                <span className="text-text-secondary">Render time</span>
+                <span className="font-semibold text-text-primary">{cost.renderMinutes} min</span>
               </div>
               <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
                 <span className="text-text-secondary">Speed / Stability / Emotion</span>

@@ -163,9 +163,12 @@ export function SceneEditor({ adId }: { adId: string }) {
     return <p className="py-12 text-center text-sm text-text-secondary">No scenes yet.</p>;
   }
 
-  // Estimated cost for DRAFT confirm CTA
+  // Estimated cost + render time for DRAFT confirm CTA
   const totalSeconds = scenes.reduce((sum, s) => sum + s.durationSeconds, 0);
   const estimatedCost = totalSeconds + scenes.length * 3;
+  const lo = Math.ceil(scenes.length * 1);
+  const hi = Math.ceil(scenes.length * 1.5);
+  const renderMinutes = lo === hi ? `~${lo}` : `~${lo}–${hi}`;
 
   return (
     <div className="space-y-4">
@@ -175,18 +178,18 @@ export function SceneEditor({ adId }: { adId: string }) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-text-primary">
               <span className="font-heading font-bold">Ready when you are.</span>
-              <span className="text-text-secondary"> Tweak any scene prompt below, then hit start.</span>
+              <span className="text-text-secondary"> Render takes <strong className="text-text-primary">{renderMinutes} min</strong>. Tweak any scene first, then hit start.</span>
             </div>
             <button
               type="button"
               onClick={startGeneration}
               disabled={starting}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50 whitespace-nowrap"
+              className="flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-4 sm:px-5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50"
             >
               {starting ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</>
               ) : (
-                <><Play className="h-4 w-4" /> Confirm & Start ({estimatedCost} credits)</>
+                <><Play className="h-4 w-4" /> Confirm &amp; Start <span className="opacity-80">({estimatedCost}cr)</span></>
               )}
             </button>
           </div>
@@ -209,8 +212,8 @@ export function SceneEditor({ adId }: { adId: string }) {
         return (
         <div key={s.id} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-            {/* Preview */}
-            <div className="relative aspect-[9/16] overflow-hidden rounded-xl bg-bg-secondary">
+            {/* Preview — capped on mobile so it doesn't take half the screen */}
+            <div className="relative aspect-[9/16] w-full max-w-[180px] mx-auto md:mx-0 md:max-w-none overflow-hidden rounded-xl bg-bg-secondary">
               {s.videoClipUrl ? (
                 <video src={s.videoClipUrl} controls className="h-full w-full object-cover" />
               ) : s.compositeImageUrl ? (
