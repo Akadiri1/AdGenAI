@@ -250,6 +250,7 @@ export async function POST(req: Request) {
       productImages: body.productImageUrls.length > 0 ? imagesToString(body.productImageUrls) : null,
       actorId: actorRow.id,
       visualInstructions: body.visualInstructions ?? null,
+      voiceSettings: body.voiceSettings ? JSON.stringify(body.voiceSettings) : null,
       score: plan.predictedScore,
     },
   });

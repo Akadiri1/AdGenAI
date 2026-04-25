@@ -14,12 +14,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  generateVoiceover,
-  pickVoiceForActor,
   concatVideos,
   lipSyncVideo,
   isReplicateConfigured,
 } from "@/lib/replicate";
+import { generateVoiceover } from "@/lib/tts";
 import { uploadToStorage } from "@/lib/storage";
 import { checkCredits, deductCredits } from "@/lib/credits";
 
@@ -109,8 +108,19 @@ export async function POST(
     if (!text.trim()) throw new Error("No spoken text found across scenes or ad.script");
 
     // 1. Voiceover (one TTS call — much cheaper than per-scene)
-    const voice = pickVoiceForActor(ad.actor?.gender ?? null);
-    const voiceoverUrl = await generateVoiceover({ text, voice });
+    let voiceSettings: Record<string, unknown> | undefined;
+    try { voiceSettings = ad.voiceSettings ? JSON.parse(ad.voiceSettings) : undefined; } catch { /* ignore */ }
+    const tts = await generateVoiceover({
+      text,
+      settings: voiceSettings as never,
+      actor: ad.actor ? {
+        gender: ad.actor.gender,
+        age: ad.actor.ageRange,
+        vibe: ad.actor.vibe,
+      } : undefined,
+      language: ad.language,
+    });
+    const voiceoverUrl = tts.audioUrl;
 
     // 2. Concat all scene clips into one silent video
     const clipUrls = ad.scenes.map((s) => s.videoClipUrl as string);

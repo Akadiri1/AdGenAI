@@ -178,6 +178,7 @@ model Ad {
   musicGenre      String?
   visualInstructions String?        // Custom AI instructions for scene style/content
   voiceoverUrl    String?
+  voiceSettings   String?           // JSON: { speed, stability, similarity, styleExaggeration, voiceId? }
 
   aspectRatio     String    @default("9:16")
   duration        Int?
