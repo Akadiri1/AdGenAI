@@ -15,16 +15,17 @@ const PRIMARY_TABS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
   { href: "/create", icon: Sparkles, label: "Create" },
   { href: "/ads", icon: Film, label: "My Ads" },
-  { href: "/analytics", icon: BarChart3, label: "Analytics" },
+  { href: "/referral", icon: Gift, label: "Refer" },
 ];
 
 const MORE_ITEMS = [
-  { href: "/campaigns", icon: Megaphone, label: "Campaigns" },
-  { href: "/schedule", icon: CalendarDays, label: "Schedule" },
-  { href: "/templates", icon: Palette, label: "Templates" },
-  // { href: "/marketplace", icon: ShoppingBag, label: "Marketplace" }, // hidden
-  { href: "/connect", icon: Link2, label: "Connect" },
-  { href: "/referral", icon: Gift, label: "Referrals" },
+  // Hidden until ready:
+  // { href: "/campaigns", icon: Megaphone, label: "Campaigns" },
+  // { href: "/schedule", icon: CalendarDays, label: "Schedule" },
+  // { href: "/templates", icon: Palette, label: "Templates" },
+  // { href: "/marketplace", icon: ShoppingBag, label: "Marketplace" },
+  // { href: "/connect", icon: Link2, label: "Connect" },
+  // { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/settings", icon: Settings, label: "Settings" },
   { href: "/settings/account", icon: User, label: "Account" },
   { href: "/settings/billing", icon: CreditCard, label: "Billing" },

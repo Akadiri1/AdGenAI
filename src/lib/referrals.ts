@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export const REFEREE_BONUS_CREDITS = 2;
-export const REFERRAL_COMMISSION_RATE = 0.3; // 30% commission (cashback)
+export const REFERRAL_COMMISSION_RATE = 0.2; // 20% commission (cashback)
 
 /**
  * Resolves a referral code to a user ID. Codes are the first 8 chars of the user ID, uppercased.
@@ -60,7 +60,7 @@ export async function applyReferralOnSignup(
 
 /**
  * Called on every successful paid invoice. If the paying user was referred,
- * credits the referrer with 30% commission and updates the referral record.
+ * credits the referrer with 20% commission and updates the referral record.
  */
 export async function creditReferralCommission(
   payingUserId: string,

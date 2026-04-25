@@ -16,6 +16,18 @@ import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, DEFAULT_VOICE_SETTINGS, type
 
 type Step = "select-avatar" | "write-script" | "voice-settings" | "generate";
 
+type Duration = 5 | 10 | 15 | 30 | 60;
+
+/** Mirror of server-side cost math (start-generation + finalize). */
+function estimateCredits(targetSeconds: Duration): { sceneCount: number; render: number; finalize: number; total: number } {
+  const sceneCount = targetSeconds <= 10 ? 1 : Math.max(2, Math.min(6, Math.round(targetSeconds / 6)));
+  const render = targetSeconds + sceneCount * 3;       // Kling + composite per scene
+  const finalize = 5 + sceneCount * 2;                  // TTS + concat + lipsync
+  return { sceneCount, render, finalize, total: render + finalize };
+}
+
+const DURATIONS: Duration[] = [5, 10, 15, 30, 60];
+
 export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -28,7 +40,10 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const [visualInstructions, setVisualInstructions] = useState("");
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(DEFAULT_VOICE_SETTINGS);
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "1:1" | "16:9">("9:16");
+  const [targetSeconds, setTargetSeconds] = useState<Duration>(15);
   const [generating, setGenerating] = useState(false);
+
+  const cost = estimateCredits(targetSeconds);
 
   const [customActorImage, setCustomActorImage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -99,7 +114,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           visualInstructions: visualInstructions || undefined,
           voiceSettings,
           aspectRatio,
-          targetSeconds: 15,
+          targetSeconds,
         }),
       });
       const data = await res.json();
@@ -237,8 +252,11 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                     fd.append("file", file);
                     fd.append("folder", "uploads");
                     const res = await fetch("/api/upload", { method: "POST", body: fd });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                    const text = await res.text();
+                    let data: { url?: string; error?: string } = {};
+                    try { data = text ? JSON.parse(text) : {}; } catch { /* non-JSON body */ }
+                    if (!res.ok) throw new Error(data.error ?? `Upload failed (${res.status}): ${text.slice(0, 200) || "empty body"}`);
+                    if (!data.url) throw new Error("Upload succeeded but returned no URL");
                     setCustomActorImage(data.url);
                     setSelectedAvatar({
                       id: "custom-" + Date.now(),
@@ -472,6 +490,35 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
               </div>
             </div>
 
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Duration</div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {DURATIONS.map((d) => {
+                  const c = estimateCredits(d);
+                  const isActive = targetSeconds === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setTargetSeconds(d)}
+                      className={`flex flex-col items-center justify-center rounded-lg border-2 py-2 transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-black/10 text-text-secondary hover:border-black/20"}`}
+                    >
+                      <span className="text-sm font-bold leading-none">{d}s</span>
+                      <span className={`mt-1 text-[9px] font-semibold leading-none ${isActive ? "text-primary" : "text-text-secondary"}`}>{c.total}cr</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[10px] text-text-secondary leading-relaxed">
+                {targetSeconds <= 10 ? (
+                  <>Single shot — one Kling clip, no scene cuts.</>
+                ) : (
+                  <>{cost.sceneCount} scenes · ~{Math.round(targetSeconds / cost.sceneCount)}s each</>
+                )}
+                {" "}· <strong className="text-text-primary">{cost.total} credits total</strong> ({cost.render} render + {cost.finalize} stitch)
+              </p>
+            </div>
+
             <button
               onClick={() => setStep("voice-settings")}
               disabled={!script.trim()}
@@ -576,6 +623,12 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
                 <span className="font-semibold text-text-primary">{aspectRatio}</span>
               </div>
               <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
+                <span className="text-text-secondary">Duration</span>
+                <span className="font-semibold text-text-primary">
+                  {targetSeconds}s · {cost.sceneCount === 1 ? "single shot" : `${cost.sceneCount} scenes`}
+                </span>
+              </div>
+              <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
                 <span className="text-text-secondary">Speed / Stability / Emotion</span>
                 <span className="font-semibold text-text-primary">{voiceSettings.speed.toFixed(1)}x / {(voiceSettings.stability * 100).toFixed(0)}% / {(voiceSettings.styleExaggeration * 100).toFixed(0)}%</span>
               </div>
@@ -586,12 +639,12 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
               <div className="flex justify-between rounded-xl bg-primary/5 border border-primary/20 p-3">
                 <span className="text-text-secondary">Cost</span>
                 <span className="font-semibold text-primary">
-                  {isFree ? "Free — prompts only" : "Free — draft only (you confirm in Studio)"}
+                  {isFree ? "Free — prompts only" : `~${cost.total} credits (charged at Confirm)`}
                 </span>
               </div>
               {!isFree && (
                 <div className="rounded-xl bg-accent/5 border border-accent/20 p-3 text-xs text-text-secondary">
-                  We&rsquo;ll create a <strong className="text-text-primary">draft</strong> in Studio. Nothing is charged until you click <strong className="text-text-primary">Confirm &amp; Start</strong> there. Estimated ~24 credits for a 15s video.
+                  We&rsquo;ll create a <strong className="text-text-primary">draft</strong> in Studio. Nothing is charged until you click <strong className="text-text-primary">Confirm &amp; Start</strong> there. Estimated <strong className="text-text-primary">{cost.total} credits</strong> for this {targetSeconds}s ad.
                 </div>
               )}
               {isFree && (

@@ -38,15 +38,21 @@ export async function POST(req: Request) {
     );
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const ext = file.name.split(".").pop() ?? "png";
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const ext = file.name.split(".").pop() ?? "png";
 
-  const url = await uploadToStorage({
-    bytes: Buffer.from(bytes),
-    contentType: file.type,
-    extension: ext,
-    folder,
-  });
+    const url = await uploadToStorage({
+      bytes: Buffer.from(bytes),
+      contentType: file.type,
+      extension: ext,
+      folder,
+    });
 
-  return NextResponse.json({ url });
+    return NextResponse.json({ url });
+  } catch (err) {
+    const msg = (err as Error).message || "Unknown upload error";
+    console.error("[upload] failed:", msg);
+    return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
+  }
 }

@@ -311,7 +311,7 @@ function ReferralClientInner({
             <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">3</span>
             <p>
               <strong className="text-text-primary">They pay, you earn — instantly.</strong>{" "}
-              The moment they subscribe (Starter $49 → $14.70, Pro $129 → $38.70, Business $299 → $89.70) your commission is credited instantly.
+              The moment they subscribe (Starter $15 → $3.00, Pro $129 → $25.80, Business $349 → $69.80) your commission is credited instantly.
               Every renewal adds more — as long as they stay subscribed, you keep earning.
             </p>
           </div>

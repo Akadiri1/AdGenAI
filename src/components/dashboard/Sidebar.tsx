@@ -14,12 +14,13 @@ const navItems = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.createAd", href: "/create", icon: Sparkles },
   { labelKey: "nav.myAds", href: "/ads", icon: Film },
-  { labelKey: "nav.campaigns", href: "/campaigns", icon: Megaphone },
-  { labelKey: "nav.schedule", href: "/schedule", icon: CalendarDays },
-  { labelKey: "nav.analytics", href: "/analytics", icon: BarChart3 },
-  { labelKey: "nav.templates", href: "/templates", icon: Palette },
-  // { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag }, // Hidden — coming back later
-  { labelKey: "nav.connect", href: "/connect", icon: Link2 },
+  // Hidden until they have content / are wired to ecommerce flow:
+  // { labelKey: "nav.campaigns", href: "/campaigns", icon: Megaphone },
+  // { labelKey: "nav.schedule", href: "/schedule", icon: CalendarDays },
+  // { labelKey: "nav.analytics", href: "/analytics", icon: BarChart3 },
+  // { labelKey: "nav.templates", href: "/templates", icon: Palette },
+  // { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag },
+  // { labelKey: "nav.connect", href: "/connect", icon: Link2 },
   { labelKey: "nav.referrals", href: "/referral", icon: Gift },
 ];
 

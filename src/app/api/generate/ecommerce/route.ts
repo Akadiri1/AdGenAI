@@ -46,7 +46,7 @@ const bodySchema = z.object({
   }).optional(),
 
   platforms: z.array(z.string()).min(1).default(["INSTAGRAM"]),
-  targetSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(15),
+  targetSeconds: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30), z.literal(60)]).default(15),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   language: z.string().default("en"),
 });

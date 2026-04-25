@@ -116,12 +116,21 @@ const LANG_NAMES: Record<string, string> = {
   sw: "Swahili", yo: "Yoruba", ko: "Korean",
 };
 
+/**
+ * Decide how many scenes an ad of `targetSeconds` should have, and how long each.
+ * Kling tops out at 10s per clip — so anything ≤10s is a single shot.
+ */
+export function computeSceneSchedule(targetSeconds: number): { sceneCount: number; secondsPerScene: number } {
+  if (targetSeconds <= 10) return { sceneCount: 1, secondsPerScene: targetSeconds <= 5 ? 5 : 10 };
+  const sceneCount = Math.max(2, Math.min(6, Math.round(targetSeconds / 6)));
+  const secondsPerScene = Math.round(targetSeconds / sceneCount);
+  return { sceneCount, secondsPerScene };
+}
+
 export async function planEcommerceAd(input: AdPlanInput): Promise<EcommerceAdPlan> {
   const langName = LANG_NAMES[input.language] ?? "English";
 
-  // Number of scenes scales with target length: ~6 seconds per scene
-  const sceneCount = Math.max(2, Math.min(6, Math.round(input.targetSeconds / 6)));
-  const secondsPerScene = Math.round(input.targetSeconds / sceneCount);
+  const { sceneCount, secondsPerScene } = computeSceneSchedule(input.targetSeconds);
 
   const systemPrompt = PLANNER_SYSTEM_PROMPT
     .replace("{langName}", langName)
@@ -256,8 +265,7 @@ export async function splitCustomScriptIntoScenes(input: {
   targetSeconds: number;
 }): Promise<EcommerceAdPlan> {
   const langName = LANG_NAMES[input.language] ?? "English";
-  const sceneCount = Math.max(2, Math.min(6, Math.round(input.targetSeconds / 6)));
-  const secondsPerScene = Math.round(input.targetSeconds / sceneCount);
+  const { sceneCount, secondsPerScene } = computeSceneSchedule(input.targetSeconds);
 
   const systemPrompt = PLANNER_SYSTEM_PROMPT
     .replace("{langName}", langName)

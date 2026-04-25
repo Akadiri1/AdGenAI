@@ -55,8 +55,6 @@ export function AdDetailClient({
   const [customImageUrl, setCustomImageUrl] = useState("");
   const [generatingVideo, setGeneratingVideo] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [scheduling, setScheduling] = useState(false);
-  const [scheduleValue, setScheduleValue] = useState("");
   const { success, error: toastError } = useToast();
 
   const isLocked = ad.status === "POSTED" || ad.status === "POSTING";
@@ -136,27 +134,7 @@ export function AdDetailClient({
     }
   }
 
-  async function handleSchedule(postNow: boolean) {
-    setScheduling(true);
-    try {
-      const res = await fetch(`/api/ads/${ad.id}/schedule`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postNow,
-          scheduledAt: !postNow && scheduleValue ? new Date(scheduleValue).toISOString() : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Scheduling failed");
-      setAd({ ...ad, status: "SCHEDULED", scheduledAt: data.scheduledAt });
-      success(postNow ? "Posting now" : "Scheduled");
-    } catch (err) {
-      toastError((err as Error).message);
-    } finally {
-      setScheduling(false);
-    }
-  }
+  // handleSchedule removed — schedule/post UI hidden until social publishing is wired
 
   async function handleGenerateVideo() {
     setGeneratingVideo(true);
@@ -448,52 +426,8 @@ export function AdDetailClient({
             </dl>
           </div>
 
-          <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-            <h3 className="font-heading font-bold text-text-primary mb-3">Schedule & Post</h3>
-            {ad.status === "POSTED" ? (
-              <div className="rounded-xl bg-success/10 p-3 text-sm text-success font-semibold text-center">
-                ✅ Posted{ad.postedAt && ` on ${new Date(ad.postedAt).toLocaleDateString()}`}
-              </div>
-            ) : ad.status === "SCHEDULED" && ad.scheduledAt ? (
-              <div className="rounded-xl bg-warning/10 p-3 text-sm text-warning font-semibold text-center">
-                ⏰ Scheduled for {new Date(ad.scheduledAt).toLocaleString()}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleSchedule(true)}
-                  disabled={scheduling}
-                  className="h-10 w-full rounded-xl bg-primary text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
-                >
-                  {scheduling ? "..." : "Post now"}
-                </button>
-                <input
-                  type="datetime-local"
-                  value={scheduleValue}
-                  onChange={(e) => setScheduleValue(e.target.value)}
-                  className="w-full rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <button
-                  onClick={() => handleSchedule(false)}
-                  disabled={scheduling || !scheduleValue}
-                  className="h-10 w-full rounded-xl border-2 border-black/10 bg-white text-sm font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
-                >
-                  Schedule
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-            <h3 className="font-heading font-bold text-text-primary mb-3">Performance</h3>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-text-secondary">Impressions</dt><dd className="font-semibold">{ad.impressions.toLocaleString()}</dd></div>
-              <div className="flex justify-between"><dt className="text-text-secondary">Clicks</dt><dd className="font-semibold">{ad.clicks.toLocaleString()}</dd></div>
-              <div className="flex justify-between"><dt className="text-text-secondary">Conversions</dt><dd className="font-semibold">{ad.conversions.toLocaleString()}</dd></div>
-              <div className="flex justify-between"><dt className="text-text-secondary">Spend</dt><dd className="font-semibold">${ad.spend.toFixed(2)}</dd></div>
-              <div className="flex justify-between"><dt className="text-text-secondary">Revenue</dt><dd className="font-semibold">${ad.revenue.toFixed(2)}</dd></div>
-            </dl>
-          </div>
+          {/* Schedule & Post — hidden for now, social publishing not wired yet */}
+          {/* Performance — hidden for now, no real metrics until ads actually post */}
         </div>
       </div>
     </div>

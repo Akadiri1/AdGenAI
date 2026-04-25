@@ -785,7 +785,7 @@ export function StudioClient({
           </div>
 
           <div className="flex w-full sm:w-auto items-center gap-2">
-            {dirty ? (
+            {dirty && (
               <button
                 onClick={save}
                 disabled={saving}
@@ -794,16 +794,8 @@ export function StudioClient({
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save & Apply Changes
               </button>
-            ) : (
-              <button
-                onClick={() => handleSchedule(true)}
-                disabled={scheduling}
-                className="flex h-12 w-full sm:w-auto flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 text-sm font-bold text-white shadow-lg"
-              >
-                {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Publish Now
-              </button>
             )}
+            {/* Publish/Schedule button removed — social publishing not wired */}
           </div>
         </div>
       </div>
