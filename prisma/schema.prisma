@@ -65,6 +65,7 @@ model User {
   ownedTeams     Team[]
   apiKeys        ApiKey[]
   auditLogs      AuditLog[]
+  actors         Actor[]
   accountManagerId String?
 
   @@index([email])
@@ -161,15 +162,22 @@ model Ad {
   script          String?
   scriptFramework String?
 
-  images          String?   // JSON array as string
+  // Ecommerce specifics
+  productName     String?
+  productOffer    String?           // "30% off", "Buy 2 get 1 free", etc.
+  productImages   String?           // JSON array of uploaded product image URLs
+  actorId         String?           // FK to Actor (stock or custom)
+  actor           Actor?            @relation(fields: [actorId], references: [id])
+
+  images          String?           // JSON array as string (composited scene images)
   videoUrl        String?
   thumbnailUrl    String?
   musicTrack      String?
   musicGenre      String?
-  visualInstructions String?  // Custom AI instructions for scene style/content
+  visualInstructions String?        // Custom AI instructions for scene style/content
   voiceoverUrl    String?
 
-  aspectRatio     String    @default("1:1")
+  aspectRatio     String    @default("9:16")
   duration        Int?
   language        String    @default("en")
   score           Float?
@@ -186,12 +194,77 @@ model Ad {
   campaignId      String?
   campaign        Campaign? @relation(fields: [campaignId], references: [id])
 
+  scenes          Scene[]
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([userId, status])
   @@index([scheduledAt])
   @@index([campaignId])
+  @@index([actorId])
+}
+
+model Scene {
+  id              String   @id @default(cuid())
+  adId            String
+  ad              Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  sceneNumber     Int      // 1, 2, 3...
+  durationSeconds Int      @default(5)
+
+  // Generation state
+  status          String   @default("PENDING") // PENDING, COMPOSITING, GENERATING_VIDEO, READY, FAILED
+  prompt          String   // Full visual prompt sent to the model
+  basePrompt      String   // Original prompt (before instruction edits)
+  spokenLine      String?  // Line the actor speaks during this scene
+
+  // Outputs
+  compositeImageUrl String? // Image after Nano Banana composites actor + product
+  videoClipUrl    String?   // Final 5-10s clip from Kling
+  klingTaskId     String?   // Async job tracking
+
+  // User edits (instruction-based)
+  editInstructions String?   // "make her smile more, brighter lighting" etc.
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([adId, sceneNumber])
+  @@index([adId])
+}
+
+model Actor {
+  id              String   @id @default(cuid())
+  // Stock actors have userId = null; custom actors have a user
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  imageUrl        String   // Primary headshot
+  thumbnailUrl    String?  // Smaller version for picker grids
+
+  // Demographics for filtering
+  gender          String?  // male, female, non-binary
+  ageRange        String?  // young-adult, adult, mature, senior
+  ethnicity       String?  // for diverse representation
+  vibe            String?  // confident, friendly, energetic, calm, professional, edgy
+  setting         String?  // home, office, outdoor, studio, gym, kitchen
+  language        String?  // best language match for voice
+
+  // Voice profile (for ElevenLabs / Kling lip-sync)
+  voiceId         String?  // ElevenLabs voice ID
+
+  isStock         Boolean  @default(false)  // true = available to all users
+  isPublic        Boolean  @default(false)  // user actors can be shared
+  usageCount      Int      @default(0)
+
+  ads             Ad[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isStock])
+  @@index([gender, ageRange])
 }
 
 model Campaign {

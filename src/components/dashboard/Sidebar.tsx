@@ -7,7 +7,7 @@ import { useLang } from "@/components/LangProvider";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Sparkles, Film, Megaphone, CalendarDays, BarChart3,
-  Palette, ShoppingBag, Link2, Gift, Settings, Plus, HelpCircle, LogOut,
+  Palette, Link2, Gift, Settings, Plus, HelpCircle, LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -18,7 +18,7 @@ const navItems = [
   { labelKey: "nav.schedule", href: "/schedule", icon: CalendarDays },
   { labelKey: "nav.analytics", href: "/analytics", icon: BarChart3 },
   { labelKey: "nav.templates", href: "/templates", icon: Palette },
-  { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag },
+  // { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag }, // Hidden — coming back later
   { labelKey: "nav.connect", href: "/connect", icon: Link2 },
   { labelKey: "nav.referrals", href: "/referral", icon: Gift },
 ];

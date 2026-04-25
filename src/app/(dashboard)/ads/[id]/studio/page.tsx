@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { stringToPlatforms, stringToImages } from "@/lib/adHelpers";
 import { StudioClient } from "./StudioClient";
+import { StudioScenesPanel } from "./StudioScenesPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +28,9 @@ export default async function StudioPage({
     );
   }
 
-  // Load main ad + any sibling variants
+  // Load main ad + any sibling variants + scene count for the new ecommerce flow
   const allIds = [id, ...(variantParam?.split(",").filter(Boolean) ?? [])];
-  const [ads, user] = await Promise.all([
+  const [ads, user, sceneCount] = await Promise.all([
     prisma.ad.findMany({
       where: { id: { in: allIds }, userId: session.user.id },
       orderBy: { score: "desc" },
@@ -38,6 +39,7 @@ export default async function StudioPage({
       where: { id: session.user.id },
       select: { plan: true, brandColors: true, brandVoice: true, language: true },
     }),
+    prisma.scene.count({ where: { adId: id } }),
   ]);
 
   const mainAd = ads.find((a) => a.id === id);
@@ -56,13 +58,16 @@ export default async function StudioPage({
   }));
 
   return (
-    <StudioClient
-      ad={JSON.parse(JSON.stringify(normalizedAds.find((a) => a.id === id)!))}
-      variants={JSON.parse(JSON.stringify(normalizedAds))}
-      isPaid={isPaid}
-      brandColors={brandColors}
-      brandVoice={user?.brandVoice ?? "professional"}
-      userLang={user?.language ?? "en"}
-    />
+    <>
+      <StudioScenesPanel adId={id} hasScenes={sceneCount > 0} />
+      <StudioClient
+        ad={JSON.parse(JSON.stringify(normalizedAds.find((a) => a.id === id)!))}
+        variants={JSON.parse(JSON.stringify(normalizedAds))}
+        isPaid={isPaid}
+        brandColors={brandColors}
+        brandVoice={user?.brandVoice ?? "professional"}
+        userLang={user?.language ?? "en"}
+      />
+    </>
   );
 }

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Sparkles, Film, BarChart3, MoreHorizontal,
-  Megaphone, CalendarDays, Palette, ShoppingBag, Link2,
+  Megaphone, CalendarDays, Palette, Link2,
   Gift, Settings, HelpCircle, X, CreditCard, Paintbrush, User, LogOut, Lock,
 } from "lucide-react";
 
@@ -22,7 +22,7 @@ const MORE_ITEMS = [
   { href: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { href: "/schedule", icon: CalendarDays, label: "Schedule" },
   { href: "/templates", icon: Palette, label: "Templates" },
-  { href: "/marketplace", icon: ShoppingBag, label: "Marketplace" },
+  // { href: "/marketplace", icon: ShoppingBag, label: "Marketplace" }, // hidden
   { href: "/connect", icon: Link2, label: "Connect" },
   { href: "/referral", icon: Gift, label: "Referrals" },
   { href: "/settings", icon: Settings, label: "Settings" },

@@ -33,7 +33,7 @@ const PROVIDERS: ProviderConfig[] = [
     icon: InstagramIcon,
     description: "Post images, reels, and stories to your Business account",
     href: "/api/connect/meta",
-    available: true,
+    available: false,
     bgClass: "from-purple-500 via-pink-500 to-orange-400",
   },
   {
@@ -42,7 +42,7 @@ const PROVIDERS: ProviderConfig[] = [
     icon: FacebookIcon,
     description: "Publish to your Facebook Pages with photos and videos",
     href: "/api/connect/facebook",
-    available: true,
+    available: false,
     bgClass: "from-blue-600 to-blue-700",
   },
   {
@@ -51,7 +51,7 @@ const PROVIDERS: ProviderConfig[] = [
     icon: TikTokIcon,
     description: "Upload short-form video ads directly to TikTok",
     href: "/api/connect/tiktok",
-    available: true,
+    available: false,
     bgClass: "from-gray-900 via-gray-800 to-pink-500",
   },
 ];
@@ -77,6 +77,19 @@ export function ConnectClient({
         <p className="text-text-secondary mt-1">
           Link once — we handle the posting automatically
         </p>
+      </div>
+
+      <div className="mb-6 rounded-2xl border-2 border-warning/30 bg-warning/5 p-5">
+        <div className="flex items-start gap-3">
+          <Clock className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-heading font-bold text-text-primary mb-1">Auto-posting is coming soon</h3>
+            <p className="text-sm text-text-secondary">
+              We&apos;re finalizing direct integrations with Instagram, Facebook, TikTok, and WhatsApp Business. For now,
+              create your ads, download them with no watermark, and post manually. We&apos;ll email you the second auto-posting goes live.
+            </p>
+          </div>
+        </div>
       </div>
 
       {success && (
