@@ -155,7 +155,7 @@ export async function lipSyncVideo(params: {
       audio: params.audioUrl,
     },
   );
-  const output = await waitForPrediction(prediction.id, 240_000);
+  const output = await waitForPrediction(prediction.id, 200_000);
   const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
   if (typeof url !== "string") throw new Error("Lip-sync produced no URL");
   return url;

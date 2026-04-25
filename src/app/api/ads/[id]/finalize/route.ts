@@ -23,7 +23,7 @@ import {
 import { uploadToStorage } from "@/lib/storage";
 import { checkCredits, deductCredits } from "@/lib/credits";
 
-export const maxDuration = 600; // up to 10 min — lipsync can be slow
+export const maxDuration = 300; // Vercel Hobby cap; lipsync usually finishes in ~120s
 
 export async function GET(
   _req: Request,
