@@ -1,6 +1,6 @@
 import {
-  Sparkles, Film, FileText, Globe, Music, CalendarDays,
-  MessageSquare, DollarSign, Trophy, type LucideIcon,
+  Sparkles, Film, FileText, Globe, Users, Mic,
+  Image as ImageIcon, Wand2, Download, type LucideIcon,
 } from "lucide-react";
 
 type Feature = {
@@ -12,57 +12,57 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    icon: Sparkles,
-    title: "Magic Mode",
-    description: "Type your business. Get ready-to-post ads. Zero decisions required.",
+    icon: Users,
+    title: "100+ AI Actors",
+    description: "Pick a face that fits your audience — diverse genders, ages, settings. Filter by vibe.",
     color: "text-primary bg-primary/10",
+  },
+  {
+    icon: ImageIcon,
+    title: "Actor + Product Compositing",
+    description: "Upload your product. Nano Banana puts your actor holding it, using it, in any setting — automatically.",
+    color: "text-accent bg-accent/10",
   },
   {
     icon: Film,
-    title: "AI Video Ads",
-    description: "Images + music + voiceover + animations assembled automatically in 6s, 15s, 30s, or 60s formats.",
-    color: "text-accent bg-accent/10",
-  },
-  {
-    icon: FileText,
-    title: "Copy That Converts",
-    description: "AIDA, PAS, Before-After-Bridge frameworks built in. AI scores every ad and tells you why.",
-    color: "text-warning bg-warning/10",
-  },
-  {
-    icon: Globe,
-    title: "30+ Languages",
-    description: "English, Spanish, French, Portuguese, German, Hindi, Arabic, Japanese, and more.",
+    title: "Kling 2.6 Pro Video",
+    description: "5–60 second videos with cinematic motion. Single shot or multi-scene cuts — you choose.",
     color: "text-secondary bg-secondary/10",
   },
   {
-    icon: Music,
-    title: "Global Music Library",
-    description: "Pop, cinematic, hip-hop, lo-fi, Afrobeats, amapiano, and regional tracks worldwide.",
+    icon: FileText,
+    title: "AI Scriptwriter",
+    description: "Write your own script or have AI generate a UGC-style hook + body + CTA in your brand voice.",
+    color: "text-warning bg-warning/10",
+  },
+  {
+    icon: Mic,
+    title: "Voiceover + Lip-Sync",
+    description: "Auto-generated voiceover synced to your actor's mouth. No recording yourself.",
     color: "text-danger bg-danger/10",
   },
   {
-    icon: CalendarDays,
-    title: "Auto-Schedule & Post",
-    description: "Set it and forget it. Post to Instagram, Facebook, TikTok, WhatsApp, and more at the perfect time.",
+    icon: Wand2,
+    title: "Edit With Plain English",
+    description: "Don't like a scene? Type \"make her smile more\" or \"brighter lighting\". AI re-renders just that scene.",
     color: "text-success bg-success/10",
   },
   {
-    icon: MessageSquare,
-    title: "WhatsApp Integration",
-    description: "Send ads via WhatsApp Status and Business API. No other platform does this.",
+    icon: Globe,
+    title: "13+ Languages",
+    description: "Generate scripts in English, Spanish, French, Portuguese, Hindi, Arabic, Yoruba, Swahili, and more.",
     color: "text-primary bg-primary/10",
   },
   {
-    icon: DollarSign,
-    title: "ROI Calculator",
-    description: "Know exactly how much money each ad made on each platform. In plain numbers.",
+    icon: Sparkles,
+    title: "Free Prompts Forever",
+    description: "Free plan generates copy-paste prompts for Kling, Veo, Sora — even if you never pay.",
     color: "text-accent bg-accent/10",
   },
   {
-    icon: Trophy,
-    title: "Performance Scoring",
-    description: "Every ad gets a predicted score with 5-point breakdown. Run only the winners.",
+    icon: Download,
+    title: "Download as MP4",
+    description: "Final video stitched, lip-synced, ready. Download and post anywhere — no platform lock-in.",
     color: "text-warning bg-warning/10",
   },
 ];
@@ -76,10 +76,10 @@ export function Features() {
             Everything you need
           </div>
           <h2 className="font-heading text-3xl font-bold text-text-primary md:text-5xl">
-            One app. The whole ad pipeline.
+            Your face, your product, ready to ship.
           </h2>
           <p className="mt-4 text-base sm:text-lg text-text-secondary">
-            Competitors give you a creator. We give you creation, scheduling, posting, and analytics — automatically.
+            Pick an actor. Upload your product. Get a finished UGC video — voiceover, lip-sync, the works. Download and post.
           </p>
         </div>
 

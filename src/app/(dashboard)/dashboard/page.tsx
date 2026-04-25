@@ -6,9 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { LiveActivityFeed } from "@/components/LiveActivityFeed";
 import { SuccessCelebration } from "@/components/SuccessCelebration";
 import {
-  Film, Megaphone, Eye, DollarSign, Sparkles, Sliders,
-  Link2, Palette, Gift, Paintbrush, ChevronRight, AlertTriangle, ShieldCheck,
-  Globe,
+  Film, Sparkles, Gift, Paintbrush, ChevronRight, AlertTriangle, ShieldCheck,
+  CreditCard, User2,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +20,8 @@ export default async function DashboardPage() {
   let isAdmin = false;
   let credits = 0;
   let totalAds = 0;
-  let activeCampaigns = 0;
-  let impressions = 0;
-  let revenueGenerated = 0;
+  let readyAds = 0;
+  let draftAds = 0;
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
     const check = await checkBrandKit(session.user.id);
@@ -31,39 +29,34 @@ export default async function DashboardPage() {
     brandMissing = check.missing;
     brandPercentage = check.percentage;
 
-    const [u, adsCount, campaignsCount, adAgg] = await Promise.all([
+    const [u, adsCount, ready, draft] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.user.id },
         select: { isAdmin: true, credits: true },
       }),
       prisma.ad.count({ where: { userId: session.user.id } }),
-      prisma.campaign.count({
-        where: { userId: session.user.id, status: { in: ["draft", "active", "scheduled"] } },
-      }),
-      prisma.ad.aggregate({
-        where: { userId: session.user.id },
-        _sum: { impressions: true, revenue: true },
-      }),
+      prisma.ad.count({ where: { userId: session.user.id, status: "READY" } }),
+      prisma.ad.count({ where: { userId: session.user.id, status: "DRAFT" } }),
     ]);
     isAdmin = u?.isAdmin ?? false;
     credits = u?.credits ?? 0;
     totalAds = adsCount;
-    activeCampaigns = campaignsCount;
-    impressions = adAgg._sum.impressions ?? 0;
-    revenueGenerated = adAgg._sum.revenue ?? 0;
+    readyAds = ready;
+    draftAds = draft;
   }
 
+  // Only metrics we actually have. Impressions/Revenue removed — we don't measure ad performance.
   const stats = [
-    { 
-      label: "Available Credits", 
-      value: credits.toLocaleString(), 
-      icon: Sparkles, 
+    {
+      label: "Available Credits",
+      value: credits.toLocaleString(),
+      icon: Sparkles,
       color: "text-primary bg-primary/10",
-      cta: { label: "Create Ad", href: "/create" }
+      cta: { label: "Create Ad", href: "/create" },
     },
     { label: "Total Ads", value: totalAds.toLocaleString(), icon: Film, color: "text-secondary bg-secondary/10" },
-    { label: "Impressions", value: impressions.toLocaleString(), icon: Eye, color: "text-accent bg-accent/10" },
-    { label: "Revenue", value: `$${revenueGenerated.toFixed(0)}`, icon: DollarSign, color: "text-success bg-success/10" },
+    { label: "Drafts (in Studio)", value: draftAds.toLocaleString(), icon: Paintbrush, color: "text-warning bg-warning/10" },
+    { label: "Ready to Publish", value: readyAds.toLocaleString(), icon: ShieldCheck, color: "text-success bg-success/10" },
   ];
 
   return (
@@ -127,7 +120,7 @@ export default async function DashboardPage() {
         </h2>
         <p className="text-white/90 mb-6 max-w-xl">
           {brandComplete
-            ? "Type your business in one sentence. Our AI handles the copy, images, video, music, and posting. No marketing knowledge needed."
+            ? "Pick an actor, write or AI-generate a script, upload your product. We handle the video, voiceover, and lip-sync. Download the MP4 and post it yourself."
             : "Complete your Brand Kit first — then AI will generate ads tailored to your brand, audience, and voice."}
         </p>
         <div className="flex flex-wrap gap-3">
@@ -213,11 +206,12 @@ export default async function DashboardPage() {
           <h3 className="font-heading text-lg font-bold text-text-primary mb-4">Quick Actions</h3>
           <div className="space-y-2">
             {[
+              { icon: Sparkles, label: "Create a new ad", href: "/create", highlight: brandComplete },
               { icon: Paintbrush, label: brandComplete ? "Update brand kit" : "Complete brand kit (required)", href: "/settings/brand", highlight: !brandComplete },
-              { icon: Globe, label: "URL-to-Ad Engine", href: "/create", highlight: true },
-              { icon: Link2, label: "Connect social accounts", href: "/connect", highlight: false },
-              { icon: Palette, label: "Browse templates", href: "/templates", highlight: false },
+              { icon: Film, label: "View my ads", href: "/ads", highlight: false },
+              { icon: CreditCard, label: "Buy credits", href: "/settings/billing", highlight: false },
               { icon: Gift, label: "Invite friends, earn 20%", href: "/referral", highlight: false },
+              { icon: User2, label: "Account settings", href: "/settings/account", highlight: false },
             ].map((action) => {
               const Icon = action.icon;
               return (

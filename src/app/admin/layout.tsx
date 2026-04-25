@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/adminAuth";
 import Link from "next/link";
 import {
   LayoutDashboard, Users, DollarSign, Film, Activity,
-  LogOut, ShieldCheck, Receipt, Server,
+  LogOut, ShieldCheck, Receipt, Server, Map,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AdminMobileNav } from "./AdminMobileNav";
@@ -17,6 +17,7 @@ const NAV = [
   { href: "/admin/infrastructure", label: "Infrastructure", icon: Server },
   { href: "/admin/ads", label: "Ads", icon: Film },
   { href: "/admin/activity", label: "Activity", icon: Activity },
+  { href: "/admin/sitemap", label: "Sitemap (all pages)", icon: Map },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

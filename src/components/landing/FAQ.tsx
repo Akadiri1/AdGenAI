@@ -4,44 +4,44 @@ import { useState } from "react";
 
 const faqs = [
   {
-    q: "Do I need any marketing knowledge to use Famousli?",
-    a: "No. Our Magic Mode is built for people with zero marketing experience. Type your business in one sentence, and our AI handles everything — copy, images, video, scheduling, and posting.",
+    q: "What does Famousli actually do?",
+    a: "We generate UGC-style video ads for ecommerce sellers. Pick an AI actor, upload your product, write or AI-generate a script — we composite the actor with your product, render a Kling video, add voiceover and lip-sync, and give you a downloadable MP4. You post it yourself wherever you want.",
   },
   {
-    q: "Which social platforms do you post to?",
-    a: "Instagram, Facebook, TikTok, YouTube Shorts, X/Twitter, LinkedIn, Pinterest, Snapchat, and WhatsApp (Business API + Status). We're the only platform that posts to WhatsApp automatically.",
+    q: "Do you publish to social platforms for me?",
+    a: "Not yet. We give you the finished MP4 — you post it on Instagram, TikTok, etc. Auto-posting is on the roadmap but not built. We didn't want to claim something we don't have.",
   },
   {
     q: "Do credits expire?",
-    a: "Never. Unlike competitors who force you to use credits monthly, your Famousli credits roll over indefinitely. Use them when you need them.",
+    a: "Credits roll over month-to-month up to a cap (twice your monthly allowance). Use them when you need them.",
   },
   {
     q: "What languages do you support?",
-    a: "30+ languages including English, Spanish, French, German, Portuguese, Italian, Dutch, Hindi, Arabic, Japanese, Korean, Swahili, and more. We add new languages every month.",
+    a: "Scripts can be generated in 13+ languages including English, Spanish, French, Portuguese, Hindi, Arabic, Japanese, Korean, Yoruba, Swahili, and more. Voiceover currently uses English voices but other languages render the script as text and you can voice-over yourself.",
   },
   {
-    q: "Can I use my own images and videos?",
-    a: "Yes. Use our AI-generated content, upload your own, or mix both. You can also paste a product URL and we'll scrape images automatically.",
+    q: "Can I use my own actor (my face)?",
+    a: "Yes — Pro and above let you upload a custom photo as your actor. Free and Starter use our 100+ stock AI actors.",
   },
   {
-    q: "How does the ROI calculator work?",
-    a: "We pull ad spend and conversion data directly from connected platforms and compare it to revenue you've tagged. You see a simple number: for every $1 spent, you made $X.",
+    q: "How long does an ad take to render?",
+    a: "A 5-10 second single-shot ad: ~2 minutes. A 30-second multi-scene ad: ~7 minutes. A 60-second ad: ~10 minutes. Most of the wait is on the AI video model (Kling 2.6 Pro on Replicate); we tell you the estimate before you start.",
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. You get 5 free ads per month forever. No credit card required. Upgrade only when you need more.",
+    a: "Yes — Free generates AI scripts and scene prompts you can copy into Kling, Veo, Sora, or any other AI video tool. No video rendering on Famousli at the free tier. No credit card required.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "Credit/debit cards (Visa, Mastercard, Amex) worldwide via Stripe, plus bank transfer, USSD, and mobile money via Paystack for customers in Africa. All plans available in USD, EUR, GBP, and 20+ local currencies.",
+    a: "Cards via Stripe (Visa, Mastercard, Amex) globally, plus bank transfer, USSD, and mobile money via Paystack for customers in Nigeria, Ghana, South Africa, Kenya, Egypt, Rwanda, and Côte d'Ivoire.",
   },
   {
     q: "Can I switch between monthly and yearly billing?",
-    a: "Yes, anytime. Yearly plans save you 20% — if you switch from monthly to yearly mid-cycle, we prorate the remaining balance.",
+    a: "Yes, anytime. Yearly plans save 20%. Switching mid-cycle prorates the remaining balance.",
   },
   {
-    q: "How is this different from Creatify or AdCreative.ai?",
-    a: "Three things: (1) true zero-knowledge mode — no marketing decisions needed, (2) we auto-post to every platform including WhatsApp, (3) we start at $49/month with 100 credits that roll over.",
+    q: "Do you offer a referral program?",
+    a: "Yes — 20% recurring commission on every paying user you refer, for as long as they stay subscribed.",
   },
 ];
 

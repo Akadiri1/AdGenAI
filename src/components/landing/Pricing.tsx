@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PLAN_DEFS } from "@/lib/plans";
 
 const currencies = {
   USD: { symbol: "$", rate: 1, label: "USD" },
@@ -14,98 +15,23 @@ const currencies = {
 
 type BillingCycle = "monthly" | "yearly";
 
-const plans = [
-  {
-    name: "Free",
-    priceMonthlyUsd: 0,
-    priceYearlyUsd: 0,
-    description: "Try before you buy",
-    credits: "3 ads/month",
-    features: [
-      "3 ads per month",
-      "All platforms supported",
-      "Watermark on exports",
-      "Basic templates",
-      "Community support",
-    ],
-    cta: "Start free",
-    popular: false,
-  },
-  {
-    name: "Starter",
-    priceMonthlyUsd: 15,
-    priceYearlyUsd: 144,
-    description: "For solopreneurs",
-    credits: "40 credits/month",
-    features: [
-      "40 credits/month (rollover)",
-      "No watermark",
-      "All AI frameworks",
-      "Schedule & auto-post",
-      "Basic analytics",
-      "Email support",
-    ],
-    cta: "Get Starter",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    priceMonthlyUsd: 129,
-    priceYearlyUsd: 1236,
-    description: "For growing brands",
-    credits: "500 credits/month",
-    features: [
-      "500 credits/month (rollover)",
-      "Advanced Mode (full creative control)",
-      "AI Write + AI Rewrite",
-      "Video assembly with music",
-      "Per-platform analytics + ROI",
-      "WhatsApp Business API",
-      "Unlimited social accounts",
-      "Ad editing after creation",
-      "Priority support",
-    ],
-    cta: "Get Pro",
-    popular: true,
-  },
-  {
-    name: "Business",
-    priceMonthlyUsd: 299,
-    priceYearlyUsd: 2868,
-    description: "For agencies & teams",
-    credits: "1,500 credits/month",
-    features: [
-      "1,500 credits/month (rollover)",
-      "Everything in Pro",
-      "API access",
-      "Team collaboration (10 seats)",
-      "Custom brand kit",
-      "White-label exports",
-      "Dedicated account manager",
-    ],
-    cta: "Get Business",
-    popular: false,
-  },
-  {
-    name: "Enterprise",
-    priceMonthlyUsd: 499,
-    priceYearlyUsd: 4788,
-    description: "For agencies & large brands",
-    credits: "2,000 credits/month",
-    features: [
-      "2,000 credits/month (rollover)",
-      "Everything in Business",
-      "Unlimited team seats",
-      "Custom AI model training",
-      "Priority API access",
-      "Custom integrations",
-      "SLA guarantee",
-      "Invoice billing (NET 30)",
-    ],
-    cta: "Contact sales",
-    popular: false,
-  },
-];
+// Pull straight from the source-of-truth PLAN_DEFS so landing always matches
+// what the billing page and the actual plan permissions say.
+const plans = (["FREE", "STARTER", "PRO", "BUSINESS", "ENTERPRISE"] as const).map((key) => {
+  const def = PLAN_DEFS[key];
+  return {
+    name: def.name,
+    priceMonthlyUsd: def.priceMonthlyUsd,
+    priceYearlyUsd: def.priceYearlyUsd,
+    description: def.tagline,
+    credits: def.monthlyCredits === 0
+      ? "Prompts only — no video"
+      : `${def.monthlyCredits.toLocaleString()} sec of video / month`,
+    features: def.features,
+    cta: key === "FREE" ? "Start free" : key === "ENTERPRISE" ? "Contact sales" : `Get ${def.name}`,
+    popular: key === "PRO",
+  };
+});
 
 export function Pricing() {
   const [currency, setCurrency] = useState<keyof typeof currencies>("USD");
@@ -183,9 +109,8 @@ export function Pricing() {
               </div>
               <div className="hidden sm:block h-6 w-px bg-black/10" />
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-secondary">
-                <span>3 ads/month</span>
-                <span>All platforms</span>
-                <span>Watermark</span>
+                <span>Unlimited prompts</span>
+                <span>Use in Kling/Veo/Sora</span>
                 <span>No credit card</span>
               </div>
             </div>
@@ -289,10 +214,8 @@ export function Pricing() {
                   <div className="hidden sm:block h-6 w-px bg-black/10" />
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
                     <span>{ep.credits}</span>
-                    <span>Unlimited seats</span>
-                    <span>Custom AI</span>
-                    <span>SLA</span>
-                    <span>API</span>
+                    <span>Founder access</span>
+                    <span>Custom invoicing</span>
                   </div>
                 </div>
                 <a
@@ -307,7 +230,7 @@ export function Pricing() {
         })()}
 
         <p className="mt-8 text-center text-sm text-text-secondary">
-          Need more credits? Buy packs of 20 for $10 anytime. All plans include a 30% referral program.
+          Need more credits? Buy packs of 30 seconds for $10 anytime. All plans include a 20% referral program.
         </p>
       </div>
     </section>

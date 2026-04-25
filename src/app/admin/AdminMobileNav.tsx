@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard, Users, DollarSign, Receipt, Film, Activity,
-  ShieldCheck, LogOut, Menu, X, Server,
+  ShieldCheck, LogOut, Menu, X, Server, Map,
 } from "lucide-react";
 
 type NavItem = {
@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { href: "/admin/infrastructure", label: "Infrastructure", icon: Server },
   { href: "/admin/ads", label: "Ads", icon: Film },
   { href: "/admin/activity", label: "Activity", icon: Activity },
+  { href: "/admin/sitemap", label: "Sitemap (all pages)", icon: Map },
 ];
 
 /**

@@ -99,7 +99,7 @@ export function BillingClient({
       if (data.url) {
         window.location.href = data.url;
       } else if (data.success) {
-        window.location.href = "/settings/billing?success=1&credits_purchased=20";
+        window.location.href = "/settings/billing?success=1&credits_purchased=30";
       }
     } catch (err) {
       setError((err as Error).message);
@@ -134,7 +134,7 @@ export function BillingClient({
             </div>
             <div className="flex-1">
               <h3 className="font-heading font-bold text-text-primary text-lg">You have a killer script ready!</h3>
-              <p className="text-sm text-text-secondary text-pretty">But you need credits to bring it to life with Veo 3.1. Grab 20 credits for just $10 and start creating.</p>
+              <p className="text-sm text-text-secondary text-pretty">But you need credits to render it. Grab 30 seconds of video for $10 and start creating.</p>
             </div>
             <button 
               onClick={() => buyCredits(showPaystack ? "paystack" : "stripe")}
@@ -185,7 +185,7 @@ export function BillingClient({
                 disabled={processing?.startsWith("credits")}
                 className="text-xs font-bold text-primary hover:underline disabled:opacity-50"
               >
-                {processing?.startsWith("credits") ? "Processing..." : "+ Buy 20 Credits"}
+                {processing?.startsWith("credits") ? "Processing..." : "+ Buy 30 Credits"}
               </button>
             )}
           </div>

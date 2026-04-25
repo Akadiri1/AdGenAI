@@ -2,20 +2,20 @@ export function HowItWorks() {
   const steps = [
     {
       number: "01",
-      title: "Describe your business",
-      description: "Type one sentence. Or paste your website URL. Our AI figures out the rest — your industry, audience, tone, and competitors worldwide.",
+      title: "Pick your actor & write the script",
+      description: "Filter 100+ AI actors by gender, age, vibe, setting. Or upload your own photo. Write your script — or have AI generate one in your brand voice.",
       color: "from-primary to-warning",
     },
     {
       number: "02",
-      title: "AI creates your ads",
-      description: "Claude generates copy in 5 proven frameworks. Stable Diffusion generates images. FFmpeg assembles videos with music. All in 30 seconds.",
+      title: "Upload your product, AI does the rest",
+      description: "Add product photos. Nano Banana composites your actor with your product. Kling 2.6 Pro renders cinematic video. Voiceover and lip-sync are auto-generated.",
       color: "from-secondary to-accent",
     },
     {
       number: "03",
-      title: "We post them for you",
-      description: "Connect your socials once. Schedule or post now. We handle Instagram, Facebook, TikTok, WhatsApp, X, LinkedIn — and track performance.",
+      title: "Review, edit, download",
+      description: "Preview each scene in Studio. Don't like one? Type \"make her smile more\" — AI re-renders just that scene. Hit download. Post wherever you want.",
       color: "from-accent to-primary",
     },
   ];
@@ -28,7 +28,7 @@ export function HowItWorks() {
             How it works
           </div>
           <h2 className="font-heading text-3xl font-bold text-text-primary md:text-5xl">
-            From idea to published ad in 30 seconds
+            From product photo to finished UGC ad
           </h2>
         </div>
 
