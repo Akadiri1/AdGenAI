@@ -413,7 +413,7 @@ export function BillingClient({
         })()}
 
         <p className="mt-4 text-center text-xs text-text-secondary">
-          Your card is charged automatically on renewal. Cancel anytime — no hidden fees. Credits roll over monthly.
+          Your card is charged automatically on renewal. Cancel anytime — no hidden fees. Credits reset monthly (no rollover).
         </p>
       </div>
 

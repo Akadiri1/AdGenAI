@@ -55,7 +55,7 @@ export function Pricing() {
             Start with the plan that fits your needs
           </h2>
           <p className="mt-4 text-lg text-text-secondary">
-            You can upgrade anytime. Credits roll over. Cancel whenever.
+            You can upgrade anytime. Credits reset monthly. Cancel whenever.
           </p>
 
           <div className="mt-8 inline-flex items-center gap-1 rounded-xl border border-black/10 bg-white p-1">

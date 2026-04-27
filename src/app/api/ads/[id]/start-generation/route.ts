@@ -43,6 +43,7 @@ export async function POST(
     return NextResponse.json({ error: "Ad is not a draft (already generating or done)" }, { status: 409 });
   }
   if (!ad.actor) return NextResponse.json({ error: "Ad has no actor — pick one before starting" }, { status: 400 });
+  if (!ad.actor.imageUrl) return NextResponse.json({ error: "Actor is missing an image URL — re-select an actor" }, { status: 400 });
 
   const pendingScenes = ad.scenes.filter((s) => s.status === "PENDING");
   if (pendingScenes.length === 0) {
@@ -67,8 +68,8 @@ export async function POST(
 
   // Composite + Kling per scene — run all in parallel for ~3× speedup.
   // Per-scene try/catch ensures one failure doesn't kill the others.
-  if (!ad.actor) throw new Error("Ad actor missing");
-  const actorImageUrl = ad.actor.imageUrl;
+  // (actor and imageUrl already validated above — safe to assert)
+  const actorImageUrl = ad.actor!.imageUrl;
   await Promise.all(pendingScenes.map(async (scene) => {
     try {
       const compositeUrl = productImages.length > 0

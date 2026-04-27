@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "Do credits expire?",
-    a: "Credits roll over month-to-month up to a cap (twice your monthly allowance). Use them when you need them.",
+    a: "Credits reset at the start of each billing month — unused credits do not carry over. Buy top-up packs ($10 / 100 credits) anytime if you need more mid-month.",
   },
   {
     q: "What languages do you support?",

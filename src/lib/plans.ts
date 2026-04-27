@@ -2,9 +2,10 @@ export type PlanKey = "FREE" | "STARTER" | "PRO" | "BUSINESS" | "ENTERPRISE";
 export type BillingCycle = "monthly" | "yearly";
 
 export const CREDIT_PACK_PRICE_USD = 10; // $10 per pack
-export const CREDIT_PACK_AMOUNT = 30;     // 30 seconds of video per pack
+export const CREDIT_PACK_AMOUNT = 100;    // 100 credits per pack (~2 fifteen-second ads)
 
-// 1 credit = 1 second of finished video output
+// 1 credit = 1 second of video + compositing overhead
+// Credits do NOT roll over — they expire at the end of each billing month.
 export const PLAN_DEFS: Record<PlanKey, {
   name: string;
   tagline: string;
@@ -43,17 +44,17 @@ export const PLAN_DEFS: Record<PlanKey, {
     tagline: "First real video ads — for solo sellers",
     priceMonthlyUsd: 15,
     priceYearlyUsd: 144,
-    monthlyCredits: 40,
-    maxRollover: 80,
+    monthlyCredits: 300,
+    maxRollover: 0,
     features: [
-      "40 seconds of finished video / month (rolls over to 80)",
+      "300 credits / month — ~8 fifteen-second ads (no rollover)",
       "100+ stock AI actors",
       "Upload your product images",
       "Nano Banana actor + product compositing",
       "Kling 2.6 Pro video generation",
-      "AI voiceover + lip-sync (Kokoro TTS + Kling Lip Sync)",
+      "AI voiceover + lip-sync",
       "Studio: instruction-based scene editing",
-      "Buy extra packs ($10 / 30 seconds)",
+      "Buy extra packs ($10 / 100 credits)",
     ],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY ?? "",
@@ -69,10 +70,10 @@ export const PLAN_DEFS: Record<PlanKey, {
     tagline: "Volume + control — for growing brands",
     priceMonthlyUsd: 129,
     priceYearlyUsd: 1236,
-    monthlyCredits: 500,
-    maxRollover: 1000,
+    monthlyCredits: 2000,
+    maxRollover: 0,
     features: [
-      "500 seconds of finished video / month (rolls over to 1,000)",
+      "2,000 credits / month — ~57 fifteen-second ads (no rollover)",
       "Everything in Starter",
       "Upload your own custom actors (your face, your team)",
       "Multi-scene cinematic ads (up to 60s)",
@@ -92,10 +93,10 @@ export const PLAN_DEFS: Record<PlanKey, {
     tagline: "For agencies & high-volume sellers",
     priceMonthlyUsd: 349,
     priceYearlyUsd: 3348,
-    monthlyCredits: 1500,
-    maxRollover: 3000,
+    monthlyCredits: 5000,
+    maxRollover: 0,
     features: [
-      "1,500 seconds of finished video / month (rolls over to 3,000)",
+      "5,000 credits / month — ~142 fifteen-second ads (no rollover)",
       "Everything in Pro",
       "Priority email support",
       "Discounted top-up packs",
@@ -114,10 +115,10 @@ export const PLAN_DEFS: Record<PlanKey, {
     tagline: "Custom-built for scale",
     priceMonthlyUsd: 999,
     priceYearlyUsd: 9588,
-    monthlyCredits: 5000,
-    maxRollover: 10000,
+    monthlyCredits: 15000,
+    maxRollover: 0,
     features: [
-      "5,000 seconds of finished video / month (rolls over to 10,000)",
+      "15,000 credits / month — ~428 fifteen-second ads (no rollover)",
       "Everything in Business",
       "Direct line to founders for feature requests",
       "Custom invoicing (NET 30)",

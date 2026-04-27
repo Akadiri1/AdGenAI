@@ -110,12 +110,25 @@ export async function POST(
     // 1. Voiceover (one TTS call — much cheaper than per-scene)
     let voiceSettings: Record<string, unknown> | undefined;
     try { voiceSettings = ad.voiceSettings ? JSON.parse(ad.voiceSettings) : undefined; } catch { /* ignore */ }
+
+    // Map DB ageRange ("young-adult" | "adult" | "mature" | "senior") to
+    // the simple values pickElevenLabsVoice expects ("young" | "middle" | "senior")
+    const ageRangeMap: Record<string, string> = {
+      "young-adult": "young",
+      "adult":       "middle",
+      "mature":      "senior",
+      "senior":      "senior",
+    };
+    const mappedAge = ad.actor?.ageRange
+      ? (ageRangeMap[ad.actor.ageRange] ?? "middle")
+      : "middle";
+
     const tts = await generateVoiceover({
       text,
       settings: voiceSettings as never,
       actor: ad.actor ? {
         gender: ad.actor.gender,
-        age: ad.actor.ageRange,
+        age: mappedAge,
         vibe: ad.actor.vibe,
       } : undefined,
       language: ad.language,

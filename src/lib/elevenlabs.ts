@@ -41,16 +41,18 @@ export function pickElevenLabsVoice(params: {
   vibe?: string | null;
 }): { id: string; name: string; key: VoiceKey } {
   const isMale = params.gender === "male";
-  const isYoung = params.age === "young";
+  // Accept both simple ("young","senior") and DB-style ("young-adult","mature") age values
+  const normalizedAge = params.age?.replace("young-adult", "young").replace("adult", "middle").replace("mature", "senior") ?? "";
+  const isYoung = normalizedAge === "young";
   const vibe = (params.vibe ?? "").toLowerCase();
 
   let key: VoiceKey;
   if (isMale) {
-    if (params.age === "senior" || vibe.includes("trust")) key = "male-deep";
+    if (normalizedAge === "senior" || vibe.includes("trust")) key = "male-deep";
     else if (isYoung || vibe.includes("energetic")) key = "male-friendly";
     else key = "male-warm";
   } else {
-    if (params.age === "senior" || vibe.includes("calm")) key = "female-mature";
+    if (normalizedAge === "senior" || vibe.includes("calm")) key = "female-mature";
     else if (vibe.includes("energetic") || vibe.includes("bold")) key = "female-upbeat";
     else key = "female-warm";
   }
