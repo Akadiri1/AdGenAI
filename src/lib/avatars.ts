@@ -20,6 +20,7 @@ export type Avatar = {
   isPro: boolean;
   isHD: boolean;
   tags: string[];
+  voiceId?: string;
   audioSamples?: {
     us?: string;
     uk?: string;
@@ -35,47 +36,32 @@ function av(
   age: AvatarAge,
   situation: AvatarSituation,
   ethnicity: string,
-  portrait: string, // either an unsplash id (photo-...) OR a randomuser slot like "men/12"
+  portrait: string,
   tags: string[],
   isPro = false,
+  voiceId?: string,
+  audioSamples?: Avatar["audioSamples"],
 ): Avatar {
   const thumbnailUrl = portrait.startsWith("photo-")
     ? `https://images.unsplash.com/${portrait}?w=400&h=400&fit=crop&crop=faces`
     : `https://randomuser.me/api/portraits/${portrait}.jpg`;
-  return { id, name, gender, age, situation, ethnicity, thumbnailUrl, isPro, isHD: true, tags };
+  return { id, name, gender, age, situation, ethnicity, thumbnailUrl, isPro, isHD: true, tags, voiceId, audioSamples };
 }
 
 export const AVATAR_LIBRARY: Avatar[] = [
   // --- Female · young ---
-  av("ava-001", "Sofia",   "female", "young",  "studio", "latina",       "women/65", ["casual", "friendly", "beauty"]),
-  av("ava-002", "Aisha",   "female", "young",  "office", "african",      "women/66", ["professional", "tech", "business"]),
-  av("ava-003", "Emma",    "female", "young",  "cafe",   "european",     "women/67", ["lifestyle", "casual", "food"]),
-  av("ava-004", "Yuki",    "female", "young",  "home",   "asian",        "women/68", ["cozy", "wellness", "skincare"]),
-  av("ava-005", "Nicole",  "female", "young",  "airport","european",     "women/69", ["travel", "fashion", "luxury"], true),
-  av("ava-006", "Priya",   "female", "young",  "gym",    "south-asian",  "women/70", ["fitness", "health", "active"]),
-  av("ava-007", "Camila",  "female", "young",  "beach",  "latina",       "women/71", ["travel", "swimwear", "summer"]),
-  av("ava-008", "Mei",     "female", "young",  "outdoor","asian",        "women/72", ["nature", "wellness", "calm"]),
-  av("ava-009", "Zara",    "female", "young",  "kitchen","middle-eastern","women/73", ["food", "lifestyle", "warm"]),
-  av("ava-010", "Hannah",  "female", "young",  "balcony","european",     "women/74", ["lifestyle", "fashion", "morning"]),
-
-  // --- Female · middle ---
-  av("ava-040", "Vanessa", "female", "middle", "office", "african-american", "women/75", ["professional", "executive", "leadership"]),
-  av("ava-041", "Claire",  "female", "middle", "kitchen","european",     "women/76", ["mom", "warm", "home"]),
-  av("ava-042", "Anjali",  "female", "middle", "studio", "south-asian",  "women/77", ["confident", "wellness", "yoga"]),
-  av("ava-043", "Maya",    "female", "middle", "outdoor","latina",       "women/78", ["nature", "active", "real"]),
-
-  // --- Female · senior ---
-  av("ava-021", "Margaret","female", "senior", "home",   "european",     "women/79", ["trusted", "testimonial", "healthcare"]),
-  av("ava-022", "Helen",   "female", "senior", "kitchen","european",     "women/80", ["wholesome", "family", "warm"]),
-  av("ava-023", "Adaeze",  "female", "senior", "outdoor","african",      "women/81", ["matriarch", "wisdom", "confident"]),
-
+  av("ava-001", "Sofia",   "female", "young",  "studio", "latina",       "women/65", ["casual", "friendly", "beauty"], false, "EXAVITQu4vr4xnSDxMaL", { us: "https://famousli-assets.s3.amazonaws.com/samples/sarah.mp3" }),
+  av("ava-002", "Aisha",   "female", "young",  "office", "african",      "women/66", ["professional", "tech", "business"], false, "jBpfuIE2acn6936vI867", { us: "https://famousli-assets.s3.amazonaws.com/samples/aisha.mp3" }),
+  av("ava-003", "Emma",    "female", "young",  "cafe",   "european",     "women/67", ["lifestyle", "casual", "food"], false, "21m00Tcm4TlvDq8ikWAM", { us: "https://famousli-assets.s3.amazonaws.com/samples/emma.mp3" }),
+  av("ava-004", "Yuki",    "female", "young",  "home",   "asian",        "women/68", ["cozy", "wellness", "skincare"], false, "pFZP5JQG7iQjIQuC4Bku", { us: "https://famousli-assets.s3.amazonaws.com/samples/yuki.mp3" }),
+  av("ava-005", "Nicole",  "female", "young",  "airport","european",     "women/69", ["travel", "fashion", "luxury"], true, "AZnzlk1Xhk9W3Y65G7F9", { us: "https://famousli-assets.s3.amazonaws.com/samples/nicole.mp3" }),
+  
   // --- Male · young ---
-  av("ava-011", "Marcus",  "male",   "young",  "studio", "african-american", "men/65", ["casual", "music", "streetwear"]),
-  av("ava-012", "Caleb",   "male",   "young",  "gaming", "european",     "men/66", ["gaming", "tech", "esports"]),
-  av("ava-013", "Liam",    "male",   "young",  "outdoor","european",     "men/67", ["adventure", "travel", "active"]),
-  av("ava-014", "Kenji",   "male",   "young",  "cafe",   "asian",        "men/68", ["lifestyle", "coffee", "creative"]),
-  av("ava-015", "Diego",   "male",   "young",  "car",    "latino",       "men/69", ["automotive", "luxury", "lifestyle"], true),
-  av("ava-016", "Tunde",   "male",   "young",  "home",   "african",      "men/70", ["entrepreneur", "tech", "confident"]),
+  av("ava-011", "Marcus",  "male",   "young",  "studio", "african-american", "men/65", ["casual", "music", "streetwear"], false, "nPczCjzI2devNBz1zQrb", { us: "https://famousli-assets.s3.amazonaws.com/samples/marcus.mp3" }),
+  av("ava-012", "Caleb",   "male",   "young",  "gaming", "european",     "men/66", ["gaming", "tech", "esports"], false, "TX3LPaxmHKxFdv7VOQHJ", { us: "https://famousli-assets.s3.amazonaws.com/samples/caleb.mp3" }),
+  av("ava-013", "Liam",    "male",   "young",  "outdoor","european",     "men/67", ["adventure", "travel", "active"], false, "bVMeCy7mYv8o0pC5t15s", { us: "https://famousli-assets.s3.amazonaws.com/samples/liam.mp3" }),
+  av("ava-016", "Tunde",   "male",   "young",  "home",   "african",      "men/70", ["entrepreneur", "tech", "confident"], false, "ODq5zAsR6fA0C06iWqD9", { us: "https://famousli-assets.s3.amazonaws.com/samples/tunde.mp3" }),
+
   av("ava-017", "Arjun",   "male",   "young",  "gym",    "south-asian",  "men/71", ["fitness", "supplements", "active"]),
   av("ava-019", "Noah",    "male",   "young",  "beach",  "european",     "men/72", ["surf", "lifestyle", "summer"]),
   av("ava-020", "Mateo",   "male",   "young",  "podcast","latino",       "men/73", ["creator", "talk", "studio"]),

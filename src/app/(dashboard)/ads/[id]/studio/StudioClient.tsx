@@ -8,14 +8,11 @@ import {
   Image as ImageIcon, Music, Languages, Palette, Type,
   Sparkles, Upload, Lock, Film, CheckCircle2, BookTemplate, X,
   Users, Copy, Mic, Loader2, Plus, Play, ShieldAlert,
-  MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { Watermark } from "@/components/Logo";
 import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, type Avatar } from "@/lib/avatars";
-import { groupWordsIntoChunks, type WordTimestamp, type CaptionChunk, type CaptionStyle } from "@/lib/captions";
-import { KaraokeCaptions } from "@/components/studio/KaraokeCaptions";
 
 type Ad = {
   id: string;
@@ -35,7 +32,6 @@ type Ad = {
   language: string;
   score: number | null;
   platform: string[];
-  captionData?: WordTimestamp[];
 };
 
 const LANGUAGES = [
@@ -104,15 +100,11 @@ export function StudioClient({
   const [showSafeZone, setShowSafeZone] = useState(false);
   
   // Captions state
-  const [captionsOn, setCaptionsOn] = useState(true);
-  const [captionStyle, setCaptionStyle] = useState<CaptionStyle>("viral");
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
-
-  const captionChunks = ad.captionData ? groupWordsIntoChunks(ad.captionData) : [];
 
   function playSample(actor: Avatar, accent: "us" | "uk" | "ng") {
     const url = actor.audioSamples?.[accent];
@@ -236,16 +228,15 @@ export function StudioClient({
       const res = await fetch(`/api/ads/${ad.id}/video`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           duration: videoDuration,
-          captions: captionsOn ? captionStyle : null,
           accent: selectedAccent,
           avatarId: selectedActorId
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Video generation failed");
-      setAd({ ...ad, videoUrl: data.videoUrl, type: "VIDEO", captionData: data.captionData });
+      setAd({ ...ad, videoUrl: data.videoUrl, type: "VIDEO" });
       success(`${videoDuration} video created`);
     } catch (err) {
       toastError((err as Error).message);
@@ -421,10 +412,6 @@ export function StudioClient({
                   </div>
                 )}
 
-                {/* Viral Karaoke Captions */}
-                {captionsOn && (ad.videoUrl || ad.thumbnailUrl) && captionChunks.length > 0 && (
-                  <KaraokeCaptions currentTime={currentTime} chunks={captionChunks} style={captionStyle} />
-                )}
 
                 {generatingVideo && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white p-6 text-center">
@@ -580,46 +567,7 @@ export function StudioClient({
                   rows={6}
                 />
                 
-                {/* Viral Captions Toggle & Styles */}
-                <div className="pt-4 border-t border-black/5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <MessageSquare className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-text-primary">Viral Karaoke Captions</div>
-                        <div className="text-[10px] text-text-secondary uppercase font-bold tracking-wider">TikTok & Reels Style</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setCaptionsOn(!captionsOn)}
-                      className={`h-6 w-11 rounded-full transition-colors ${captionsOn ? "bg-primary" : "bg-bg-secondary"}`}
-                    >
-                      <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${captionsOn ? "translate-x-5" : "translate-x-0.5"}`} />
-                    </button>
-                  </div>
-
-                  {captionsOn && (
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["classic", "viral", "cyber"] as const).map((style) => (
-                        <button
-                          key={style}
-                          onClick={() => setCaptionStyle(style)}
-                          className={`rounded-xl border-2 p-2.5 text-center transition-all ${
-                            captionStyle === style ? "border-primary bg-primary/5 shadow-sm scale-[1.02]" : "border-black/10 bg-white hover:border-black/20"
-                          }`}
-                        >
-                          <div className={`text-[10px] font-black uppercase italic ${
-                            style === 'viral' ? 'text-yellow-500' : style === 'cyber' ? 'text-green-500' : 'text-text-primary'
-                          }`}>
-                            {style}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Captions — coming soon once word-timestamp pipeline is wired */}
               </div>
             </div>
           )}

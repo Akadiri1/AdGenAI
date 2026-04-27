@@ -19,8 +19,8 @@ export default async function CreatePage() {
     select: { plan: true },
   });
   const plan = (user?.plan ?? "FREE") as PlanKey;
-  const isPaid = canGenerateVideo(plan);
-  const isFree = plan === "FREE";
+  const isPaid = ["STARTER", "PRO", "BUSINESS", "ENTERPRISE"].includes(plan);
+  const isFree = !isPaid;
 
   // Brand kit only required for paid users
   if (isPaid) {

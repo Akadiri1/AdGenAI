@@ -62,10 +62,19 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const [customActorImage, setCustomActorImage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+  const [previewingVoice, setPreviewingVoice] = useState(false);
 
   const [productName, setProductName] = useState("");
   const [productOffer, setProductOffer] = useState("");
   const [productDescription, setProductDescription] = useState("");
+
+  const BACKGROUND_SUGGESTIONS = [
+    { label: "Modern Kitchen", prompt: "In a sleek, modern kitchen with marble countertops and warm lighting." },
+    { label: "Home Office", prompt: "Sitting at a clean, professional home office desk with a laptop and plants." },
+    { label: "Sunny Beach", prompt: "Standing on a beautiful tropical beach with white sand and turquoise water." },
+    { label: "Luxury Studio", prompt: "In a high-end professional photo studio with softbox lighting and a solid gray background." },
+    { label: "Cozy Living Room", prompt: "In a warm, inviting living room with a soft sofa and natural sunlight." },
+  ];
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -76,21 +85,34 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
     };
   }, []);
 
-  function playSample(e: React.MouseEvent, avatar: Avatar) {
-    e.preventDefault();
-    e.stopPropagation();
-    const sampleUrl = avatar.audioSamples?.us || avatar.audioSamples?.uk || avatar.audioSamples?.ng;
-    if (!sampleUrl) return;
-
-    if (playingSampleId === avatar.id) {
+  async function previewVoice(avatar: Avatar) {
+    if (previewingVoice) {
       audioRef.current?.pause();
       setPlayingSampleId(null);
+      setPreviewingVoice(false);
       return;
     }
-    if (audioRef.current) {
-      audioRef.current.src = sampleUrl;
-      audioRef.current.play().catch(console.error);
-      setPlayingSampleId(avatar.id);
+    setPreviewingVoice(true);
+    setPlayingSampleId(avatar.id);
+    try {
+      const res = await fetch("/api/ai/voice-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voiceId: avatar.voiceId || undefined,
+          gender: avatar.gender === "non-binary" ? "female" : avatar.gender,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Preview failed");
+      if (audioRef.current) {
+        audioRef.current.src = data.url;
+        audioRef.current.play().catch(console.error);
+      }
+    } catch {
+      setPlayingSampleId(null);
+    } finally {
+      setPreviewingVoice(false);
     }
   }
 
@@ -373,12 +395,27 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                     <div className="text-xs text-text-secondary capitalize">{selectedAvatar.gender} · {selectedAvatar.age} · {selectedAvatar.situation}</div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setStep("write-script")}
-                  className="flex h-10 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-dark"
-                >
-                  Next: Write script
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => previewVoice(selectedAvatar!)}
+                    disabled={previewingVoice}
+                    title="Hear this actor's voice"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-black/10 bg-white text-text-secondary hover:bg-bg-secondary hover:text-primary disabled:opacity-50 transition-colors"
+                  >
+                    {previewingVoice && playingSampleId === selectedAvatar?.id
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : playingSampleId === selectedAvatar?.id
+                        ? <Pause className="h-4 w-4" />
+                        : <Volume2 className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => setStep("write-script")}
+                    className="flex h-10 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-dark"
+                  >
+                    Next: Write script
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -466,6 +503,21 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
                 rows={4}
                 maxLength={500}
               />
+
+              <div className="space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">AI Background Suggestions</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {BACKGROUND_SUGGESTIONS.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => setVisualInstructions(s.prompt)}
+                      className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-all"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
           </div>
@@ -549,9 +601,31 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
       {step === "voice-settings" && (
         <div className="max-w-2xl mx-auto space-y-4">
           <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm space-y-5">
-            <div className="flex items-center gap-2 mb-2">
-              <SlidersHorizontal className="h-5 w-5 text-primary" />
-              <h2 className="font-heading text-lg font-bold text-text-primary">Voice Controls</h2>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-5 w-5 text-primary" />
+                <h2 className="font-heading text-lg font-bold text-text-primary">Voice Controls</h2>
+              </div>
+              {selectedAvatar && (
+                <button
+                  type="button"
+                  onClick={() => previewVoice(selectedAvatar)}
+                  disabled={previewingVoice}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all disabled:opacity-60 ${
+                    playingSampleId === selectedAvatar.id
+                      ? "bg-primary text-white"
+                      : "bg-primary/10 text-primary hover:bg-primary/20"
+                  }`}
+                >
+                  {previewingVoice && playingSampleId === selectedAvatar.id ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...</>
+                  ) : playingSampleId === selectedAvatar.id ? (
+                    <><Pause className="h-3.5 w-3.5" /> Stop</>
+                  ) : (
+                    <><Volume2 className="h-3.5 w-3.5" /> Preview Voice</>
+                  )}
+                </button>
+              )}
             </div>
             <p className="text-sm text-text-secondary">
               Fine-tune how {selectedAvatar?.name} sounds. These controls determine the naturalness and emotion of the delivery.
