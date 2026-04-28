@@ -65,22 +65,31 @@ export async function POST(
 
   const productImages = stringToImages(ad.productImages);
   const aspectRatio = (ad.aspectRatio as "9:16" | "1:1" | "16:9") ?? "9:16";
-
-  // Composite + Kling per scene — sequential with delay to respect Replicate
-  // burst limits (1 concurrent request on accounts < $5 balance).
   const actorImageUrl = ad.actor!.imageUrl;
+
+  // ── Composite ONCE ──────────────────────────────────────────────────────
+  // Run Nano Banana a single time so every scene starts from the SAME image:
+  // same face, same outfit, same setting. Only camera angle + action change.
+  let sharedCompositeUrl = actorImageUrl;
+  if (productImages.length > 0) {
+    try {
+      sharedCompositeUrl = await compositeActorWithProduct({
+        actorImageUrl,
+        productImageUrls: productImages,
+        prompt: "Person holding and using the product naturally. Photorealistic commercial photography, sharp focus, consistent outfit and setting, no text overlays.",
+      });
+    } catch (err) {
+      console.warn("[start-gen] composite failed, using actor image directly:", (err as Error).message);
+    }
+  }
+
+  // ── Kling per scene (sequential, 3s gap) ───────────────────────────────
+  // Each scene gets a different prompt (angle/action) but the SAME starting
+  // image, ensuring outfit + setting consistency across all clips.
   for (const scene of pendingScenes) {
     try {
-      const compositeUrl = productImages.length > 0
-        ? await compositeActorWithProduct({
-            actorImageUrl,
-            productImageUrls: productImages,
-            prompt: `${scene.prompt}. Photorealistic, commercial photography, sharp focus, no text overlays.`,
-          })
-        : actorImageUrl;
-
       const { predictionId } = await generateKlingVideoClip({
-        imageUrl: compositeUrl,
+        imageUrl: sharedCompositeUrl,
         prompt: scene.prompt,
         durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
         aspectRatio,
@@ -90,7 +99,7 @@ export async function POST(
         where: { id: scene.id },
         data: {
           status: "GENERATING_VIDEO",
-          compositeImageUrl: compositeUrl,
+          compositeImageUrl: sharedCompositeUrl,
           klingTaskId: predictionId,
         },
       });
@@ -103,7 +112,7 @@ export async function POST(
         },
       });
     }
-    // Small pause between scenes to avoid Replicate burst rate limit
+    // 3s gap to stay inside Replicate's burst limit
     if (pendingScenes.indexOf(scene) < pendingScenes.length - 1) {
       await new Promise((r) => setTimeout(r, 3000));
     }

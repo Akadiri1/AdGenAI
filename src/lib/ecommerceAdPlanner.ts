@@ -245,6 +245,12 @@ Every scene must use a DIFFERENT shot type AND a different camera movement from 
 If Scene 1 = MCU + push-in, Scene 2 CANNOT be MCU + push-in.
 If Scene 1 = "holds product," Scene 2 = "applies to skin," Scene 3 = "shows result." Never repeat the same interaction.
 
+CONSISTENCY RULE — EQUALLY MANDATORY:
+The actor wears THE EXACT SAME OUTFIT and is in THE EXACT SAME LOCATION in every scene.
+This is a continuous video — costume and setting do NOT change between cuts.
+Scene 1 establishes the look. Every subsequent scene must describe the same outfit and setting verbatim.
+What changes: shot type, camera distance, the actor's action, and emotion. Nothing else.
+
 ════════════════════════════════════════
 OUTPUT — VALID JSON ONLY
 ════════════════════════════════════════
