@@ -1,17 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Loader2, Download, Sparkles, AlertCircle, RefreshCw, Film } from "lucide-react";
+import { Loader2, Download, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-// videoStitcher loaded lazily (browser-only, can't SSR)
 
 type Scene = {
   sceneNumber: number;
   finalClipUrl: string | null;
   videoClipUrl: string | null;
-  spokenLine: string | null;
 };
 
 type FinalState = {
@@ -31,10 +29,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
   const [starting, setStarting] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [stitching, setStitching] = useState(false);
-  const [stitchProgress, setStitchProgress] = useState({ msg: "", pct: 0 });
 
-  // Fetch finalize status + scene clips every 5s
   useEffect(() => {
     let cancelled = false;
     async function tick() {
@@ -54,7 +49,6 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             sceneNumber: s.sceneNumber,
             finalClipUrl: s.finalClipUrl,
             videoClipUrl: s.videoClipUrl,
-            spokenLine: s.spokenLine,
           }));
         setScenes(clips);
       } catch { /* swallow */ }
@@ -68,16 +62,15 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
 
   const cost = 5 + state.sceneCount * 2;
   const isGenerating = state.finalVideoStatus === "GENERATING";
-  const isReady = (state.finalVideoStatus === "READY") || scenes.some(s => s.finalClipUrl);
+  const isReady = state.finalVideoStatus === "READY" || scenes.some(s => s.finalClipUrl);
   const isFailed = state.finalVideoStatus === "FAILED";
-
-  const clips = scenes.map(s => s.finalClipUrl ?? s.videoClipUrl).filter(Boolean) as string[];
-  const currentClip = clips[currentIdx];
+  const clips = scenes.map(s => ({ url: (s.finalClipUrl ?? s.videoClipUrl)!, scene: s.sceneNumber })).filter(c => c.url);
+  const currentClip = clips[currentIdx]?.url;
 
   async function startFinalize() {
     const ok = await confirm({
-      title: "Generate voiceover + lip-sync?",
-      message: `Adds voice and lip-sync to each scene. Charges ${cost} credits, takes 3–5 minutes.`,
+      title: "Add voiceover + lip-sync?",
+      message: `Adds voice to each scene. Charges ${cost} credits, takes 3–5 minutes.`,
       confirmLabel: `Start (${cost}cr)`,
     });
     if (!ok) return;
@@ -86,7 +79,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
       const res = await fetch(`/api/ads/${adId}/finalize`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      success("Lip-sync started — scenes will update as each one finishes");
+      success("Lip-sync started — scenes update as each one finishes");
       setState(prev => prev ? { ...prev, finalVideoStatus: "GENERATING" } : prev);
       refreshCredits();
     } catch (err) {
@@ -97,45 +90,15 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
   }
 
   function onVideoEnded() {
-    if (currentIdx < clips.length - 1) {
-      setCurrentIdx(i => i + 1);
-    }
+    if (currentIdx < clips.length - 1) setCurrentIdx(i => i + 1);
   }
 
-  async function downloadStitched() {
-    setStitching(true);
-    setStitchProgress({ msg: "Initializing…", pct: 0 });
-    try {
-      // Lazy import — browser only, never runs on server
-      const { getStitcher } = await import("@/lib/videoStitcher");
-      const stitcher = getStitcher();
-      await stitcher.load((msg, pct) => setStitchProgress({ msg, pct }));
-      const blob = await stitcher.concat(clips, (msg, pct) => setStitchProgress({ msg, pct }));
-      // Trigger download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `famousli-ad-${adId.slice(0, 8)}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      success("Stitched MP4 downloaded");
-    } catch (err) {
-      error(`Stitch failed: ${(err as Error).message}`);
-    } finally {
-      setStitching(false);
-      setStitchProgress({ msg: "", pct: 0 });
-    }
-  }
-
-  // Auto-play next clip when currentIdx changes
   useEffect(() => {
-    if (videoRef.current && clips[currentIdx]) {
+    if (videoRef.current && currentClip) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
     }
-  }, [currentIdx, clips]);
+  }, [currentIdx, currentClip]);
 
   return (
     <div className="mb-6 rounded-3xl border-2 border-success/20 bg-gradient-to-br from-success/5 via-white to-accent/5 p-5 shadow-sm">
@@ -147,12 +110,8 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
         {clips.length > 1 && (
           <div className="flex gap-1.5">
             {clips.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentIdx(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === currentIdx ? "w-6 bg-primary" : "w-2 bg-black/20"
-                }`}
+              <button key={i} onClick={() => setCurrentIdx(i)}
+                className={`h-2 rounded-full transition-all ${i === currentIdx ? "w-6 bg-primary" : "w-2 bg-black/20"}`}
               />
             ))}
           </div>
@@ -161,72 +120,25 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
 
       {isReady && clips.length > 0 ? (
         <div className="space-y-3">
-          {/* Sequential player */}
           <div className="rounded-2xl overflow-hidden bg-black">
-            <video
-              ref={videoRef}
-              src={currentClip}
-              controls
-              autoPlay
-              onEnded={onVideoEnded}
-              className="w-full max-h-[600px]"
-            />
+            <video ref={videoRef} src={currentClip} controls autoPlay onEnded={onVideoEnded}
+              className="w-full max-h-[600px]" />
           </div>
-
           {clips.length > 1 && (
             <p className="text-[11px] text-text-secondary text-center">
-              Scene {currentIdx + 1} of {clips.length} — videos play in sequence automatically
+              Scene {currentIdx + 1} of {clips.length} — auto-advances to next scene
             </p>
           )}
-
-          {/* Primary CTA — stitched MP4 download */}
-          <button
-            type="button"
-            onClick={downloadStitched}
-            disabled={stitching || clips.length === 0}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg hover:bg-primary-dark disabled:opacity-50"
-          >
-            {stitching
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> {stitchProgress.msg || "Stitching…"} ({stitchProgress.pct}%)</>
-              : <><Film className="h-4 w-4" /> Download as one MP4 ({clips.length} {clips.length === 1 ? "scene" : "scenes"})</>
-            }
-          </button>
-          {stitching && stitchProgress.pct > 0 && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${stitchProgress.pct}%` }}
-              />
-            </div>
-          )}
-
-          {clips.length > 1 && (
-            <details className="rounded-xl border border-black/5 bg-bg-secondary/30 px-3 py-2">
-              <summary className="cursor-pointer text-xs font-semibold text-text-secondary hover:text-text-primary">
-                Or download each scene separately
-              </summary>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {clips.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    download
-                    className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white border border-black/10 px-3 text-xs font-semibold text-text-primary hover:bg-bg-secondary"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Scene {i + 1}
-                  </a>
-                ))}
-              </div>
-            </details>
-          )}
-
-          <button
-            type="button"
-            onClick={startFinalize}
-            disabled={starting || isGenerating}
-            className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border-2 border-black/10 bg-white text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
-          >
+          <div className="flex flex-wrap gap-2">
+            {clips.map((c, i) => (
+              <a key={i} href={c.url} download
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-bold text-white hover:bg-primary-dark">
+                <Download className="h-4 w-4" /> Download Scene {c.scene}
+              </a>
+            ))}
+          </div>
+          <button type="button" onClick={startFinalize} disabled={starting || isGenerating}
+            className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border-2 border-black/10 bg-white text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50">
             {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Re-render lip-sync ({cost}cr)
           </button>
@@ -238,7 +150,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             Generating voiceover + lip-sync for each scene...
           </div>
           <p className="mt-1 text-xs text-text-secondary">
-            Each scene takes 1–2 min. Watch the scene cards above — they update as each one finishes.
+            Each scene takes 1–2 min. Scene cards above update as each one finishes.
           </p>
         </div>
       ) : isFailed ? (
@@ -260,7 +172,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             All {state.sceneCount} scenes ready. Add voiceover and lip-sync to bring them to life.
           </p>
           <button type="button" onClick={startFinalize} disabled={starting}
-            className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50">
+            className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50 whitespace-nowrap">
             {starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</> : <><Sparkles className="h-4 w-4" /> Add Voice + Lip-sync ({cost}cr)</>}
           </button>
         </div>

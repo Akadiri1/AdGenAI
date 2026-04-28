@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     "bullmq",
     "ioredis",
     "nodemailer",
-    "@ffmpeg/ffmpeg",
-    "@ffmpeg/util",
-    "@ffmpeg/core",
   ],
 };
 
