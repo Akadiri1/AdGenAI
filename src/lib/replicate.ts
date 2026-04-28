@@ -142,22 +142,29 @@ export async function getKlingClipStatus(predictionId: string): Promise<{
 // =====================================================================
 // Kling Lip Sync — sync an existing video to spoken audio
 // =====================================================================
+// Valid English voice IDs for Kling Lip Sync (text-based TTS path)
+export const KLING_VOICES = {
+  female: "en_commercial_lady_en_f-v1",
+  male: "en_oversea_male1",
+  default: "en_AOT",
+} as const;
+
 export async function lipSyncVideo(params: {
   videoUrl: string;
-  audioUrl?: string;  // mp3/wav URL — if omitted, uses text
-  text?: string;      // spoken text — used when no audioUrl
-  voiceId?: string;   // Kling built-in voice (e.g. "en_AOT")
+  audioUrl?: string;  // mp3/wav/m4a/aac URL (< 5MB) — preferred path
+  text?: string;      // spoken text — fallback if no audioUrl
+  gender?: string | null;
 }): Promise<string> {
   if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
 
+  const voiceId = params.gender === "male" ? KLING_VOICES.male : KLING_VOICES.female;
   const input: Record<string, unknown> = { video_url: params.videoUrl };
+
   if (params.audioUrl) {
-    // Preferred: drive lip-sync from an external audio file
     input.audio_file = params.audioUrl;
   } else if (params.text) {
-    // Fallback: let Kling do its own TTS
-    input.text = params.text;
-    input.voice_id = params.voiceId ?? "en_female_1"; // female English default
+    input.text = params.text.slice(0, 300); // model has length limits
+    input.voice_id = voiceId;
   } else {
     throw new Error("lipSyncVideo: provide either audioUrl or text");
   }

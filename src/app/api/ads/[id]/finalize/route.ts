@@ -139,18 +139,28 @@ export async function POST(
     const clipUrls = ad.scenes.map((s) => s.videoClipUrl as string);
     const concatUrl = await concatVideos({ videoUrls: clipUrls });
 
-    // 3. Lip-sync — try audio_file first, fall back to text if audio URL is unreachable
-    let lipsyncedUrl: string;
+    // 3. Lip-sync — try audio_file, fall back to text TTS, then skip if both fail
+    const actorGender = ad.actor?.gender ?? null;
+    let lipsyncedUrl: string = concatUrl; // default: return silent concat if lip-sync fails
     try {
-      lipsyncedUrl = await lipSyncVideo({ videoUrl: concatUrl, audioUrl: voiceoverUrl });
-    } catch (lipErr) {
-      const msg = (lipErr as Error).message;
-      // If audio_file fails (unreachable URL), drive lip-sync from the text directly
-      if (msg.includes("audio") || msg.includes("invalid") || msg.includes("E006")) {
-        console.warn("[finalize] audio_file failed, falling back to text lip-sync:", msg);
-        lipsyncedUrl = await lipSyncVideo({ videoUrl: concatUrl, text });
-      } else {
-        throw lipErr;
+      lipsyncedUrl = await lipSyncVideo({
+        videoUrl: concatUrl,
+        audioUrl: voiceoverUrl,
+        gender: actorGender,
+      });
+    } catch (lipErr1) {
+      console.warn("[finalize] audio_file path failed:", (lipErr1 as Error).message);
+      try {
+        // Fallback 1: use text with Kling's built-in TTS
+        lipsyncedUrl = await lipSyncVideo({
+          videoUrl: concatUrl,
+          text,
+          gender: actorGender,
+        });
+      } catch (lipErr2) {
+        // Fallback 2: skip lip-sync, return the concat video with voiceover stored separately
+        console.warn("[finalize] text lip-sync also failed — skipping lip-sync:", (lipErr2 as Error).message);
+        lipsyncedUrl = concatUrl;
       }
     }
 
