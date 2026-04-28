@@ -66,11 +66,10 @@ export async function POST(
   const productImages = stringToImages(ad.productImages);
   const aspectRatio = (ad.aspectRatio as "9:16" | "1:1" | "16:9") ?? "9:16";
 
-  // Composite + Kling per scene — run all in parallel for ~3× speedup.
-  // Per-scene try/catch ensures one failure doesn't kill the others.
-  // (actor and imageUrl already validated above — safe to assert)
+  // Composite + Kling per scene — sequential with delay to respect Replicate
+  // burst limits (1 concurrent request on accounts < $5 balance).
   const actorImageUrl = ad.actor!.imageUrl;
-  await Promise.all(pendingScenes.map(async (scene) => {
+  for (const scene of pendingScenes) {
     try {
       const compositeUrl = productImages.length > 0
         ? await compositeActorWithProduct({
@@ -104,7 +103,11 @@ export async function POST(
         },
       });
     }
-  }));
+    // Small pause between scenes to avoid Replicate burst rate limit
+    if (pendingScenes.indexOf(scene) < pendingScenes.length - 1) {
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
 
   return NextResponse.json({
     success: true,
