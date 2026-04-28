@@ -155,23 +155,36 @@ export async function POST(req: Request) {
   } else if (body.avatarLibraryId) {
     const libAvatar = AVATAR_LIBRARY.find((a) => a.id === body.avatarLibraryId);
     if (!libAvatar) return NextResponse.json({ error: "Library avatar not found" }, { status: 404 });
-    // Find-or-create a user-owned snapshot of the library avatar.
+
+    // Resolve relative portrait paths (e.g. /actors/ava-001.png) to absolute URLs
+    // so Replicate's servers can fetch them during compositing.
+    const appUrl = (process.env.NEXTAUTH_URL ?? "https://famousli.vercel.app").replace(/\/$/, "");
+    const absoluteImageUrl = libAvatar.thumbnailUrl.startsWith("/")
+      ? `${appUrl}${libAvatar.thumbnailUrl}`
+      : libAvatar.thumbnailUrl;
+
     actorRow = await prisma.actor.findFirst({
-      where: { userId, name: libAvatar.name, imageUrl: libAvatar.thumbnailUrl },
+      where: { userId, name: libAvatar.name },
     });
     if (!actorRow) {
       actorRow = await prisma.actor.create({
         data: {
           userId,
           name: libAvatar.name,
-          imageUrl: libAvatar.thumbnailUrl,
-          thumbnailUrl: libAvatar.thumbnailUrl,
+          imageUrl: absoluteImageUrl,
+          thumbnailUrl: absoluteImageUrl,
           gender: libAvatar.gender,
           ageRange: libAvatar.age,
           ethnicity: libAvatar.ethnicity,
           vibe: libAvatar.tags.slice(0, 2).join(", ") || "natural",
           setting: libAvatar.situation,
         },
+      });
+    } else if (actorRow.imageUrl.startsWith("/")) {
+      // Fix existing rows that stored a relative URL
+      actorRow = await prisma.actor.update({
+        where: { id: actorRow.id },
+        data: { imageUrl: absoluteImageUrl, thumbnailUrl: absoluteImageUrl },
       });
     }
   } else if (body.customActorImageUrl) {
