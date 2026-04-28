@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Loader2, Download, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Download, Sparkles, AlertCircle, RefreshCw, Film } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { useConfirm } from "@/components/ui/ConfirmModal";
+import { getStitcher } from "@/lib/videoStitcher";
 
 type Scene = {
   sceneNumber: number;
@@ -30,6 +31,8 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
   const [starting, setStarting] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [stitching, setStitching] = useState(false);
+  const [stitchProgress, setStitchProgress] = useState({ msg: "", pct: 0 });
 
   // Fetch finalize status + scene clips every 5s
   useEffect(() => {
@@ -99,6 +102,31 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     }
   }
 
+  async function downloadStitched() {
+    setStitching(true);
+    setStitchProgress({ msg: "Initializing…", pct: 0 });
+    try {
+      const stitcher = getStitcher();
+      await stitcher.load((msg, pct) => setStitchProgress({ msg, pct }));
+      const blob = await stitcher.concat(clips, (msg, pct) => setStitchProgress({ msg, pct }));
+      // Trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `famousli-ad-${adId.slice(0, 8)}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      success("Stitched MP4 downloaded");
+    } catch (err) {
+      error(`Stitch failed: ${(err as Error).message}`);
+    } finally {
+      setStitching(false);
+      setStitchProgress({ msg: "", pct: 0 });
+    }
+  }
+
   // Auto-play next clip when currentIdx changes
   useEffect(() => {
     if (videoRef.current && clips[currentIdx]) {
@@ -149,31 +177,57 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            {clips.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                download
-                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-white hover:bg-primary-dark"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Scene {i + 1}
-              </a>
-            ))}
-          </div>
+          {/* Primary CTA — stitched MP4 download */}
+          <button
+            type="button"
+            onClick={downloadStitched}
+            disabled={stitching || clips.length === 0}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg hover:bg-primary-dark disabled:opacity-50"
+          >
+            {stitching
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> {stitchProgress.msg || "Stitching…"} ({stitchProgress.pct}%)</>
+              : <><Film className="h-4 w-4" /> Download as one MP4 ({clips.length} {clips.length === 1 ? "scene" : "scenes"})</>
+            }
+          </button>
+          {stitching && stitchProgress.pct > 0 && (
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${stitchProgress.pct}%` }}
+              />
+            </div>
+          )}
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={startFinalize}
-              disabled={starting || isGenerating}
-              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-black/10 bg-white text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
-            >
-              {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Re-render lip-sync ({cost}cr)
-            </button>
-          </div>
+          {clips.length > 1 && (
+            <details className="rounded-xl border border-black/5 bg-bg-secondary/30 px-3 py-2">
+              <summary className="cursor-pointer text-xs font-semibold text-text-secondary hover:text-text-primary">
+                Or download each scene separately
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {clips.map((url, i) => (
+                  <a
+                    key={i}
+                    href={url}
+                    download
+                    className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white border border-black/10 px-3 text-xs font-semibold text-text-primary hover:bg-bg-secondary"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Scene {i + 1}
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
+
+          <button
+            type="button"
+            onClick={startFinalize}
+            disabled={starting || isGenerating}
+            className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border-2 border-black/10 bg-white text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
+          >
+            {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Re-render lip-sync ({cost}cr)
+          </button>
         </div>
       ) : isGenerating || starting ? (
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
