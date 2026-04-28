@@ -225,7 +225,8 @@ model Scene {
   compositeImageUrl String? // Image after Nano Banana composites actor + product
   videoClipUrl    String?   // Raw 5-10s clip from Kling (silent)
   voiceoverUrl    String?   // TTS audio for this scene's spokenLine
-  finalClipUrl    String?   // Lip-synced final clip (overwrites videoClipUrl for display)
+  finalClipUrl    String?   // Lip-synced final clip
+  lipSyncTaskId   String?   // Async Kling Lip Sync prediction ID
   klingTaskId     String?   // Async job tracking
 
   // User edits (instruction-based)
