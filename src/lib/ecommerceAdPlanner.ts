@@ -321,29 +321,27 @@ STEP 3 — Apply the correct CTA tier (T1 soft urgency preferred; T2 if offer is
 ${input.productOffer ? `Offer exists: "${input.productOffer}" — use T2 delivery/discount CTA` : "No offer — use T1 soft urgency CTA (friend recommendation style)"}
 ${isAfricanMarket ? `African market: mention delivery availability or pay-on-delivery if relevant — this is the #1 purchase barrier.` : ""}
 
-Return this EXACT JSON (no markdown, no fences):
+Return ONLY this JSON object — no preamble, no explanation, no markdown fences:
 {
-  "hookType": "H3 — Honest Confession (or whichever you chose and why in one phrase)",
-  "scriptFramework": "The Honest Skeptic",
-  "headline": "max 80 chars — scroll-stopping social caption headline, first-person, not a tagline",
-  "bodyText": "max 180 chars — social media caption body, first-person POV, conversational",
-  "callToAction": "3–5 word soft CTA matching the tier you chose",
-  "hashtags": ["5", "specific", "relevant", "hashtags", "not-generic"],
-  "fullScript": "Complete spoken script in ${langName}. Natural pauses (...), fragments, filler words. Exactly ~${Math.round(input.targetSeconds * 2.5)} words.",
+  "headline": "max 80 chars — scroll-stopping caption headline, first-person",
+  "bodyText": "max 180 chars — caption body, conversational first-person POV",
+  "callToAction": "3–5 word soft CTA",
+  "hashtags": ["5", "relevant", "hashtags"],
+  "fullScript": "Complete spoken script in ${langName} — ~${Math.round(input.targetSeconds * 2.5)} words, natural pauses, fragments, fillers",
   "scenes": [
     {
       "sceneNumber": 1,
       "durationSeconds": ${secondsPerScene},
       "spokenLine": "exact words spoken in this scene — in ${langName}",
-      "visualPrompt": "Full 6-element Kling prompt in English: [SHOT TYPE]. [Actor: age + ethnicity + appearance + outfit + expression at start]. [Specific physical action performed across the ${secondsPerScene}s, present tense]. [Product: how held/used/applied — be specific]. [Environment + background]. [Lighting: source + direction + color temp]. [Camera movement].",
-      "shotType": "ECU | CU | MCU | MS | OTS | POV | low-angle",
-      "emotion": "specific nuanced emotion — e.g. 'quietly conspiratorial', 'pleasantly shocked', 'skeptically impressed'"
+      "visualPrompt": "Full Kling prompt in English: [SHOT TYPE]. [Actor appearance + outfit + expression]. [Physical action across ${secondsPerScene}s]. [Product interaction]. [Environment]. [Lighting direction + temp]. [Camera movement].",
+      "shotType": "MCU",
+      "emotion": "genuinely surprised"
     }
   ],
-  "musicGenre": "specific genre matching ad energy — e.g. 'upbeat Afrobeats', 'warm Afropop', 'lo-fi hip-hop', 'cinematic tension build'",
+  "musicGenre": "specific genre",
   "musicMood": "one mood word",
   "predictedScore": 78,
-  "scoreReasoning": "1 honest sentence — what makes this ad strong and what its single biggest weakness is"
+  "scoreReasoning": "one honest sentence"
 }`;
 
   const text = await generateText({ system: systemPrompt, prompt: userPrompt, maxTokens: 4000 });
@@ -357,7 +355,14 @@ Return this EXACT JSON (no markdown, no fences):
 
 function stripFences(text: string): string {
   const t = text.trim();
-  if (t.startsWith("```")) return t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  // Remove markdown fences
+  if (t.startsWith("```")) return t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // If model added preamble/postamble, extract the JSON object directly
+  const firstBrace = t.indexOf("{");
+  const lastBrace = t.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return t.slice(firstBrace, lastBrace + 1);
+  }
   return t;
 }
 
