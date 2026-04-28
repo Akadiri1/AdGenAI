@@ -12,7 +12,7 @@ import {
 import { useToast } from "@/components/ui/Toast";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { Watermark } from "@/components/Logo";
-import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, type Avatar } from "@/lib/avatars";
+import { AVATAR_LIBRARY, type Avatar } from "@/lib/avatars";
 
 type Ad = {
   id: string;

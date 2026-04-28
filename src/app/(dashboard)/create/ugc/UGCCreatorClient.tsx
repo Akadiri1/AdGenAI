@@ -12,7 +12,7 @@ import { useCredits } from "@/components/CreditsProvider";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { MultiFileUpload } from "@/components/ui/MultiFileUpload";
 import { FileUpload } from "@/components/ui/FileUpload";
-import { AVATAR_LIBRARY, SITUATIONS, filterAvatars, DEFAULT_VOICE_SETTINGS, type Avatar, type AvatarGender, type AvatarAge, type AvatarSituation, type VoiceSettings } from "@/lib/avatars";
+import { AVATAR_LIBRARY, DEFAULT_VOICE_SETTINGS, type Avatar, type VoiceSettings } from "@/lib/avatars";
 
 type Step = "select-avatar" | "write-script" | "voice-settings" | "generate";
 
@@ -116,18 +116,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
     }
   }
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [genderFilter, setGenderFilter] = useState<AvatarGender | "">("");
-  const [ageFilter, setAgeFilter] = useState<AvatarAge | "">("");
-  const [situationFilter, setSituationFilter] = useState<AvatarSituation | "">("");
-
-  const filteredAvatars = filterAvatars({
-    gender: genderFilter || undefined,
-    age: ageFilter || undefined,
-    situation: situationFilter || undefined,
-    search: searchQuery || undefined,
-  });
+  const filteredAvatars = AVATAR_LIBRARY;
 
   async function generate() {
     if (!selectedAvatar || !script.trim()) return;
@@ -211,63 +200,12 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
       {/* Step 1: Avatar Selection */}
       {step === "select-avatar" && (
         <div className="space-y-4">
-          {/* Search + Filters */}
-          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search actors by name, tag, or setting..."
-                  className="w-full rounded-xl border-2 border-black/10 bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary"
-                />
-              </div>
-              <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value as AvatarGender | "")}
-                className="rounded-xl border-2 border-black/10 bg-white px-3 py-2.5 text-xs font-semibold outline-none focus:border-primary">
-                <option value="">All genders</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-              </select>
-              <select value={ageFilter} onChange={(e) => setAgeFilter(e.target.value as AvatarAge | "")}
-                className="rounded-xl border-2 border-black/10 bg-white px-3 py-2.5 text-xs font-semibold outline-none focus:border-primary">
-                <option value="">All ages</option>
-                <option value="young">Young adult</option>
-                <option value="middle">Middle aged</option>
-                <option value="senior">Senior</option>
-              </select>
-            </div>
-
-            <div className="mt-3 rounded-lg bg-accent/5 border border-accent/20 px-3 py-2 text-[11px] text-text-secondary">
-              <strong className="text-accent">Note:</strong> these thumbnails are low-res for the picker only. When the ad is generated, <strong className="text-text-primary">Nano Banana</strong> upscales the actor + your product into a sharp 1024×1024 hero shot — final video output is full quality.
-            </div>
-            {/* Situation tags */}
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setSituationFilter("")}
-                className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-all ${
-                  !situationFilter ? "bg-primary text-white" : "bg-bg-secondary text-text-secondary hover:bg-black/5"
-                }`}
-              >
-                All
-              </button>
-              {SITUATIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSituationFilter(situationFilter === s ? "" : s)}
-                  className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold capitalize transition-all ${
-                    situationFilter === s ? "bg-primary text-white" : "bg-bg-secondary text-text-secondary hover:bg-black/5"
-                  }`}
-                >
-                  {s.replace("-", " ")}
-                </button>
-              ))}
-            </div>
+          <div className="rounded-lg bg-accent/5 border border-accent/20 px-4 py-2.5 text-[11px] text-text-secondary">
+            <strong className="text-accent">5 AI actors available.</strong> More actors coming soon. Upload your own photo for a custom actor.
           </div>
 
           {/* Avatar grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {/* Custom Avatar Upload Card */}
             <div className={`group relative overflow-hidden rounded-2xl border-2 transition-all flex flex-col ${
               selectedAvatar?.id.startsWith('custom-') ? "border-primary shadow-lg ring-2 ring-primary/20" : "border-dashed border-black/15 hover:border-primary/50"
@@ -372,11 +310,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
             })}
           </div>
 
-          {filteredAvatars.length === 0 && (
-            <div className="py-12 text-center text-text-secondary text-sm">
-              No actors match your filters. Try different criteria.
-            </div>
-          )}
+
 
           {selectedAvatar && (
             <div className="sticky bottom-20 sm:bottom-4 rounded-2xl border border-black/5 bg-white p-4 shadow-lg">
