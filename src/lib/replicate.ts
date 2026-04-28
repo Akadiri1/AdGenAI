@@ -151,8 +151,8 @@ export async function lipSyncVideo(params: {
     "kwaivgi/kling-lip-sync",
     undefined,
     {
-      video: params.videoUrl,
-      audio: params.audioUrl,
+      video_url: params.videoUrl,
+      audio_url: params.audioUrl,
     },
   );
   const output = await waitForPrediction(prediction.id, 200_000);
