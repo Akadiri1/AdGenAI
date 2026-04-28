@@ -58,12 +58,8 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     return () => { cancelled = true; clearInterval(id); };
   }, [adId]);
 
-  if (!state || !state.allScenesReady) return null;
-
-  const cost = 5 + state.sceneCount * 2;
-  const isGenerating = state.finalVideoStatus === "GENERATING";
-  const isReady = state.finalVideoStatus === "READY" || scenes.some(s => s.finalClipUrl);
-  const isFailed = state.finalVideoStatus === "FAILED";
+  // Derive clips before the early return so the autoplay useEffect can
+  // reference currentClip unconditionally (Rules of Hooks — no hooks after returns)
   const clips = scenes.map(s => ({ url: (s.finalClipUrl ?? s.videoClipUrl)!, scene: s.sceneNumber })).filter(c => c.url);
   const currentClip = clips[currentIdx]?.url;
 
@@ -89,16 +85,16 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     }
   }
 
+  if (!state || !state.allScenesReady) return null;
+
+  const cost = 5 + state.sceneCount * 2;
+  const isGenerating = state.finalVideoStatus === "GENERATING";
+  const isReady = state.finalVideoStatus === "READY" || scenes.some(s => s.finalClipUrl);
+  const isFailed = state.finalVideoStatus === "FAILED";
+
   function onVideoEnded() {
     if (currentIdx < clips.length - 1) setCurrentIdx(i => i + 1);
   }
-
-  useEffect(() => {
-    if (videoRef.current && currentClip) {
-      videoRef.current.load();
-      videoRef.current.play().catch(() => {});
-    }
-  }, [currentIdx, currentClip]);
 
   return (
     <div className="mb-6 rounded-3xl border-2 border-success/20 bg-gradient-to-br from-success/5 via-white to-accent/5 p-5 shadow-sm">
