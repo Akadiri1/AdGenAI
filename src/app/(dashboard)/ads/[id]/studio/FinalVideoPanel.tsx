@@ -5,7 +5,7 @@ import { Loader2, Download, Sparkles, AlertCircle, RefreshCw, Film } from "lucid
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import { getStitcher } from "@/lib/videoStitcher";
+// videoStitcher loaded lazily (browser-only, can't SSR)
 
 type Scene = {
   sceneNumber: number;
@@ -106,6 +106,8 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     setStitching(true);
     setStitchProgress({ msg: "Initializing…", pct: 0 });
     try {
+      // Lazy import — browser only, never runs on server
+      const { getStitcher } = await import("@/lib/videoStitcher");
       const stitcher = getStitcher();
       await stitcher.load((msg, pct) => setStitchProgress({ msg, pct }));
       const blob = await stitcher.concat(clips, (msg, pct) => setStitchProgress({ msg, pct }));
