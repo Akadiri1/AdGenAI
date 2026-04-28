@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Play, Download, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Loader2, Download, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { useConfirm } from "@/components/ui/ConfirmModal";
+
+type Scene = {
+  sceneNumber: number;
+  finalClipUrl: string | null;
+  videoClipUrl: string | null;
+  spokenLine: string | null;
+};
 
 type FinalState = {
   videoUrl: string | null;
@@ -12,34 +19,41 @@ type FinalState = {
   finalVideoError: string | null;
   allScenesReady: boolean;
   sceneCount: number;
-  // Per-scene final clips are shown in SceneEditor — videoUrl is just the primary
 };
 
-/**
- * Shown in Studio under the Scenes section once every scene clip is READY.
- * Triggers POST /api/ads/[id]/finalize which:
- *   1. TTS the spoken script
- *   2. concat scene clips
- *   3. lipsync against the voiceover
- *   4. uploads final MP4 to R2
- */
 export function FinalVideoPanel({ adId }: { adId: string }) {
   const { error, success } = useToast();
   const { refreshCredits } = useCredits();
   const confirm = useConfirm();
   const [state, setState] = useState<FinalState | null>(null);
+  const [scenes, setScenes] = useState<Scene[]>([]);
   const [starting, setStarting] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Poll the same /scenes endpoint — it returns adStatus, but we also need
-  // finalVideoStatus + videoUrl. We hit the dedicated GET below.
+  // Fetch finalize status + scene clips every 5s
   useEffect(() => {
     let cancelled = false;
     async function tick() {
       try {
-        const res = await fetch(`/api/ads/${adId}/finalize`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setState(data);
+        const [finRes, sceneRes] = await Promise.all([
+          fetch(`/api/ads/${adId}/finalize`, { cache: "no-store" }),
+          fetch(`/api/ads/${adId}/scenes`, { cache: "no-store" }),
+        ]);
+        if (!finRes.ok || !sceneRes.ok) return;
+        const finData = await finRes.json();
+        const sceneData = await sceneRes.json();
+        if (cancelled) return;
+        setState(finData);
+        const clips: Scene[] = (sceneData.scenes ?? [])
+          .filter((s: Scene) => s.finalClipUrl || s.videoClipUrl)
+          .map((s: Scene) => ({
+            sceneNumber: s.sceneNumber,
+            finalClipUrl: s.finalClipUrl,
+            videoClipUrl: s.videoClipUrl,
+            spokenLine: s.spokenLine,
+          }));
+        setScenes(clips);
       } catch { /* swallow */ }
     }
     tick();
@@ -51,23 +65,26 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
 
   const cost = 5 + state.sceneCount * 2;
   const isGenerating = state.finalVideoStatus === "GENERATING";
-  const isReady = state.finalVideoStatus === "READY" && !!state.videoUrl;
+  const isReady = (state.finalVideoStatus === "READY") || scenes.some(s => s.finalClipUrl);
   const isFailed = state.finalVideoStatus === "FAILED";
+
+  const clips = scenes.map(s => s.finalClipUrl ?? s.videoClipUrl).filter(Boolean) as string[];
+  const currentClip = clips[currentIdx];
 
   async function startFinalize() {
     const ok = await confirm({
-      title: "Render final video?",
-      message: `This stitches all scenes, adds voiceover and lip-sync. Charges ${cost} credits and takes ~2 minutes.`,
-      confirmLabel: `Render (${cost}cr)`,
+      title: "Generate voiceover + lip-sync?",
+      message: `Adds voice and lip-sync to each scene. Charges ${cost} credits, takes 3–5 minutes.`,
+      confirmLabel: `Start (${cost}cr)`,
     });
     if (!ok) return;
     setStarting(true);
     try {
       const res = await fetch(`/api/ads/${adId}/finalize`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Finalize failed");
-      success(`Final video ready — ${data.creditsCharged} credits charged`);
-      setState({ ...state!, videoUrl: data.videoUrl, finalVideoStatus: "READY", finalVideoError: null });
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      success("Lip-sync started — scenes will update as each one finishes");
+      setState(prev => prev ? { ...prev, finalVideoStatus: "GENERATING" } : prev);
       refreshCredits();
     } catch (err) {
       error((err as Error).message);
@@ -76,34 +93,85 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     }
   }
 
+  function onVideoEnded() {
+    if (currentIdx < clips.length - 1) {
+      setCurrentIdx(i => i + 1);
+    }
+  }
+
+  // Auto-play next clip when currentIdx changes
+  useEffect(() => {
+    if (videoRef.current && clips[currentIdx]) {
+      videoRef.current.load();
+      videoRef.current.play().catch(() => {});
+    }
+  }, [currentIdx, clips]);
+
   return (
     <div className="mb-6 rounded-3xl border-2 border-success/20 bg-gradient-to-br from-success/5 via-white to-accent/5 p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-success" />
-        <h2 className="font-heading text-xl font-bold text-text-primary">Final video</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-success" />
+          <h2 className="font-heading text-xl font-bold text-text-primary">Final video</h2>
+        </div>
+        {clips.length > 1 && (
+          <div className="flex gap-1.5">
+            {clips.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentIdx(i)}
+                className={`h-2 rounded-full transition-all ${
+                  i === currentIdx ? "w-6 bg-primary" : "w-2 bg-black/20"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {isReady && state.videoUrl ? (
+      {isReady && clips.length > 0 ? (
         <div className="space-y-3">
+          {/* Sequential player */}
           <div className="rounded-2xl overflow-hidden bg-black">
-            <video src={state.videoUrl} controls className="w-full max-h-[600px]" />
+            <video
+              ref={videoRef}
+              src={currentClip}
+              controls
+              autoPlay
+              onEnded={onVideoEnded}
+              className="w-full max-h-[600px]"
+            />
           </div>
+
+          {clips.length > 1 && (
+            <p className="text-[11px] text-text-secondary text-center">
+              Scene {currentIdx + 1} of {clips.length} — videos play in sequence automatically
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-2">
-            <a
-              href={state.videoUrl}
-              download
-              className="flex h-10 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-dark"
-            >
-              <Download className="h-4 w-4" /> Download MP4
-            </a>
+            {clips.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                download
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-white hover:bg-primary-dark"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Scene {i + 1}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={startFinalize}
-              disabled={starting}
-              className="flex h-10 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border-2 border-black/10 bg-white px-4 text-sm font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
+              disabled={starting || isGenerating}
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-black/10 bg-white text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50"
             >
-              {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Re-render <span className="opacity-70">({cost}cr)</span>
+              {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Re-render lip-sync ({cost}cr)
             </button>
           </div>
         </div>
@@ -123,34 +191,21 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
             <div className="flex items-center gap-2 font-semibold text-danger mb-1">
               <AlertCircle className="h-4 w-4" /> Finalization failed
             </div>
-            <p className="text-xs text-text-secondary break-words">{state.finalVideoError ?? "Unknown error"}</p>
+            <p className="text-xs text-text-secondary">{state.finalVideoError ?? "Unknown error"}</p>
           </div>
-          <button
-            type="button"
-            onClick={startFinalize}
-            disabled={starting}
-            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50"
-          >
-            {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Retry ({cost} credits)
+          <button type="button" onClick={startFinalize} disabled={starting}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-50">
+            Retry ({cost}cr)
           </button>
         </div>
       ) : (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-text-secondary">
-            All {state.sceneCount} scenes are ready. Render the final ad with voiceover and lip-sync — <strong className="text-text-primary">~2 min</strong>.
+            All {state.sceneCount} scenes ready. Add voiceover and lip-sync to bring them to life.
           </p>
-          <button
-            type="button"
-            onClick={startFinalize}
-            disabled={starting}
-            className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-success px-4 sm:px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50"
-          >
-            {starting ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</>
-            ) : (
-              <><Play className="h-4 w-4" /> Render Final Video <span className="opacity-80">({cost}cr)</span></>
-            )}
+          <button type="button" onClick={startFinalize} disabled={starting}
+            className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white shadow-lg hover:bg-success/90 disabled:opacity-50">
+            {starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</> : <><Sparkles className="h-4 w-4" /> Add Voice + Lip-sync ({cost}cr)</>}
           </button>
         </div>
       )}
