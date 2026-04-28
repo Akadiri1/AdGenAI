@@ -152,7 +152,7 @@ export async function lipSyncVideo(params: {
     undefined,
     {
       video_url: params.videoUrl,
-      audio_url: params.audioUrl,
+      audio: params.audioUrl,
     },
   );
   const output = await waitForPrediction(prediction.id, 200_000);
