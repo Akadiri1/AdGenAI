@@ -180,8 +180,8 @@ export async function POST(req: Request) {
           setting: libAvatar.situation,
         },
       });
-    } else if (actorRow.imageUrl.startsWith("/")) {
-      // Fix existing rows that stored a relative URL
+    } else if (actorRow.imageUrl !== absoluteImageUrl) {
+      // Always sync imageUrl from the library (catches old randomuser.me/Unsplash URLs)
       actorRow = await prisma.actor.update({
         where: { id: actorRow.id },
         data: { imageUrl: absoluteImageUrl, thumbnailUrl: absoluteImageUrl },
