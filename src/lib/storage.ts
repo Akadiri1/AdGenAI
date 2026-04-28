@@ -57,15 +57,21 @@ export async function uploadToStorage(input: UploadInput): Promise<string> {
     return `${R2_PUBLIC_URL!.replace(/\/$/, "")}/${key}`;
   }
 
-  // Local fallback — writes to ./public/uploads and returns a URL served by Next.js.
-  // For Meta to fetch this, the dev server must be tunneled via ngrok.
+  // In production (Vercel/serverless) the filesystem is read-only — R2 must be configured.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "R2 storage is not configured. Add R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_PUBLIC_URL to your environment variables. See https://dash.cloudflare.com → R2.",
+    );
+  }
+
+  // Local dev fallback — writes to ./public/uploads, served by Next.js dev server.
   const publicDir = path.join(process.cwd(), "public", folder);
   fs.mkdirSync(publicDir, { recursive: true });
   const filePath = path.join(publicDir, `${id}.${extension}`);
   fs.writeFileSync(filePath, bytes as Buffer);
 
-  const publicUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${publicUrl.replace(/\/$/, "")}/${folder}/${id}.${extension}`;
+  const publicUrl = "http://localhost:3000";
+  return `${publicUrl}/${folder}/${id}.${extension}`;
 }
 
 /**
