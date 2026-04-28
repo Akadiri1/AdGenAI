@@ -1,28 +1,25 @@
 /**
  * POST /api/ads/[id]/finalize
  *
- * Stitches all READY scenes into one final ad MP4:
- *   1. Generate one voiceover from the full spoken script (TTS)
- *   2. Concatenate all scene clips into a silent video
- *   3. Lip-sync the concat against the voiceover → final MP4
- *   4. Upload to R2, save to ad.videoUrl, mark ad final-ready
+ * Per-scene approach (no server-side concat needed):
+ *   For each READY scene:
+ *     1. TTS the scene's spokenLine → voiceoverUrl
+ *     2. Lip-sync the scene clip against that audio → finalClipUrl
+ *     3. Persist finalClipUrl on the scene
+ *   Mark ad.finalVideoStatus = "READY"
  *
- * Cost: ~5 credits + 2 per scene (TTS + concat are cheap; lipsync is the chunky one).
+ * GET: returns finalization status + allScenesReady flag.
  */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  concatVideos,
-  lipSyncVideo,
-  isReplicateConfigured,
-} from "@/lib/replicate";
-import { generateVoiceover } from "@/lib/tts";
+import { lipSyncVideo, isReplicateConfigured } from "@/lib/replicate";
 import { uploadToStorage } from "@/lib/storage";
 import { checkCredits, deductCredits } from "@/lib/credits";
+import { generateVoiceover } from "@/lib/tts";
 
-export const maxDuration = 300; // Vercel Hobby cap; lipsync usually finishes in ~120s
+export const maxDuration = 300;
 
 export async function GET(
   _req: Request,
@@ -39,7 +36,7 @@ export async function GET(
       videoUrl: true,
       finalVideoStatus: true,
       finalVideoError: true,
-      scenes: { select: { status: true, videoClipUrl: true } },
+      scenes: { select: { status: true, videoClipUrl: true, finalClipUrl: true } },
     },
   });
   if (!ad || ad.userId !== session.user.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -71,133 +68,115 @@ export async function POST(
 
   const ad = await prisma.ad.findUnique({
     where: { id },
-    include: { actor: true, scenes: { orderBy: { sceneNumber: "asc" } } },
+    include: {
+      actor: true,
+      scenes: { where: { status: "READY" }, orderBy: { sceneNumber: "asc" } },
+    },
   });
   if (!ad || ad.userId !== userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (ad.scenes.length === 0) return NextResponse.json({ error: "No ready scenes" }, { status: 400 });
+  if (ad.finalVideoStatus === "GENERATING") return NextResponse.json({ error: "Already running" }, { status: 409 });
+  if (ad.finalVideoStatus === "READY") return NextResponse.json({ success: true, message: "Already finalized" });
 
-  // Validate state
-  if (ad.scenes.length === 0) return NextResponse.json({ error: "No scenes" }, { status: 400 });
-  const allReady = ad.scenes.every((s) => s.status === "READY" && s.videoClipUrl);
-  if (!allReady) {
-    return NextResponse.json({
-      error: "Not all scenes are READY yet — wait for generation to finish before finalizing",
-    }, { status: 409 });
-  }
-  if (ad.finalVideoStatus === "GENERATING") {
-    return NextResponse.json({ error: "Finalization already running" }, { status: 409 });
-  }
-  if (ad.videoUrl && ad.finalVideoStatus === "READY") {
-    return NextResponse.json({ success: true, videoUrl: ad.videoUrl, message: "Already final" });
-  }
-
+  // Cost: 5 base + 2 per scene (TTS + lipsync per scene)
   const cost = 5 + ad.scenes.length * 2;
   if (!(await checkCredits(userId, cost))) {
-    return NextResponse.json({ error: `Need ${cost} credits to finalize`, neededCredits: cost }, { status: 402 });
+    return NextResponse.json({ error: `Need ${cost} credits`, neededCredits: cost }, { status: 402 });
   }
 
   await deductCredits(userId, cost);
   await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "GENERATING", finalVideoError: null } });
 
-  try {
-    // Build the spoken text from each scene's spokenLine, fallback to ad.script
-    const scriptText = ad.scenes
-      .map((s) => s.spokenLine?.trim())
-      .filter(Boolean)
-      .join(" ");
-    const text = scriptText || ad.script || "";
-    if (!text.trim()) throw new Error("No spoken text found across scenes or ad.script");
+  // Map DB ageRange to simple age values for voice selection
+  const ageRangeMap: Record<string, string> = {
+    "young-adult": "young", "adult": "middle", "mature": "senior", "senior": "senior",
+  };
+  const mappedAge = ad.actor?.ageRange ? (ageRangeMap[ad.actor.ageRange] ?? "middle") : "middle";
+  let voiceSettings: Record<string, unknown> | undefined;
+  try { voiceSettings = ad.voiceSettings ? JSON.parse(ad.voiceSettings) : undefined; } catch { /* ignore */ }
 
-    // 1. Voiceover (one TTS call — much cheaper than per-scene)
-    let voiceSettings: Record<string, unknown> | undefined;
-    try { voiceSettings = ad.voiceSettings ? JSON.parse(ad.voiceSettings) : undefined; } catch { /* ignore */ }
+  let lastFinalClipUrl: string | null = null;
+  const errors: string[] = [];
 
-    // Map DB ageRange ("young-adult" | "adult" | "mature" | "senior") to
-    // the simple values pickElevenLabsVoice expects ("young" | "middle" | "senior")
-    const ageRangeMap: Record<string, string> = {
-      "young-adult": "young",
-      "adult":       "middle",
-      "mature":      "senior",
-      "senior":      "senior",
-    };
-    const mappedAge = ad.actor?.ageRange
-      ? (ageRangeMap[ad.actor.ageRange] ?? "middle")
-      : "middle";
+  // Per-scene: TTS → lipsync (sequential, one at a time)
+  for (const scene of ad.scenes) {
+    const spokenText = scene.spokenLine?.trim() || ad.script || "";
+    if (!spokenText || !scene.videoClipUrl) continue;
 
-    const tts = await generateVoiceover({
-      text,
-      settings: voiceSettings as never,
-      actor: ad.actor ? {
-        gender: ad.actor.gender,
-        age: mappedAge,
-        vibe: ad.actor.vibe,
-      } : undefined,
-      language: ad.language,
-    });
-    const voiceoverUrl = tts.audioUrl;
-
-    // 2. Concat all scene clips into one silent video
-    const clipUrls = ad.scenes.map((s) => s.videoClipUrl as string);
-    const concatUrl = await concatVideos({ videoUrls: clipUrls });
-
-    // 3. Lip-sync — try audio_file, fall back to text TTS, then skip if both fail
-    const actorGender = ad.actor?.gender ?? null;
-    let lipsyncedUrl: string = concatUrl; // default: return silent concat if lip-sync fails
     try {
-      lipsyncedUrl = await lipSyncVideo({
-        videoUrl: concatUrl,
-        audioUrl: voiceoverUrl,
-        gender: actorGender,
+      // 1. Generate TTS for this scene's spoken line
+      const tts = await generateVoiceover({
+        text: spokenText,
+        settings: voiceSettings as never,
+        actor: ad.actor ? { gender: ad.actor.gender, age: mappedAge, vibe: ad.actor.vibe } : undefined,
+        language: ad.language,
       });
-    } catch (lipErr1) {
-      console.warn("[finalize] audio_file path failed:", (lipErr1 as Error).message);
+
+      // 2. Lipsync this scene's clip with its voiceover
+      let finalClipUrl: string;
       try {
-        // Fallback 1: use text with Kling's built-in TTS
-        lipsyncedUrl = await lipSyncVideo({
-          videoUrl: concatUrl,
-          text,
-          gender: actorGender,
+        finalClipUrl = await lipSyncVideo({
+          videoUrl: scene.videoClipUrl,
+          audioUrl: tts.audioUrl,
+          gender: ad.actor?.gender ?? null,
         });
-      } catch (lipErr2) {
-        // Fallback 2: skip lip-sync, return the concat video with voiceover stored separately
-        console.warn("[finalize] text lip-sync also failed — skipping lip-sync:", (lipErr2 as Error).message);
-        lipsyncedUrl = concatUrl;
+      } catch {
+        // Fallback: use text-based lipsync (Kling's built-in TTS)
+        finalClipUrl = await lipSyncVideo({
+          videoUrl: scene.videoClipUrl,
+          text: spokenText.slice(0, 300),
+          gender: ad.actor?.gender ?? null,
+        });
       }
+
+      // 3. Persist to permanent storage
+      let permanentUrl = finalClipUrl;
+      try {
+        const buf = await fetch(finalClipUrl).then((r) => r.arrayBuffer());
+        permanentUrl = await uploadToStorage({
+          bytes: Buffer.from(buf),
+          contentType: "video/mp4",
+          extension: "mp4",
+          folder: "ads/final",
+        });
+      } catch { /* use Replicate temp URL */ }
+
+      await prisma.scene.update({
+        where: { id: scene.id },
+        data: { finalClipUrl: permanentUrl, voiceoverUrl: tts.audioUrl },
+      });
+      lastFinalClipUrl = permanentUrl;
+    } catch (err) {
+      const msg = (err as Error).message;
+      errors.push(`Scene ${scene.sceneNumber}: ${msg}`);
+      // Store original clip as fallback so user still gets something
+      lastFinalClipUrl = lastFinalClipUrl ?? scene.videoClipUrl;
     }
 
-    // 4. Persist to R2 (or local fallback) so the URL doesn't expire
-    let permanentUrl = lipsyncedUrl;
-    try {
-      const buf = await fetch(lipsyncedUrl).then((r) => r.arrayBuffer());
-      permanentUrl = await uploadToStorage({
-        bytes: Buffer.from(buf),
-        contentType: "video/mp4",
-        extension: "mp4",
-        folder: "ads/final",
-      });
-    } catch { /* fall back to the temp Replicate URL */ }
-
-    await prisma.ad.update({
-      where: { id },
-      data: {
-        videoUrl: permanentUrl,
-        voiceoverUrl,
-        finalVideoStatus: "READY",
-        finalVideoError: null,
-        status: "READY",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      videoUrl: permanentUrl,
-      creditsCharged: cost,
-    });
-  } catch (err) {
-    const msg = (err as Error).message;
-    await prisma.ad.update({
-      where: { id },
-      data: { finalVideoStatus: "FAILED", finalVideoError: msg },
-    });
-    return NextResponse.json({ error: "Finalization failed", details: msg }, { status: 500 });
+    // 3s gap between scenes to stay inside Replicate burst limit
+    if (ad.scenes.indexOf(scene) < ad.scenes.length - 1) {
+      await new Promise((r) => setTimeout(r, 3000));
+    }
   }
+
+  const hasErrors = errors.length > 0;
+  await prisma.ad.update({
+    where: { id },
+    data: {
+      finalVideoStatus: hasErrors && !lastFinalClipUrl ? "FAILED" : "READY",
+      finalVideoError: hasErrors ? errors.join("; ") : null,
+      videoUrl: lastFinalClipUrl,
+      status: "READY",
+    },
+  });
+
+  return NextResponse.json({
+    success: true,
+    creditsCharged: cost,
+    sceneCount: ad.scenes.length,
+    errors: hasErrors ? errors : undefined,
+    message: hasErrors
+      ? `Finalized with ${errors.length} error(s) — some scenes may not be lip-synced`
+      : "All scenes lip-synced. Watch each scene in Studio.",
+  });
 }

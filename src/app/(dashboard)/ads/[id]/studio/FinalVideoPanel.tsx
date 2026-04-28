@@ -8,10 +8,11 @@ import { useConfirm } from "@/components/ui/ConfirmModal";
 
 type FinalState = {
   videoUrl: string | null;
-  finalVideoStatus: string | null; // null | "GENERATING" | "READY" | "FAILED"
+  finalVideoStatus: string | null;
   finalVideoError: string | null;
   allScenesReady: boolean;
   sceneCount: number;
+  // Per-scene final clips are shown in SceneEditor — videoUrl is just the primary
 };
 
 /**

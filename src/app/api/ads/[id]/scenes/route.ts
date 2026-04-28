@@ -77,6 +77,7 @@ export async function GET(
       spokenLine: s.spokenLine,
       compositeImageUrl: s.compositeImageUrl,
       videoClipUrl: s.videoClipUrl,
+      finalClipUrl: s.finalClipUrl,
       editInstructions: s.editInstructions,
     })),
   });

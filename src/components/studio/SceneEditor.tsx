@@ -20,6 +20,7 @@ type Scene = {
   spokenLine: string | null;
   compositeImageUrl: string | null;
   videoClipUrl: string | null;
+  finalClipUrl: string | null; // lip-synced version — shown when available
   editInstructions: string | null;
 };
 
@@ -222,8 +223,8 @@ export function SceneEditor({ adId }: { adId: string }) {
           <div className="grid gap-4 md:grid-cols-[200px_1fr]">
             {/* Preview — capped on mobile so it doesn't take half the screen */}
             <div className="relative aspect-[9/16] w-full max-w-[180px] mx-auto md:mx-0 md:max-w-none overflow-hidden rounded-xl bg-bg-secondary">
-              {s.videoClipUrl ? (
-                <video src={s.videoClipUrl} controls className="h-full w-full object-cover" />
+              {(s.finalClipUrl || s.videoClipUrl) ? (
+                <video src={s.finalClipUrl ?? s.videoClipUrl ?? ""} controls className="h-full w-full object-cover" />
               ) : s.compositeImageUrl ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
