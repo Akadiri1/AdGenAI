@@ -111,10 +111,10 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4">
           <div className="flex items-center gap-2 font-semibold text-accent">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Stitching scenes, generating voiceover, and lip-syncing...
+            Generating voiceover + lip-sync for each scene...
           </div>
           <p className="mt-1 text-xs text-text-secondary">
-            This usually takes 60–120 seconds. We&apos;ll update this panel when it&apos;s ready.
+            Each scene takes 1–2 min. Watch the scene cards above — they update as each one finishes.
           </p>
         </div>
       ) : isFailed ? (
