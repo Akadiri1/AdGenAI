@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/dashboard/BottomNav";
 import { ReferralClaimer } from "@/components/ReferralClaimer";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { CreditsProvider } from "@/components/CreditsProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmModal";
 import { SupportBubble } from "@/components/SupportBubble";
 import { AppLock } from "@/components/AppLock";
 import { getServerSession } from "next-auth";
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
 
   return (
     <CreditsProvider initialCredits={credits}>
+    <ConfirmProvider>
       <AppLock>
         <div className="flex h-screen overflow-hidden bg-bg-secondary/20">
           <ReferralClaimer />
@@ -54,6 +56,7 @@ export default async function DashboardLayout({
           <SupportBubble />
         </div>
       </AppLock>
+    </ConfirmProvider>
     </CreditsProvider>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 
 type SceneStatus = "PENDING" | "COMPOSITING" | "GENERATING_VIDEO" | "READY" | "FAILED" | "PROMPT_ONLY";
 
@@ -36,6 +37,7 @@ const QUICK_INSTRUCTIONS = [
 export function SceneEditor({ adId }: { adId: string }) {
   const { error, success } = useToast();
   const { refreshCredits } = useCredits();
+  const confirm = useConfirm();
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [adStatus, setAdStatus] = useState<string>("");
@@ -139,7 +141,13 @@ export function SceneEditor({ adId }: { adId: string }) {
   }
 
   async function startGeneration() {
-    if (!confirm("Start generation? This will charge credits and kick off video rendering for every scene.")) return;
+    const ok = await confirm({
+      title: "Start generation?",
+      message: `This will charge ${estimatedCost} credits and begin rendering ${scenes.length} scene${scenes.length > 1 ? "s" : ""}. Takes ${renderMinutes} minutes.`,
+      confirmLabel: `Start (${estimatedCost}cr)`,
+      danger: false,
+    });
+    if (!ok) return;
     setStarting(true);
     try {
       const res = await fetch(`/api/ads/${adId}/start-generation`, { method: "POST" });

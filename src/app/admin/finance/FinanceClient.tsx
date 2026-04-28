@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, ExternalLink } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 
 type Tx = {
   id: string;
@@ -49,6 +50,7 @@ export function FinanceClient({
   initialTransactions: Tx[]; initialExpenses: Expense[]; summary: Summary;
 }) {
   const { success, error } = useToast();
+  const confirm = useConfirm();
   const [transactions] = useState(initialTransactions);
   const [expenses, setExpenses] = useState(initialExpenses);
   const [tab, setTab] = useState<"all" | "revenue" | "expenses">("all");
@@ -96,7 +98,8 @@ export function FinanceClient({
   }
 
   async function deleteExpense(id: string) {
-    if (!confirm("Delete this expense?")) return;
+    const ok = await confirm({ title: "Delete expense?", message: "This cannot be undone.", confirmLabel: "Delete", danger: true });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/admin/expenses?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed");

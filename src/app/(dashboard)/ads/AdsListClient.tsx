@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AdCard } from "@/components/ads/AdPreview";
 import { Trash2, CheckSquare, Square, X, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 type Ad = {
   id: string;
   type: string;
@@ -25,6 +26,7 @@ type Ad = {
 export function AdsListClient({ initialAds }: { initialAds: Ad[] }) {
   const router = useRouter();
   const { success, error } = useToast();
+  const confirm = useConfirm();
   const [ads, setAds] = useState(initialAds);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -55,7 +57,13 @@ export function AdsListClient({ initialAds }: { initialAds: Ad[] }) {
   async function bulkDelete() {
     if (selected.size === 0) return;
     const count = selected.size;
-    if (!confirm(`Delete ${count} ad${count > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete ${count} ad${count > 1 ? "s" : ""}?`,
+      message: "This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
 
     setDeleting(true);
     try {

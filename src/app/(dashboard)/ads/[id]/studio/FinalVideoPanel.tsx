@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Play, Download, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 
 type FinalState = {
   videoUrl: string | null;
@@ -24,6 +25,7 @@ type FinalState = {
 export function FinalVideoPanel({ adId }: { adId: string }) {
   const { error, success } = useToast();
   const { refreshCredits } = useCredits();
+  const confirm = useConfirm();
   const [state, setState] = useState<FinalState | null>(null);
   const [starting, setStarting] = useState(false);
 
@@ -52,7 +54,12 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
   const isFailed = state.finalVideoStatus === "FAILED";
 
   async function startFinalize() {
-    if (!confirm(`Render the final stitched ad? This will charge ${cost} credits.`)) return;
+    const ok = await confirm({
+      title: "Render final video?",
+      message: `This stitches all scenes, adds voiceover and lip-sync. Charges ${cost} credits and takes ~2 minutes.`,
+      confirmLabel: `Render (${cost}cr)`,
+    });
+    if (!ok) return;
     setStarting(true);
     try {
       const res = await fetch(`/api/ads/${adId}/finalize`, { method: "POST" });

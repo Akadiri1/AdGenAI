@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Film, Calendar, Clock, ChevronRight, Filter, Search, Image as ImageIcon, Trash2, Loader2, CheckSquare } from "lucide-react";
+import { useConfirm } from "@/components/ui/ConfirmModal";
+import { useToast } from "@/components/ui/Toast";
 
 type Ad = {
   id: string;
@@ -21,6 +23,8 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
   const [search, setSearch] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const confirm = useConfirm();
+  const { error: toastError } = useToast();
 
   const filteredAds = ads.filter(ad => {
     if (!search) return true;
@@ -52,13 +56,15 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
 
   async function handleDelete() {
     const isDeletingAll = selectedIds.size === 0;
-    
-    if (isDeletingAll) {
-      if (!confirm("Are you sure you want to delete ALL your ads? This cannot be undone.")) return;
-    } else {
-      if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected ad(s)? This cannot be undone.`)) return;
-    }
-    
+    const count = isDeletingAll ? ads.length : selectedIds.size;
+    const ok = await confirm({
+      title: isDeletingAll ? "Delete all ads?" : `Delete ${count} ad${count > 1 ? "s" : ""}?`,
+      message: "This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+
     setIsDeleting(true);
     try {
       const body = isDeletingAll ? { deleteAll: true } : { ids: Array.from(selectedIds) };
@@ -68,7 +74,6 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to delete ads");
-      
       if (isDeletingAll) {
         setAds([]);
       } else {
@@ -77,7 +82,7 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
       setSelectedIds(new Set());
     } catch (err) {
       console.error(err);
-      alert("An error occurred while deleting ads.");
+      toastError("An error occurred while deleting ads.");
     } finally {
       setIsDeleting(false);
     }
