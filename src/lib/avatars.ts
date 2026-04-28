@@ -55,11 +55,8 @@ function av(
 }
 
 export const AVATAR_LIBRARY: Avatar[] = [
-  av("ava-001", "Sofia",  "female", "young",  "studio", "latina",          "photo-1531123897727-8f129e1688ce", ["beauty", "friendly", "casual"],        "EXAVITQu4vr4xnSDxMaL"),
-  av("ava-003", "Emma",   "female", "young",  "cafe",   "european",        "photo-1494790108377-be9c29b29330", ["lifestyle", "food", "casual"],          "21m00Tcm4TlvDq8ikWAM"),
-  av("ava-011", "Marcus", "male",   "young",  "studio", "african-american", "photo-1507003211169-0a1dd7228f2d", ["confident", "streetwear", "casual"],   "nPczCjzI2devNBz1zQrb"),
-  av("ava-016", "Tunde",  "male",   "young",  "home",   "african",          "photo-1492562080023-ab3db95bfbce", ["entrepreneur", "tech", "confident"],   "ODq5zAsR6fA0C06iWqD9"),
-  av("ava-006", "Priya",  "female", "young",  "gym",    "south-asian",      "photo-1520813792240-56fc4a3765a7", ["fitness", "wellness", "active"],       "pFZP5JQG7iQjIQuC4Bku"),
+  av("ava-001", "Sofia",  "female", "young",  "studio", "latina",   "photo-1531123897727-8f129e1688ce", ["beauty", "friendly", "casual"],  "EXAVITQu4vr4xnSDxMaL"),
+  av("ava-003", "Emma",   "female", "young",  "cafe",   "european", "photo-1494790108377-be9c29b29330", ["lifestyle", "food", "casual"],   "21m00Tcm4TlvDq8ikWAM"),
 ];
 
 export type VoiceSettings = {
