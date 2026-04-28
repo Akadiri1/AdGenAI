@@ -144,18 +144,26 @@ export async function getKlingClipStatus(predictionId: string): Promise<{
 // =====================================================================
 export async function lipSyncVideo(params: {
   videoUrl: string;
-  audioUrl: string;
+  audioUrl?: string;  // mp3/wav URL — if omitted, uses text
+  text?: string;      // spoken text — used when no audioUrl
+  voiceId?: string;   // Kling built-in voice (e.g. "en_AOT")
 }): Promise<string> {
   if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
-  const prediction = await createPrediction(
-    "kwaivgi/kling-lip-sync",
-    undefined,
-    {
-      video_url: params.videoUrl,
-      audio: params.audioUrl,
-    },
-  );
-  const output = await waitForPrediction(prediction.id, 200_000);
+
+  const input: Record<string, unknown> = { video_url: params.videoUrl };
+  if (params.audioUrl) {
+    // Preferred: drive lip-sync from an external audio file
+    input.audio_file = params.audioUrl;
+  } else if (params.text) {
+    // Fallback: let Kling do its own TTS
+    input.text = params.text;
+    input.voice_id = params.voiceId ?? "en_female_1"; // female English default
+  } else {
+    throw new Error("lipSyncVideo: provide either audioUrl or text");
+  }
+
+  const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
+  const output = await waitForPrediction(prediction.id, 240_000);
   const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
   if (typeof url !== "string") throw new Error("Lip-sync produced no URL");
   return url;

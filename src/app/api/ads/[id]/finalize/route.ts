@@ -139,8 +139,20 @@ export async function POST(
     const clipUrls = ad.scenes.map((s) => s.videoClipUrl as string);
     const concatUrl = await concatVideos({ videoUrls: clipUrls });
 
-    // 3. Lip-sync the concat against the voiceover
-    const lipsyncedUrl = await lipSyncVideo({ videoUrl: concatUrl, audioUrl: voiceoverUrl });
+    // 3. Lip-sync — try audio_file first, fall back to text if audio URL is unreachable
+    let lipsyncedUrl: string;
+    try {
+      lipsyncedUrl = await lipSyncVideo({ videoUrl: concatUrl, audioUrl: voiceoverUrl });
+    } catch (lipErr) {
+      const msg = (lipErr as Error).message;
+      // If audio_file fails (unreachable URL), drive lip-sync from the text directly
+      if (msg.includes("audio") || msg.includes("invalid") || msg.includes("E006")) {
+        console.warn("[finalize] audio_file failed, falling back to text lip-sync:", msg);
+        lipsyncedUrl = await lipSyncVideo({ videoUrl: concatUrl, text });
+      } else {
+        throw lipErr;
+      }
+    }
 
     // 4. Persist to R2 (or local fallback) so the URL doesn't expire
     let permanentUrl = lipsyncedUrl;
