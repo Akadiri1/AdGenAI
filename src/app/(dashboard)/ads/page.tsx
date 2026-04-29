@@ -18,9 +18,30 @@ export default async function MyAdsPage() {
     );
   }
 
-  const ads = await prisma.ad.findMany({
+  const rawAds = await prisma.ad.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
+    include: {
+      actor: { select: { thumbnailUrl: true } },
+      scenes: {
+        orderBy: { sceneNumber: "asc" },
+        take: 1,
+        select: { compositeImageUrl: true, finalClipUrl: true, videoClipUrl: true },
+      },
+    },
+  });
+
+  // Derive the best available thumbnail for each ad
+  const ads = rawAds.map((ad) => {
+    const scene = ad.scenes[0];
+    const thumbnail =
+      ad.thumbnailUrl ??
+      scene?.finalClipUrl ??       // lip-synced clip (shows first frame)
+      scene?.compositeImageUrl ??  // actor + product composite photo
+      scene?.videoClipUrl ??       // raw Kling clip
+      ad.actor?.thumbnailUrl ??    // actor portrait fallback
+      null;
+    return { ...ad, thumbnailUrl: thumbnail };
   });
 
   return (

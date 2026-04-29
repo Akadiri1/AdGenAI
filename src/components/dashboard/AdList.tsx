@@ -2,9 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Film, Calendar, Clock, ChevronRight, Filter, Search, Image as ImageIcon, Trash2, Loader2, CheckSquare } from "lucide-react";
+import { Film, Calendar, Clock, ChevronRight, Filter, Search, Trash2, Loader2, CheckSquare } from "lucide-react";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
+
+function getAdGradient(status: string) {
+  const map: Record<string, string> = {
+    DRAFT:      "bg-gradient-to-br from-warning/20 via-bg-secondary to-warning/5",
+    GENERATING: "bg-gradient-to-br from-accent/20 via-bg-secondary to-primary/10",
+    READY:      "bg-gradient-to-br from-success/20 via-bg-secondary to-accent/10",
+    FAILED:     "bg-gradient-to-br from-danger/20 via-bg-secondary to-warning/10",
+  };
+  return map[status] ?? "bg-gradient-to-br from-primary/15 via-bg-secondary to-secondary/10";
+}
 
 type Ad = {
   id: string;
@@ -146,15 +156,26 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
                 </div>
               </div>
 
-              <div className="aspect-video bg-bg-secondary relative flex items-center justify-center">
+              {/* Thumbnail — uses composite/clip image, coloured gradient fallback */}
+              <div className={`aspect-video relative overflow-hidden ${!ad.thumbnailUrl ? getAdGradient(ad.status) : ""}`}>
                 {ad.thumbnailUrl ? (
-                  <img src={ad.thumbnailUrl} alt={ad.headline || "Ad thumbnail"} className="w-full h-full object-cover" />
-                ) : ad.type === "IMAGE" ? (
-                  <ImageIcon className="h-8 w-8 text-text-secondary/50" />
+                  ad.thumbnailUrl.includes(".mp4") || ad.thumbnailUrl.includes("delivery")
+                    ? <video src={ad.thumbnailUrl} muted playsInline className="w-full h-full object-cover"
+                        onMouseOver={e => (e.currentTarget as HTMLVideoElement).play()}
+                        onMouseOut={e => { const v = e.currentTarget as HTMLVideoElement; v.pause(); v.currentTime = 0; }} />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    : <img src={ad.thumbnailUrl} alt={ad.headline || "Ad"} className="w-full h-full object-cover" />
                 ) : (
-                  <Film className="h-8 w-8 text-text-secondary/50" />
+                  <div className="flex h-full w-full items-center justify-center flex-col gap-2">
+                    {ad.status === "GENERATING"
+                      ? <div className="h-8 w-8 rounded-full border-4 border-white/30 border-t-accent animate-spin" />
+                      : <Film className="h-8 w-8 text-text-secondary/60" />}
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                      {ad.status === "DRAFT" ? "Draft" : ad.status === "GENERATING" ? "Rendering…" : "No preview"}
+                    </span>
+                  </div>
                 )}
-                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-white/90 backdrop-blur text-xs font-semibold shadow-sm">
+                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur text-[10px] font-bold text-white">
                   {ad.status}
                 </div>
               </div>
