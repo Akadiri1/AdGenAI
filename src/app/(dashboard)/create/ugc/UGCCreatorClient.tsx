@@ -200,8 +200,35 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
       {/* Step 1: Avatar Selection */}
       {step === "select-avatar" && (
         <div className="space-y-4">
-          <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-text-primary">
-            <strong className="font-bold">Upload your own photo</strong> — your face, your brand. Any clear front-facing photo works. The AI will animate you speaking the script.
+          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm space-y-3">
+            <div className="font-heading font-bold text-text-primary">Upload your photo — the AI animates you speaking</div>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="flex items-start gap-1.5">
+                <span className="text-success font-bold mt-0.5">✓</span>
+                <span className="text-text-secondary">Front-facing, looking at camera</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-success font-bold mt-0.5">✓</span>
+                <span className="text-text-secondary">Good lighting — daylight or ring light</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-success font-bold mt-0.5">✓</span>
+                <span className="text-text-secondary">Simple or plain background</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-success font-bold mt-0.5">✓</span>
+                <span className="text-text-secondary">High resolution (1MB+ photo)</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-danger font-bold mt-0.5">✗</span>
+                <span className="text-text-secondary">Sunglasses or face covered</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-danger font-bold mt-0.5">✗</span>
+                <span className="text-text-secondary">Dark, blurry or backlit photos</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-text-secondary">Better photo quality = more realistic video output. A clear selfie in natural light is all you need.</p>
           </div>
 
           {/* Avatar grid */}
@@ -217,8 +244,12 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  if (file.size > 5 * 1024 * 1024) {
-                    toastError("File too large (max 5MB)");
+                  if (file.size > 10 * 1024 * 1024) {
+                    toastError("File too large (max 10MB)");
+                    return;
+                  }
+                  if (file.size < 50 * 1024) {
+                    toastError("Photo too small — upload a higher resolution image for better results");
                     return;
                   }
                   try {
@@ -255,18 +286,25 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                   <img src={customActorImage} alt="Custom" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center p-2 text-center">
-                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
-                      <Upload className="h-3.5 w-3.5 text-primary" />
+                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                      <Upload className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="text-[10px] font-bold text-text-primary uppercase tracking-wider">Upload Actor</span>
-                    <span className="text-[9px] text-text-secondary mt-1">Your own photo</span>
+                    <span className="text-[10px] font-bold text-text-primary uppercase tracking-wider">Tap to upload</span>
+                    <span className="text-[9px] text-text-secondary mt-1">JPG / PNG / WebP</span>
+                  </div>
+                )}
+                {customActorImage && (
+                  <div className="absolute top-2 right-2 rounded-md bg-success text-white text-[9px] font-bold px-1.5 py-0.5">
+                    ✓ Ready
                   </div>
                 )}
               </div>
               <div className="p-2 border-t border-black/5 bg-white relative z-20">
-                <div className="text-xs font-semibold text-text-primary truncate">Your Actor</div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[9px] text-text-secondary capitalize">Custom photo</span>
+                <div className="text-xs font-semibold text-text-primary truncate">
+                  {customActorImage ? "Photo uploaded" : "Your photo"}
+                </div>
+                <div className="text-[9px] text-text-secondary mt-0.5">
+                  {customActorImage ? "Tap to change" : "Front-facing, good light"}
                 </div>
               </div>
               {selectedAvatar?.id.startsWith('custom-') && (
