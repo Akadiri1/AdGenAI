@@ -54,9 +54,36 @@ function av(
   return { id, name, gender, age, situation, ethnicity, thumbnailUrl, isPro: false, isHD: true, tags, voiceId };
 }
 
-// Stock actors temporarily disabled — users upload their own photo.
-// Re-enable once FLUX portrait pack is generated.
-export const AVATAR_LIBRARY: Avatar[] = [];
+export const AVATAR_LIBRARY: Avatar[] = [
+  // --- Female ---
+  {
+    id: "ava-001",
+    name: "Sofia",
+    gender: "female",
+    age: "young",
+    situation: "studio",
+    ethnicity: "latina",
+    thumbnailUrl: PORTRAIT_OVERRIDES["ava-001"] ?? "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=400&fit=crop&crop=faces",
+    isPro: false,
+    isHD: true,
+    tags: ["friendly", "casual", "beauty"],
+    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — ElevenLabs
+  },
+  // --- Male ---
+  {
+    id: "ava-011",
+    name: "Marcus",
+    gender: "male",
+    age: "young",
+    situation: "studio",
+    ethnicity: "african-american",
+    thumbnailUrl: PORTRAIT_OVERRIDES["ava-011"] ?? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=faces",
+    isPro: false,
+    isHD: true,
+    tags: ["confident", "casual", "streetwear"],
+    voiceId: "nPczCjzI2devNBz1zQrb", // Brian — ElevenLabs
+  },
+];
 
 export type VoiceSettings = {
   speed: number;

@@ -34,6 +34,7 @@ const bodySchema = z.object({
   actorId: z.string().optional(),
   avatarLibraryId: z.string().optional(),
   customActorImageUrl: z.string().url().optional(),
+  customActorGender: z.enum(["male", "female"]).optional(),
 
   customScript: z.string().max(2000).optional(),
   visualInstructions: z.string().max(500).optional(),
@@ -194,6 +195,7 @@ export async function POST(req: Request) {
         name: "Your actor",
         imageUrl: body.customActorImageUrl,
         thumbnailUrl: body.customActorImageUrl,
+        gender: body.customActorGender ?? "female",
         vibe: "natural, authentic",
         setting: "studio",
       },

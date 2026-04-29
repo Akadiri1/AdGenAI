@@ -60,6 +60,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const cost = estimateCredits(targetSeconds);
 
   const [customActorImage, setCustomActorImage] = useState("");
+  const [customActorGender, setCustomActorGender] = useState<"female" | "male">("female");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const [previewingVoice, setPreviewingVoice] = useState(false);
@@ -95,12 +96,16 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
     setPreviewingVoice(true);
     setPlayingSampleId(avatar.id);
     try {
+      // For custom uploads, use the gender the user selected
+      const gender = avatar.id.startsWith("custom-")
+        ? customActorGender
+        : (avatar.gender === "non-binary" ? "female" : avatar.gender);
       const res = await fetch("/api/ai/voice-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           voiceId: avatar.voiceId || undefined,
-          gender: avatar.gender === "non-binary" ? "female" : avatar.gender,
+          gender,
         }),
       });
       const data = await res.json();
@@ -129,7 +134,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
         body: JSON.stringify({
           // Actor: custom upload OR library avatar
           ...(isCustomActor
-            ? { customActorImageUrl: customActorImage }
+            ? { customActorImageUrl: customActorImage, customActorGender }
             : { avatarLibraryId: selectedAvatar.id }),
           customScript: script,
           productName: productName || undefined,
@@ -262,7 +267,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                     setSelectedAvatar({
                       id: "custom-" + Date.now(),
                       name: "Custom Actor",
-                      gender: "female",
+                      gender: customActorGender,
                       age: "young",
                       situation: "studio",
                       ethnicity: "custom",
@@ -304,9 +309,36 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 <div className="text-xs font-semibold text-text-primary truncate">
                   {customActorImage ? "Photo uploaded" : "Your photo"}
                 </div>
-                <div className="text-[9px] text-text-secondary mt-0.5">
-                  {customActorImage ? "Tap to change" : "Front-facing, good light"}
-                </div>
+                {customActorImage ? (
+                  <div className="flex gap-1 mt-1.5 pointer-events-auto z-40 relative" onClick={e => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomActorGender("female");
+                        if (selectedAvatar?.id.startsWith("custom-")) {
+                          setSelectedAvatar({ ...selectedAvatar, gender: "female" });
+                        }
+                      }}
+                      className={`flex-1 rounded-md py-0.5 text-[9px] font-bold transition-colors ${customActorGender === "female" ? "bg-primary text-white" : "bg-bg-secondary text-text-secondary"}`}
+                    >
+                      ♀ Female
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomActorGender("male");
+                        if (selectedAvatar?.id.startsWith("custom-")) {
+                          setSelectedAvatar({ ...selectedAvatar, gender: "male" });
+                        }
+                      }}
+                      className={`flex-1 rounded-md py-0.5 text-[9px] font-bold transition-colors ${customActorGender === "male" ? "bg-primary text-white" : "bg-bg-secondary text-text-secondary"}`}
+                    >
+                      ♂ Male
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-[9px] text-text-secondary mt-0.5">Front-facing, good light</div>
+                )}
               </div>
               {selectedAvatar?.id.startsWith('custom-') && (
                 <div className="absolute inset-0 border-2 border-primary rounded-2xl pointer-events-none z-30" />
