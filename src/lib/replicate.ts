@@ -37,13 +37,25 @@ async function callReplicate(path: string, init: RequestInit = {}): Promise<Resp
 }
 
 async function createPrediction(model: string, version: string | undefined, input: Record<string, unknown>): Promise<Prediction> {
-  const body = version
-    ? { version, input }
-    : { input };
+  const body = version ? { version, input } : { input };
   const path = version ? "/predictions" : `/models/${model}/predictions`;
-  const res = await callReplicate(path, { method: "POST", body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`Replicate create failed: ${res.status} ${await res.text()}`);
-  return (await res.json()) as Prediction;
+
+  // Retry up to 3× on 429 rate-limit with exponential backoff
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await callReplicate(path, { method: "POST", body: JSON.stringify(body) });
+    if (res.ok) return (await res.json()) as Prediction;
+    const text = await res.text();
+    if (res.status === 429) {
+      const retryAfter = (() => { try { return JSON.parse(text).retry_after ?? 15; } catch { return 15; } })();
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, (retryAfter + 2) * 1000));
+        continue;
+      }
+      throw new Error(`Replicate rate limited. Add credit at https://replicate.com/account/billing to increase your limit. (${text.slice(0, 200)})`);
+    }
+    throw new Error(`Replicate create failed: ${res.status} ${text}`);
+  }
+  throw new Error("Replicate create failed after 3 attempts");
 }
 
 async function getPrediction(id: string): Promise<Prediction> {

@@ -207,7 +207,7 @@ NEVER use: "Buy now!", "Order today!", "Limited time offer!", "Click the link be
 Every visualPrompt is a MOTION SCRIPT for a 5–10 second AI video clip. Kling renders motion. Write what MOVES, not what looks beautiful.
 
 REQUIRED FORMAT (all 6 elements, in order):
-[SHOT TYPE]. [Actor: age + appearance + ethnicity + outfit + expression at START of clip]. [Specific physical action performed ACROSS the full clip duration — present tense]. [Product: how it is held/applied/used/shown — be specific]. [Environment + background detail]. [Lighting: source + direction + color temperature]. [Camera movement over clip duration].
+[SHOT TYPE]. [Actor: age + appearance + ethnicity + expression at START of clip — NEVER describe outfit, Kling will keep the source image's clothing]. [Specific physical action performed ACROSS the full clip duration — present tense]. [Product: how it is held/applied/used/shown — be specific]. [Environment + background detail — SAME in all scenes]. [Lighting: source + direction + color temperature — SAME in all scenes]. [Camera movement over clip duration].
 
 SHOT TYPE LIBRARY (vary across every scene — never repeat):
   ECU (Extreme Close-Up): hands on product, skin/hair texture, eyes, product surface
@@ -245,11 +245,11 @@ Every scene must use a DIFFERENT shot type AND a different camera movement from 
 If Scene 1 = MCU + push-in, Scene 2 CANNOT be MCU + push-in.
 If Scene 1 = "holds product," Scene 2 = "applies to skin," Scene 3 = "shows result." Never repeat the same interaction.
 
-CONSISTENCY RULE — EQUALLY MANDATORY:
-The actor wears THE EXACT SAME OUTFIT and is in THE EXACT SAME LOCATION in every scene.
-This is a continuous video — costume and setting do NOT change between cuts.
-Scene 1 establishes the look. Every subsequent scene must describe the same outfit and setting verbatim.
-What changes: shot type, camera distance, the actor's action, and emotion. Nothing else.
+CONSISTENCY RULE — CRITICAL:
+NEVER describe clothing/outfit in any scene prompt. Kling reads the source image — describing an outfit causes it to OVERRIDE the actor's real clothes with AI-generated ones. Leave clothing to the source photo.
+NEVER change the background setting between scenes. Pick ONE location in scene 1, describe it exactly the same in all subsequent scenes.
+What changes between scenes: ONLY the shot type, camera distance, camera movement, and the actor's physical action.
+What NEVER changes: background/setting, lighting colour temperature, and — by omission — outfit.
 
 ════════════════════════════════════════
 OUTPUT — VALID JSON ONLY
@@ -339,7 +339,7 @@ Return ONLY this JSON object — no preamble, no explanation, no markdown fences
       "sceneNumber": 1,
       "durationSeconds": ${secondsPerScene},
       "spokenLine": "exact words spoken in this scene — in ${langName}",
-      "visualPrompt": "Full Kling prompt in English: [SHOT TYPE]. [Actor appearance + outfit + expression]. [Physical action across ${secondsPerScene}s]. [Product interaction]. [Environment]. [Lighting direction + temp]. [Camera movement].",
+      "visualPrompt": "Full Kling prompt: [SHOT TYPE]. [Actor: age/ethnicity/expression only — NO outfit]. [Physical action across ${secondsPerScene}s]. [Product interaction if applicable]. [EXACT SAME environment as scene 1]. [EXACT SAME lighting as scene 1]. [Camera movement].",
       "shotType": "MCU",
       "emotion": "genuinely surprised"
     }
