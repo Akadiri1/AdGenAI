@@ -217,7 +217,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
               </div>
               <div className="flex items-start gap-1.5">
                 <span className="text-success font-bold mt-0.5">✓</span>
-                <span className="text-text-secondary">Any resolution from 30KB — AI will enhance it</span>
+                <span className="text-text-secondary">Any resolution — AI auto-enhances before generating</span>
               </div>
               <div className="flex items-start gap-1.5">
                 <span className="text-danger font-bold mt-0.5">✗</span>
@@ -228,7 +228,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 <span className="text-text-secondary">Dark, blurry or backlit photos</span>
               </div>
             </div>
-            <p className="text-[10px] text-text-secondary">Even low-res photos work — the AI automatically sharpens and 2× upscales your photo before generating.</p>
+            <p className="text-[10px] text-text-secondary">Any photo works — the AI automatically sharpens and upscales it before generating. Focus on lighting and angle, not resolution.</p>
           </div>
 
           {/* Avatar grid */}
@@ -246,10 +246,6 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                   if (!file) return;
                   if (file.size > 10 * 1024 * 1024) {
                     toastError("File too large (max 10MB)");
-                    return;
-                  }
-                  if (file.size < 30 * 1024) {
-                    toastError("Photo too small (min 30KB) — try a slightly larger image");
                     return;
                   }
                   try {
