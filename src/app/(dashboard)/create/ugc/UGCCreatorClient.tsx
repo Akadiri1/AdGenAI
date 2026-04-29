@@ -403,16 +403,31 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
       {step === "write-script" && (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
+            {/* Script writing guidance */}
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <div className="font-heading font-bold text-text-primary mb-1 text-sm">Write the script yourself for best results</div>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                The AI Write button gives a generic output. <strong className="text-text-primary">You know your product, your audience, and your voice better than any AI.</strong> Write like you're sending a voice note to a friend — casual, honest, specific.
+              </p>
+              <div className="mt-2 text-xs text-text-secondary">
+                <span className="font-semibold text-text-primary">Use AI Write/Rewrite</span> only to fix awkward sentences or try a different angle — not to write the whole thing.
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
               <AIRephraseField
                 kind="textarea"
-                label="Script"
+                label="Script — write it in your own words"
                 hint={`${script.length} chars · ~${Math.round(script.split(/\s+/).length / 2.5)}s`}
                 value={script}
                 onChange={setScript}
-                placeholder="Write what the actor says on camera. Make it natural — like a real person talking, not reading an ad. Include pauses, filler words, and genuine emotion.
+                placeholder={`Write exactly what you want the actor to say. Be specific about your product and who it's for.
 
-Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. Like, I've been looking for something like this for months and nothing came close...'"
+Good example:
+"I've been dealing with [problem] for months. Tried everything. Then I found [product] and honestly... I don't know how I lived without it. Three weeks in and [specific result]. Link in bio if you want to try it."
+
+Bad example:
+"Check out this amazing product that will transform your life and elevate your journey to the next level."`}
                 fieldType="script"
                 rows={8}
               />
