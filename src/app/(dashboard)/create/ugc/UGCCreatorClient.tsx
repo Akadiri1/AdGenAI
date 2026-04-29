@@ -298,6 +298,11 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                     ✓ Ready
                   </div>
                 )}
+                {customActorImage && (
+                  <div className="absolute bottom-2 left-2 right-2 rounded-md bg-black/60 text-white text-[8px] font-semibold px-1.5 py-1 text-center backdrop-blur-sm">
+                    AI will auto-enhance before generating
+                  </div>
+                )}
               </div>
               <div className="p-2 border-t border-black/5 bg-white relative z-20">
                 <div className="text-xs font-semibold text-text-primary truncate">
@@ -693,6 +698,15 @@ Example: 'Okay so I just tried this thing and honestly... I'm kind of obsessed. 
                 <span className="text-text-secondary">Render time</span>
                 <span className="font-semibold text-text-primary">{cost.renderMinutes} min</span>
               </div>
+              {selectedAvatar?.id.startsWith("custom-") && (
+                <div className="flex items-center gap-2 rounded-xl bg-success/5 border border-success/20 p-3">
+                  <span className="text-lg">✨</span>
+                  <div>
+                    <div className="text-xs font-bold text-success">AI photo enhancement included</div>
+                    <div className="text-[10px] text-text-secondary">GFPGAN will auto-sharpen and 2× upscale your photo before generating — no extra cost</div>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between rounded-xl bg-bg-secondary p-3">
                 <span className="text-text-secondary">Speed / Stability / Emotion</span>
                 <span className="font-semibold text-text-primary">{voiceSettings.speed.toFixed(1)}x / {(voiceSettings.stability * 100).toFixed(0)}% / {(voiceSettings.styleExaggeration * 100).toFixed(0)}%</span>

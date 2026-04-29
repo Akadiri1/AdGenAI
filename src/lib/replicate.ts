@@ -140,6 +140,31 @@ export async function getKlingClipStatus(predictionId: string): Promise<{
 }
 
 // =====================================================================
+// Face enhancement — sharpens, deblurs, restores actor photo quality
+// Uses GFPGAN (Tencent's face restoration model)
+// =====================================================================
+export async function enhanceActorPhoto(imageUrl: string): Promise<string> {
+  if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
+
+  const prediction = await createPrediction(
+    "tencentarc/gfpgan",
+    undefined,
+    {
+      img: imageUrl,
+      version: 1.4,       // best quality version
+      scale: 2,           // 2× upscale
+    },
+  );
+
+  const output = await waitForPrediction(prediction.id, 120_000);
+  const url = typeof output === "string" ? output
+    : Array.isArray(output) ? (output as string[])[0]
+    : (output as Record<string, string>)?.output ?? null;
+  if (typeof url !== "string") throw new Error("Face enhancement produced no URL");
+  return url;
+}
+
+// =====================================================================
 // Kling Lip Sync — sync an existing video to spoken audio
 // =====================================================================
 // Valid English voice IDs for Kling Lip Sync (text-based TTS path)

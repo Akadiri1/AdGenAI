@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import {
   compositeActorWithProduct,
   generateKlingVideoClip,
+  enhanceActorPhoto,
   isReplicateConfigured,
 } from "@/lib/replicate";
 import { stringToImages } from "@/lib/adHelpers";
@@ -65,7 +66,25 @@ export async function POST(
 
   const productImages = stringToImages(ad.productImages);
   const aspectRatio = (ad.aspectRatio as "9:16" | "1:1" | "16:9") ?? "9:16";
-  const actorImageUrl = ad.actor!.imageUrl;
+  let actorImageUrl = ad.actor!.imageUrl;
+
+  // ── Auto-enhance custom actor photos ────────────────────────────────────
+  // GFPGAN sharpens, deblurs, and 2× upscales the face before Kling sees it.
+  // Only runs for non-stock actors (custom uploads). Skipped gracefully on error.
+  const isCustomActor = !ad.actor!.isStock && !!ad.actor!.userId;
+  if (isCustomActor) {
+    try {
+      const enhanced = await enhanceActorPhoto(actorImageUrl);
+      actorImageUrl = enhanced;
+      // Persist the enhanced URL so future generations reuse it
+      await prisma.actor.update({
+        where: { id: ad.actor!.id },
+        data: { imageUrl: enhanced, thumbnailUrl: enhanced },
+      });
+    } catch (err) {
+      console.warn("[start-gen] face enhancement failed, using original:", (err as Error).message);
+    }
+  }
 
   // ── Composite ONCE ──────────────────────────────────────────────────────
   // Run Nano Banana a single time so every scene starts from the SAME image:
