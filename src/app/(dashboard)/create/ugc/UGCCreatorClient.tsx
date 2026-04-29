@@ -200,8 +200,8 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
       {/* Step 1: Avatar Selection */}
       {step === "select-avatar" && (
         <div className="space-y-4">
-          <div className="rounded-lg bg-accent/5 border border-accent/20 px-4 py-2.5 text-[11px] text-text-secondary">
-            <strong className="text-accent">5 AI actors available.</strong> More actors coming soon. Upload your own photo for a custom actor.
+          <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-text-primary">
+            <strong className="font-bold">Upload your own photo</strong> — your face, your brand. Any clear front-facing photo works. The AI will animate you speaking the script.
           </div>
 
           {/* Avatar grid */}

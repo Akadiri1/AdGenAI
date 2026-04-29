@@ -54,10 +54,9 @@ function av(
   return { id, name, gender, age, situation, ethnicity, thumbnailUrl, isPro: false, isHD: true, tags, voiceId };
 }
 
-export const AVATAR_LIBRARY: Avatar[] = [
-  av("ava-001", "Sofia",  "female", "young",  "studio", "latina",   "photo-1531123897727-8f129e1688ce", ["beauty", "friendly", "casual"],  "EXAVITQu4vr4xnSDxMaL"),
-  av("ava-003", "Emma",   "female", "young",  "cafe",   "european", "photo-1494790108377-be9c29b29330", ["lifestyle", "food", "casual"],   "21m00Tcm4TlvDq8ikWAM"),
-];
+// Stock actors temporarily disabled — users upload their own photo.
+// Re-enable once FLUX portrait pack is generated.
+export const AVATAR_LIBRARY: Avatar[] = [];
 
 export type VoiceSettings = {
   speed: number;
