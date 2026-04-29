@@ -72,15 +72,23 @@ export async function POST(
     where: { id },
     include: {
       actor: true,
-      scenes: { where: { status: "READY" }, orderBy: { sceneNumber: "asc" } },
+      // Only process scenes that don't have a finalClipUrl yet
+      scenes: {
+        where: { status: "READY", finalClipUrl: null },
+        orderBy: { sceneNumber: "asc" },
+      },
     },
   });
   if (!ad || ad.userId !== userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (ad.scenes.length === 0) return NextResponse.json({ error: "No ready scenes" }, { status: 400 });
+  if (ad.scenes.length === 0) {
+    // All scenes already have finalClipUrl — mark complete
+    await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "READY" } });
+    return NextResponse.json({ success: true, message: "Already finalized" });
+  }
   if (ad.finalVideoStatus === "GENERATING") return NextResponse.json({ error: "Already running" }, { status: 409 });
-  if (ad.finalVideoStatus === "READY") return NextResponse.json({ success: true, message: "Already finalized" });
 
-  const cost = 5 + ad.scenes.length * 2;
+  // Cost only for scenes that still need processing
+  const cost = 2 + ad.scenes.length * 2;
   if (!(await checkCredits(userId, cost))) {
     return NextResponse.json({ error: `Need ${cost} credits`, neededCredits: cost }, { status: 402 });
   }
