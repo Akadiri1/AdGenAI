@@ -198,7 +198,7 @@ const AGE_DESC = {
 
 function buildPrompt({ g, age, eth, vibe, set }) {
   const subject = AGE_DESC[age][g];
-  return `Hyper-realistic professional headshot photograph of a ${eth} ${subject}, ${vibe} expression, framed from chest up, looking directly at camera, sharp focus on the eyes. Natural skin texture, fine pores visible, no smoothing. Setting: ${set}. Soft natural light from camera-left, warm tones, shallow depth of field with smooth bokeh background. Shot on a Sony A7 IV with an 85mm f/1.4 lens. No makeup-heavy retouching, no airbrushing, no text overlays, no logos, no watermarks. Editorial commercial photography style.`;
+  return `Candid selfie-style portrait of a real ${eth} ${subject} filming a TikTok or Instagram UGC video ad. ${vibe} energy. Looking directly at camera, relaxed and natural, slightly imperfect like a real content creator — not a model. Framed from chest up. Setting: ${set}. Natural ambient light, authentic everyday look. Shot on a modern smartphone front camera. Real skin texture, no heavy retouching, no airbrushing. No text overlays, no logos, no watermarks. Looks like a real person, not a stock photo.`;
 }
 
 // ---------------- Replicate call ----------------
