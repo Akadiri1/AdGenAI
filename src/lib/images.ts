@@ -32,7 +32,15 @@ export async function generateImage(params: ImageGenParams): Promise<string> {
 
   const enhanced = enhancePrompt(prompt, quality);
 
-  // Priority: SiliconFlow (Fastest/Reliable) -> Gemini -> Replicate -> Stability -> Fallback
+  // Priority: NVIDIA → SiliconFlow → Gemini → Replicate → Stability → Fallback
+  if (process.env.NVIDIA_API_KEY) {
+    try {
+      return await generateWithNvidia(enhanced, aspectRatio);
+    } catch (e) {
+      console.error("NVIDIA image failed:", e);
+    }
+  }
+
   if (process.env.SILICONFLOW_API_KEY) {
     try {
       return await generateWithSiliconFlow(enhanced, aspectRatio);
@@ -73,6 +81,54 @@ export async function generateImage(params: ImageGenParams): Promise<string> {
     : [1080, 1350];
     
   return `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=${w}&h=${h}&fit=crop&q=80`;
+}
+
+// ── NVIDIA NIM — Stable Diffusion XL (fast, free tier with nvapi key) ────────
+async function generateWithNvidia(
+  prompt: string,
+  aspectRatio: string,
+): Promise<string> {
+  const key = process.env.NVIDIA_API_KEY;
+  if (!key) throw new Error("NVIDIA_API_KEY not set");
+
+  const [w, h] = aspectRatio === "1:1" ? [1024, 1024]
+    : aspectRatio === "9:16" ? [832, 1216]
+    : [1216, 832];
+
+  const res = await fetch("https://integrate.api.nvidia.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      model: "stabilityai/stable-diffusion-xl-base-1.0",
+      prompt,
+      negative_prompt: "blurry, low quality, watermark, text, logo",
+      width: w,
+      height: h,
+      cfg_scale: 7,
+      sampler: "K_DPM_2_ANCESTRAL",
+      steps: 25,
+      n: 1,
+    }),
+  });
+
+  if (!res.ok) throw new Error(`NVIDIA image error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+
+  // Response: { data: [{ b64_json: "..." }] }
+  const b64 = data.data?.[0]?.b64_json;
+  if (!b64) throw new Error("No image in NVIDIA response");
+
+  const { uploadToStorage } = await import("@/lib/storage");
+  return uploadToStorage({
+    bytes: Buffer.from(b64, "base64"),
+    contentType: "image/png",
+    extension: "png",
+    folder: "ads/images",
+  });
 }
 
 async function generateWithSiliconFlow(
