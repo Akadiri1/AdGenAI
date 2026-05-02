@@ -32,15 +32,8 @@ export async function generateImage(params: ImageGenParams): Promise<string> {
 
   const enhanced = enhancePrompt(prompt, quality);
 
-  // Priority: NVIDIA → SiliconFlow → Gemini → Replicate → Stability → Fallback
-  if (process.env.NVIDIA_API_KEY) {
-    try {
-      return await generateWithNvidia(enhanced, aspectRatio);
-    } catch (e) {
-      console.error("NVIDIA image failed:", e);
-    }
-  }
-
+  // Priority: SiliconFlow → Gemini → Replicate → Stability → Fallback
+  // (NVIDIA image models are not available on this account tier)
   if (process.env.SILICONFLOW_API_KEY) {
     try {
       return await generateWithSiliconFlow(enhanced, aspectRatio);
@@ -95,7 +88,8 @@ async function generateWithNvidia(
     : aspectRatio === "9:16" ? [832, 1216]
     : [1216, 832];
 
-  const res = await fetch("https://integrate.api.nvidia.com/v1/images/generations", {
+  // NVIDIA uses a model-specific endpoint for image generation
+  const res = await fetch("https://ai.api.nvidia.com/v1/genai/stabilityai/sdxl-turbo", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -103,23 +97,23 @@ async function generateWithNvidia(
       Accept: "application/json",
     },
     body: JSON.stringify({
-      model: "stabilityai/stable-diffusion-xl-base-1.0",
-      prompt,
-      negative_prompt: "blurry, low quality, watermark, text, logo",
+      text_prompts: [
+        { text: prompt, weight: 1 },
+        { text: "blurry, low quality, watermark, text, logo, deformed", weight: -1 },
+      ],
+      sampler: "K_EULER_ANCESTRAL",
+      steps: 20,
+      cfg_scale: 7,
       width: w,
       height: h,
-      cfg_scale: 7,
-      sampler: "K_DPM_2_ANCESTRAL",
-      steps: 25,
-      n: 1,
+      seed: 0,
     }),
   });
 
   if (!res.ok) throw new Error(`NVIDIA image error ${res.status}: ${await res.text()}`);
   const data = await res.json();
 
-  // Response: { data: [{ b64_json: "..." }] }
-  const b64 = data.data?.[0]?.b64_json;
+  const b64 = data.artifacts?.[0]?.base64;
   if (!b64) throw new Error("No image in NVIDIA response");
 
   const { uploadToStorage } = await import("@/lib/storage");
