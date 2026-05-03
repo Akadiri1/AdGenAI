@@ -42,6 +42,16 @@ function estimateCredits(targetSeconds: Duration): {
 
 const DURATIONS: Duration[] = [5, 10, 15, 30, 60];
 
+// ElevenLabs voice profiles — cover all main UGC creator types
+const VOICE_PROFILES = [
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah",   gender: "female" as const, description: "Young woman · warm & friendly",     emoji: "👩" },
+  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily",    gender: "female" as const, description: "Young woman · upbeat & energetic",  emoji: "💃" },
+  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel",  gender: "female" as const, description: "Mature woman · calm & trusted",     emoji: "👩‍💼" },
+  { id: "nPczCjzI2devNBz1zQrb", name: "Brian",   gender: "male"   as const, description: "Young man · deep & confident",      emoji: "👨" },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam",    gender: "male"   as const, description: "Young man · casual & friendly",    emoji: "🧑" },
+  { id: "pqHfZKP75CvOlQylNhV4", name: "Bill",    gender: "male"   as const, description: "Mature man · authoritative",        emoji: "👨‍💼" },
+];
+
 export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -53,6 +63,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const [productImages, setProductImages] = useState<string[]>([]);
   const [visualInstructions, setVisualInstructions] = useState("");
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(DEFAULT_VOICE_SETTINGS);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>("EXAVITQu4vr4xnSDxMaL");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "1:1" | "16:9">("9:16");
   const [targetSeconds, setTargetSeconds] = useState<Duration>(15);
   const [generating, setGenerating] = useState(false);
@@ -86,7 +97,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
     };
   }, []);
 
-  async function previewVoice(avatar: Avatar) {
+  async function previewVoice(avatar: Avatar & { voiceId?: string }, overrideVoiceId?: string) {
     if (previewingVoice) {
       audioRef.current?.pause();
       setPlayingSampleId(null);
@@ -94,9 +105,8 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
       return;
     }
     setPreviewingVoice(true);
-    setPlayingSampleId(avatar.id);
+    setPlayingSampleId(overrideVoiceId ?? avatar.id);
     try {
-      // For custom uploads, use the gender the user selected
       const gender = avatar.id.startsWith("custom-")
         ? customActorGender
         : (avatar.gender === "non-binary" ? "female" : avatar.gender);
@@ -104,7 +114,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          voiceId: avatar.voiceId || undefined,
+          voiceId: overrideVoiceId ?? selectedVoiceId ?? avatar.voiceId ?? undefined,
           gender,
           speed:             voiceSettings.speed,
           stability:         voiceSettings.stability,
@@ -146,7 +156,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           productDescription: productDescription || undefined,
           productImageUrls: productImages,
           visualInstructions: visualInstructions || undefined,
-          voiceSettings,
+          voiceSettings: { ...voiceSettings, voiceId: selectedVoiceId },
           aspectRatio,
           targetSeconds,
         }),
@@ -651,8 +661,42 @@ Bad example:
                 </button>
               )}
             </div>
+            {/* Voice picker */}
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">Choose a voice</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {VOICE_PROFILES.map((v) => {
+                  const isSelected = selectedVoiceId === v.id;
+                  return (
+                    <div key={v.id}
+                      className={`relative rounded-xl border-2 p-2.5 cursor-pointer transition-all ${isSelected ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"}`}
+                      onClick={() => setSelectedVoiceId(v.id)}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">{v.emoji}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setSelectedVoiceId(v.id); previewVoice({ ...selectedAvatar!, voiceId: v.id }); }}
+                          disabled={previewingVoice}
+                          className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-black/10 hover:bg-primary/10 hover:border-primary disabled:opacity-50"
+                          title={`Preview ${v.name}`}
+                        >
+                          {previewingVoice && selectedVoiceId === v.id
+                            ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                            : <Volume2 className="h-3 w-3 text-text-secondary" />}
+                        </button>
+                      </div>
+                      <div className="text-xs font-bold text-text-primary">{v.name}</div>
+                      <div className="text-[9px] text-text-secondary leading-tight mt-0.5">{v.description}</div>
+                      {isSelected && <div className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <p className="text-sm text-text-secondary">
-              Fine-tune how {selectedAvatar?.name} sounds. These controls determine the naturalness and emotion of the delivery.
+              Fine-tune how the voice sounds with the controls below.
             </p>
 
             <VoiceSlider
