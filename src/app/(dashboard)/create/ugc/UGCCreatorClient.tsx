@@ -676,7 +676,7 @@ Bad example:
                         <span className="text-base">{v.emoji}</span>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setSelectedVoiceId(v.id); previewVoice({ ...selectedAvatar!, voiceId: v.id }); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedVoiceId(v.id); previewVoice({ ...selectedAvatar!, gender: v.gender, voiceId: v.id }); }}
                           disabled={previewingVoice}
                           className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-black/10 hover:bg-primary/10 hover:border-primary disabled:opacity-50"
                           title={`Preview ${v.name}`}
