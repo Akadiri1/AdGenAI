@@ -16,8 +16,8 @@ import { isReplicateConfigured } from "@/lib/replicate";
 const bodySchema = z.object({
   voiceId: z.string().min(3).max(100).optional(),
   gender: z.enum(["male", "female"]).optional(),
-  // Voice settings from the sliders — so preview reflects actual settings
-  speed:             z.number().min(0.7).max(1.2).optional(),
+  // Voice settings from the sliders (app range: speed 0.5–2.0, others 0–1)
+  speed:             z.number().min(0.5).max(2.0).optional(),
   stability:         z.number().min(0).max(1).optional(),
   similarity:        z.number().min(0).max(1).optional(),
   styleExaggeration: z.number().min(0).max(1).optional(),
@@ -59,7 +59,8 @@ export async function POST(req: Request) {
             stability:        body.stability         ?? 0.5,
             similarity_boost: body.similarity        ?? 0.75,
             style:            body.styleExaggeration ?? 0.1,
-            speed:            body.speed             ?? 1.0,
+            // ElevenLabs speed is clamped to 0.7–1.2 regardless of app slider range
+            speed: Math.min(1.2, Math.max(0.7, body.speed ?? 1.0)),
             use_speaker_boost: true,
           },
         }),
