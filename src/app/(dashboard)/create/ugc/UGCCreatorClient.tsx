@@ -106,6 +106,10 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
         body: JSON.stringify({
           voiceId: avatar.voiceId || undefined,
           gender,
+          speed:             voiceSettings.speed,
+          stability:         voiceSettings.stability,
+          similarity:        voiceSettings.similarity,
+          styleExaggeration: voiceSettings.styleExaggeration,
         }),
       });
       const data = await res.json();

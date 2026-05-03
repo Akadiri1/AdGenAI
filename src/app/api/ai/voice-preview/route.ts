@@ -16,6 +16,11 @@ import { isReplicateConfigured } from "@/lib/replicate";
 const bodySchema = z.object({
   voiceId: z.string().min(3).max(100).optional(),
   gender: z.enum(["male", "female"]).optional(),
+  // Voice settings from the sliders — so preview reflects actual settings
+  speed:             z.number().min(0.7).max(1.2).optional(),
+  stability:         z.number().min(0).max(1).optional(),
+  similarity:        z.number().min(0).max(1).optional(),
+  styleExaggeration: z.number().min(0).max(1).optional(),
 });
 
 const PREVIEW_PHRASE =
@@ -50,7 +55,13 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           text: PREVIEW_PHRASE,
           model_id: "eleven_multilingual_v2",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.1, use_speaker_boost: true },
+          voice_settings: {
+            stability:        body.stability         ?? 0.5,
+            similarity_boost: body.similarity        ?? 0.75,
+            style:            body.styleExaggeration ?? 0.1,
+            speed:            body.speed             ?? 1.0,
+            use_speaker_boost: true,
+          },
         }),
       });
 

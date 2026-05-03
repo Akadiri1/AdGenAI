@@ -401,7 +401,14 @@ export function StudioClient({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={ad.thumbnailUrl} alt={ad.headline ?? ""} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center"><Film className="h-12 w-12 text-text-secondary" /></div>
+                  <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/20 via-bg-secondary to-secondary/10">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/60 backdrop-blur">
+                      <Film className="h-7 w-7 text-primary" />
+                    </div>
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider px-4 text-center">
+                      Preview will appear after generation
+                    </span>
+                  </div>
                 )}
 
                 {/* Safe Zone Overlay */}
