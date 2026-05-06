@@ -109,9 +109,10 @@ export async function POST(
     }
   }
 
-  // ── Kling per scene (sequential, 3s gap) ───────────────────────────────
-  // Each scene gets a different prompt (angle/action) but the SAME starting
-  // image, ensuring outfit + setting consistency across all clips.
+  // ── Kling per scene (sequential, 12s gap) ─────────────────────────────
+  // 12s gap ensures we stay inside Replicate's burst limit (1 req/10s for
+  // accounts below $5 balance). createPrediction also auto-retries on 429.
+  // Each scene gets a different prompt but the SAME starting image.
   for (const scene of pendingScenes) {
     try {
       const { predictionId } = await generateKlingVideoClip({
@@ -140,7 +141,7 @@ export async function POST(
     }
     // 3s gap to stay inside Replicate's burst limit
     if (pendingScenes.indexOf(scene) < pendingScenes.length - 1) {
-      await new Promise((r) => setTimeout(r, 3000));
+      await new Promise((r) => setTimeout(r, 12000));
     }
   }
 
