@@ -8,6 +8,7 @@ import { StudioClient } from "./StudioClient";
 import { StudioScenesPanel } from "./StudioScenesPanel";
 import { StudioBriefPanel } from "./StudioBriefPanel";
 import { FinalVideoPanel } from "./FinalVideoPanel";
+import { VideoEditorPanel } from "@/components/studio/VideoEditorPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -95,12 +96,23 @@ export default async function StudioPage({
   // Ecommerce ads (with scenes) get the new flow: Brief + Scenes only.
   // Legacy image-only ads keep the old StudioClient.
   if (sceneCount > 0 && briefAd) {
+    // Fetch scenes with clip URLs for the editor panel
+    const editorScenes = await prisma.scene.findMany({
+      where: { adId: id },
+      orderBy: { sceneNumber: "asc" },
+      select: {
+        id: true, sceneNumber: true, spokenLine: true,
+        finalClipUrl: true, videoClipUrl: true, durationSeconds: true,
+      },
+    });
+
     return (
       <div className="mx-auto max-w-5xl">
         <StudioHeader ad={briefAd} />
         <StudioBriefPanel initialAd={briefAd} />
         <StudioScenesPanel adId={id} hasScenes />
         <FinalVideoPanel adId={id} />
+        <VideoEditorPanel adId={id} scenes={JSON.parse(JSON.stringify(editorScenes))} />
       </div>
     );
   }
