@@ -72,6 +72,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
 
   const [customActorImage, setCustomActorImage] = useState("");
   const [customActorGender, setCustomActorGender] = useState<"female" | "male">("female");
+  const [uploadingActor, setUploadingActor] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const [previewingVoice, setPreviewingVoice] = useState(false);
@@ -263,8 +264,11 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 onChange={async (e) => {
                   const rawFile = e.target.files?.[0];
                   if (!rawFile) return;
+                  // Clear previous selection immediately + show loading
+                  setSelectedAvatar(null);
+                  setCustomActorImage("");
+                  setUploadingActor(true);
                   try {
-                    // Auto-compress before upload — bypasses Vercel 4.5MB limit
                     const { compressImage } = await import("@/lib/compressImage");
                     const file = await compressImage(rawFile, 3.5);
                     const fd = new FormData();
@@ -291,11 +295,18 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                     });
                   } catch (err) {
                     toastError((err as Error).message);
+                  } finally {
+                    setUploadingActor(false);
                   }
                 }}
               />
               <div className="aspect-[3/4] bg-bg-secondary/30 relative flex flex-col items-center justify-center">
-                {customActorImage ? (
+                {uploadingActor ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                    <span className="text-[10px] font-semibold text-text-secondary">Uploading...</span>
+                  </div>
+                ) : customActorImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={customActorImage} alt="Custom" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
