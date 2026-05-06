@@ -520,53 +520,74 @@ Bad example:
                 )}
               </div>
 
-              {/* Product details — name + AI-assisted description + offer */}
-              <div className="rounded-xl border border-black/5 bg-bg-secondary/30 p-4 space-y-3">
-                <div className="flex items-center gap-2">
+              {/* Product details */}
+              <div className="rounded-xl border border-black/5 bg-bg-secondary/30 p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Product details</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Tell the AI about your product</span>
                 </div>
+
+                {/* Product name */}
                 <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">Product name</label>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                    Product name <span className="text-text-secondary/60 normal-case font-normal">— what is it called?</span>
+                  </label>
                   <input
                     type="text"
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
-                    placeholder="e.g. AeroPods Pro, Glow Serum, Smart Bottle"
+                    placeholder="e.g. Midnight Temptress Dress, Glow Face Serum, Nike Air Max"
                     className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                   />
                 </div>
+
+                {/* Description */}
                 <AIRephraseField
                   kind="textarea"
-                  label="Description"
+                  label="Product description — what makes it special?"
                   hint={`${productDescription.length} chars`}
                   value={productDescription}
                   onChange={setProductDescription}
-                  placeholder="What is the product, who's it for, and what's the #1 benefit? The clearer this is, the better the script will be."
+                  placeholder={`Describe your product in plain words. Include:
+• What it is and what it does
+• Who it's for (women in their 30s? young men? new mums?)
+• The #1 reason someone should buy it
+
+Example: "A custom-made velvet evening dress for Nigerian women who want to stand out at weddings and events. Made to your exact measurements — no more dresses that don't fit your body."`}
                   fieldType="body"
-                  rows={4}
+                  rows={5}
                   maxLength={500}
                   businessContext={productName ? `Product: ${productName}` : undefined}
                 />
+
+                {/* Offer */}
                 <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">Offer (optional)</label>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                    Special offer <span className="text-text-secondary/60 normal-case font-normal">— optional, but boosts conversions</span>
+                  </label>
                   <input
                     type="text"
                     value={productOffer}
                     onChange={(e) => setProductOffer(e.target.value)}
-                    placeholder="e.g. 30% off launch week, Buy 2 get 1 free"
+                    placeholder="e.g. Free delivery this week · First 10 orders get 20% off · Pay on delivery available"
                     className="w-full rounded-xl border-2 border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                   />
+                  <p className="mt-1 text-[10px] text-text-secondary">The AI will include this offer in the script and CTA. Leave blank if no current offer.</p>
                 </div>
               </div>
 
               <AIRephraseField
                 kind="textarea"
-                label="Visual instructions / Prompts"
+                label="Scene & background instructions — what should the video look like?"
                 hint={`${visualInstructions.length} chars`}
                 value={visualInstructions}
                 onChange={setVisualInstructions}
-                placeholder="E.g., Show the product floating in space, or make the background a sunny beach. Tip: describe lighting, mood, camera angle, and what's happening."
+                placeholder={`Describe the setting, mood, and what the actor is doing. Examples:
+• "Bright modern Lagos apartment, afternoon light, actor gestures naturally while talking"
+• "Outdoor rooftop at sunset, confident mood, actor holds the product at chest height"
+• "Clean white studio, close-up on the product, soft professional lighting"
+
+The more specific you are, the better the AI can direct each scene.`}
                 fieldType="imagePrompt"
                 rows={4}
                 maxLength={500}
