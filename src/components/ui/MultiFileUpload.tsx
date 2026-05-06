@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Upload, Loader2, X, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { compressImage } from "@/lib/compressImage";
 
 type Props = {
   values: string[]; // array of current URLs
@@ -31,12 +32,9 @@ export function MultiFileUpload({
   const { error } = useToast();
 
   async function upload(files: FileList | File[]) {
-    const validFiles = Array.from(files).filter(f => f.size <= maxSizeMb * 1024 * 1024);
-    if (validFiles.length < files.length) {
-      error(`Some files were too large (max ${maxSizeMb}MB)`);
-    }
-    
-    if (validFiles.length + values.length > maxFiles) {
+    const allFiles = Array.from(files);
+
+    if (allFiles.length + values.length > maxFiles) {
       error(`You can only upload up to ${maxFiles} files`);
       return;
     }
@@ -44,14 +42,19 @@ export function MultiFileUpload({
     setUploading(true);
     const newUrls = [...values];
 
-    for (const file of validFiles) {
+    for (const rawFile of allFiles) {
       try {
+        // Auto-compress to stay under Vercel's 4.5MB serverless limit
+        const file = await compressImage(rawFile, 3.5);
         const fd = new FormData();
         fd.append("file", file);
         fd.append("folder", folder);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Upload failed");
+        const text = await res.text();
+        let data: { url?: string; error?: string } = {};
+        try { data = text ? JSON.parse(text) : {}; } catch { /* non-JSON */ }
+        if (!res.ok) throw new Error(data.error ?? `Upload failed (${res.status})`);
+        if (!data.url) throw new Error("Upload succeeded but returned no URL");
         newUrls.push(data.url);
       } catch (err) {
         error((err as Error).message);
@@ -128,7 +131,7 @@ export function MultiFileUpload({
           }}
         />
         <p className="text-[10px] text-text-secondary">
-          PNG, JPG, WebP. Max {maxSizeMb}MB. {values.length}/{maxFiles} uploaded.
+          PNG, JPG, WebP — any size, auto-compressed before upload. {values.length}/{maxFiles} uploaded.
         </p>
       </div>
     </div>
