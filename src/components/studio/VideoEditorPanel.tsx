@@ -12,7 +12,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical, Scissors, Type, Music, Loader2,
-  Check, ChevronDown, ChevronUp, Play, Pause,
+  Check, ChevronDown, ChevronUp, Play, Pause, Undo2, Redo2, RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 
@@ -314,6 +314,8 @@ function TrimSection({ clips }: { clips: { url: string; scene: number }[] }) {
 // ── Main panel ───────────────────────────────────────────────────────────────
 export function VideoEditorPanel({ adId, scenes: initialScenes }: Props) {
   const [scenes, setScenes] = useState(initialScenes);
+  const [history, setHistory] = useState<Scene[][]>([initialScenes]); // undo stack
+  const [future, setFuture]   = useState<Scene[][]>([]);              // redo stack
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { success, error } = useToast();
@@ -330,27 +332,61 @@ export function VideoEditorPanel({ adId, scenes: initialScenes }: Props) {
   }));
   const clipUrls = clips.map(c => c.url);
 
+  async function saveOrder(ordered: Scene[]) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/ads/${adId}/reorder-scenes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: ordered.map(s => s.id) }),
+      });
+      if (!res.ok) throw new Error("Reorder failed");
+    } catch (err) {
+      error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function applyOrder(newScenes: Scene[], pushHistory = true) {
+    if (pushHistory) {
+      setHistory(h => [...h, scenes]);
+      setFuture([]);
+    }
+    setScenes(newScenes);
+    saveOrder(newScenes);
+  }
+
+  function undo() {
+    if (history.length <= 1) return;
+    const prev = history[history.length - 1];
+    setHistory(h => h.slice(0, -1));
+    setFuture(f => [scenes, ...f]);
+    setScenes(prev);
+    saveOrder(prev);
+  }
+
+  function redo() {
+    if (future.length === 0) return;
+    const next = future[0];
+    setFuture(f => f.slice(1));
+    setHistory(h => [...h, scenes]);
+    setScenes(next);
+    saveOrder(next);
+  }
+
+  function resetOrder() {
+    applyOrder([...initialScenes]);
+    success("Reset to original order");
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = scenes.findIndex(s => s.id === active.id);
     const newIndex = scenes.findIndex(s => s.id === over.id);
     const reordered = arrayMove(scenes, oldIndex, newIndex);
-    setScenes(reordered);
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/ads/${adId}/reorder-scenes`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order: reordered.map(s => s.id) }),
-      });
-      if (!res.ok) throw new Error("Reorder failed");
-      success("Scene order saved");
-    } catch (err) {
-      error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    applyOrder(reordered);
   }
 
   if (readyScenes.length === 0) return null;
@@ -396,15 +432,38 @@ export function VideoEditorPanel({ adId, scenes: initialScenes }: Props) {
           {openSection === id && (
             <div className="px-4 pb-4 border-t border-black/5 pt-3">
               {id === "reorder" && (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={scenes.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
-                      {scenes.map((scene, i) => (
-                        <SortableScene key={scene.id} scene={scene} index={i} />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                <div className="space-y-3">
+                  {/* Undo / Redo / Reset controls */}
+                  <div className="flex items-center gap-2">
+                    <button onClick={undo} disabled={history.length <= 1}
+                      title="Undo"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 bg-white hover:bg-bg-secondary disabled:opacity-30 transition-colors">
+                      <Undo2 className="h-3.5 w-3.5 text-text-secondary" />
+                    </button>
+                    <button onClick={redo} disabled={future.length === 0}
+                      title="Redo"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 bg-white hover:bg-bg-secondary disabled:opacity-30 transition-colors">
+                      <Redo2 className="h-3.5 w-3.5 text-text-secondary" />
+                    </button>
+                    <button onClick={resetOrder}
+                      title="Reset to original order"
+                      className="flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-[11px] font-semibold text-text-secondary hover:bg-bg-secondary hover:text-danger transition-colors">
+                      <RotateCcw className="h-3 w-3" /> Reset
+                    </button>
+                    <span className="text-[10px] text-text-secondary ml-auto">
+                      Drag the ≡ handle to reorder
+                    </span>
+                  </div>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={scenes.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                        {scenes.map((scene, i) => (
+                          <SortableScene key={scene.id} scene={scene} index={i} />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
               )}
               {id === "trim"    && <TrimSection clips={clips} />}
               {id === "caption" && <CaptionsSection clips={clipUrls} />}
