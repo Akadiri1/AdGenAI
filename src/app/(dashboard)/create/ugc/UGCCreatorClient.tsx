@@ -261,13 +261,12 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 accept="image/png,image/jpeg,image/webp"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (file.size > 10 * 1024 * 1024) {
-                    toastError("File too large (max 10MB)");
-                    return;
-                  }
+                  const rawFile = e.target.files?.[0];
+                  if (!rawFile) return;
                   try {
+                    // Auto-compress before upload — bypasses Vercel 4.5MB limit
+                    const { compressImage } = await import("@/lib/compressImage");
+                    const file = await compressImage(rawFile, 3.5);
                     const fd = new FormData();
                     fd.append("file", file);
                     fd.append("folder", "uploads");
