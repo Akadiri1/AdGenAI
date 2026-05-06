@@ -2,6 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Loader2, Download, Sparkles, AlertCircle, RefreshCw, Film } from "lucide-react";
+import dynamic from "next/dynamic";
+const VideoStitcher = dynamic(
+  () => import("@/components/studio/VideoStitcher").then(m => m.VideoStitcher),
+  { ssr: false }
+);
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { useConfirm } from "@/components/ui/ConfirmModal";
@@ -27,9 +32,6 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
   const [state, setState] = useState<FinalState | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [starting, setStarting] = useState(false);
-  const [stitching, setStitching] = useState(false);
-  const [stitchMsg, setStitchMsg] = useState("");
-  const [stitchPct, setStitchPct] = useState(0);
   const [currentIdx, setCurrentIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -99,22 +101,7 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
     if (currentIdx < clips.length - 1) setCurrentIdx(i => i + 1);
   }
 
-  async function downloadStitched() {
-    setStitching(true); setStitchMsg("Initializing…"); setStitchPct(0);
-    try {
-      const { getStitcher } = await import("@/lib/videoStitcher");
-      const stitcher = getStitcher();
-      await stitcher.load((msg, pct) => { setStitchMsg(msg); setStitchPct(pct); });
-      const blob = await stitcher.concat(clips.map(c => c.url), (msg, pct) => { setStitchMsg(msg); setStitchPct(pct); });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `famousli-ad.mp4`;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
-      success("Downloaded as one MP4");
-    } catch (err) { error(`Stitch failed: ${(err as Error).message}`); }
-    finally { setStitching(false); setStitchMsg(""); setStitchPct(0); }
-  }
+  // Stitching handled by <VideoStitcher /> component below
 
   return (
     <div className="mb-6 rounded-3xl border-2 border-success/20 bg-gradient-to-br from-success/5 via-white to-accent/5 p-5 shadow-sm">
@@ -145,18 +132,8 @@ export function FinalVideoPanel({ adId }: { adId: string }) {
               Scene {currentIdx + 1} of {clips.length} — auto-advances to next scene
             </p>
           )}
-          {/* Primary: stitch all into one MP4 */}
-          <button type="button" onClick={downloadStitched} disabled={stitching}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg hover:bg-primary-dark disabled:opacity-60">
-            {stitching
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> {stitchMsg || "Stitching…"} {stitchPct > 0 ? `(${stitchPct}%)` : ""}</>
-              : <><Film className="h-4 w-4" /> Download as one MP4</>}
-          </button>
-          {stitching && stitchPct > 0 && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary">
-              <div className="h-full bg-primary transition-all" style={{ width: `${stitchPct}%` }} />
-            </div>
-          )}
+          {/* Primary: stitch all into one MP4 — runs in browser, no server needed */}
+          <VideoStitcher clips={clips} adId={adId} />
           {/* Secondary: individual scene downloads */}
           {clips.length > 1 && (
             <details className="rounded-xl border border-black/5 px-3 py-2 text-xs">
