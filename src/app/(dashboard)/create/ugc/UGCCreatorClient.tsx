@@ -478,13 +478,47 @@ Bad example:
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm space-y-4">
               <h3 className="font-heading text-sm font-bold text-text-primary">Visuals (Optional)</h3>
 
-              <MultiFileUpload
-                values={productImages}
-                onChange={setProductImages}
-                label="Add product photo(s)"
-                previewSize="lg"
-                maxFiles={20}
-              />
+              <div>
+                <MultiFileUpload
+                  values={productImages}
+                  onChange={setProductImages}
+                  label="Add product photo(s)"
+                  previewSize="lg"
+                  maxFiles={20}
+                />
+                {productImages.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                      How should the actor use this product?
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: "👕 Wear it", prompt: "The actor is wearing the product. Show the full outfit clearly." },
+                        { label: "🤲 Hold it", prompt: "The actor holds the product naturally toward camera." },
+                        { label: "💄 Apply it", prompt: "The actor applies or uses the product on themselves." },
+                        { label: "📦 Unbox it", prompt: "The actor holds up and shows the product packaging." },
+                        { label: "✋ Show it off", prompt: "The actor displays the product prominently in frame." },
+                      ].map((chip) => (
+                        <button
+                          key={chip.label}
+                          type="button"
+                          onClick={() => setVisualInstructions(chip.prompt)}
+                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                            visualInstructions === chip.prompt
+                              ? "bg-primary text-white"
+                              : "bg-bg-secondary text-text-secondary hover:bg-black/10"
+                          }`}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-text-secondary">
+                      Pick one or write your own in Visual Instructions below. The AI will composite your actor with the product using this instruction.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Product details — name + AI-assisted description + offer */}
               <div className="rounded-xl border border-black/5 bg-bg-secondary/30 p-4 space-y-3">

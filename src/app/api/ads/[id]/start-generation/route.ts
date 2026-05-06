@@ -92,10 +92,17 @@ export async function POST(
   let sharedCompositeUrl = actorImageUrl;
   if (productImages.length > 0) {
     try {
+      // Use the visual instructions as the composite prompt so "wear it" / "hold it" etc.
+      // directly drive how Nano Banana places the product on the actor.
+      const visualInstructions = ad.visualInstructions?.trim();
+      const compositePrompt = visualInstructions
+        ? `${visualInstructions} Photorealistic commercial photography, sharp focus, consistent outfit, no text overlays.`
+        : "Person naturally holding and using the product. Photorealistic commercial photography, sharp focus, consistent outfit and setting, no text overlays.";
+
       sharedCompositeUrl = await compositeActorWithProduct({
         actorImageUrl,
         productImageUrls: productImages,
-        prompt: "Person holding and using the product naturally. Photorealistic commercial photography, sharp focus, consistent outfit and setting, no text overlays.",
+        prompt: compositePrompt,
       });
     } catch (err) {
       console.warn("[start-gen] composite failed, using actor image directly:", (err as Error).message);
