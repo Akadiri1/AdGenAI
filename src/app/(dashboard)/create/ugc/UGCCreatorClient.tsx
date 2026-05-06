@@ -576,37 +576,94 @@ Example: "A custom-made velvet evening dress for Nigerian women who want to stan
                 </div>
               </div>
 
-              <AIRephraseField
-                kind="textarea"
-                label="Scene & background instructions — what should the video look like?"
-                hint={`${visualInstructions.length} chars`}
-                value={visualInstructions}
-                onChange={setVisualInstructions}
-                placeholder={`Describe the setting, mood, and what the actor is doing. Examples:
-• "Bright modern Lagos apartment, afternoon light, actor gestures naturally while talking"
-• "Outdoor rooftop at sunset, confident mood, actor holds the product at chest height"
-• "Clean white studio, close-up on the product, soft professional lighting"
-
-The more specific you are, the better the AI can direct each scene.`}
-                fieldType="imagePrompt"
-                rows={4}
-                maxLength={500}
-              />
-
-              <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">AI Background Suggestions</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {BACKGROUND_SUGGESTIONS.map((s) => (
-                    <button
-                      key={s.label}
-                      onClick={() => setVisualInstructions(s.prompt)}
-                      className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-all"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
+              {/* Visual instructions explainer */}
+              <div className="space-y-3">
+                <div>
+                  <div className="font-heading font-bold text-sm text-text-primary mb-0.5">
+                    Visual Instructions — describe what you want to SEE in the video
+                  </div>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    This controls the <strong className="text-text-primary">background, setting, lighting, and what the actor is doing</strong> in each scene. Think of it as directing a short film — tell the AI where the actor is, what mood you want, and what movement or action you expect.
+                  </p>
                 </div>
+
+                {/* Quick-pick categories */}
+                <div className="rounded-xl border border-black/5 bg-bg-secondary/30 p-3 space-y-2.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Quick picks — tap to use</div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-semibold text-text-secondary">📍 Location / Background</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { t: "Lagos apartment", v: "Bright modern Lagos apartment, large windows, warm afternoon light, clean and minimal." },
+                        { t: "Outdoor rooftop", v: "Outdoor rooftop terrace, city skyline in background, golden hour sunset, warm cinematic light." },
+                        { t: "White studio", v: "Clean white studio backdrop, soft professional lighting, no distractions." },
+                        { t: "Luxury bedroom", v: "Elegant bedroom with warm ambient lighting, luxurious bedding in background." },
+                        { t: "Busy street", v: "Busy Nigerian street market in background, natural daylight, energetic and authentic feel." },
+                      ].map((c) => (
+                        <button key={c.t} type="button"
+                          onClick={() => setVisualInstructions(prev => prev ? `${prev} ${c.v}` : c.v)}
+                          className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-colors">
+                          {c.t}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="text-[10px] font-semibold text-text-secondary mt-1">🎬 Actor action / movement</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { t: "Talks to camera", v: "Actor speaks directly to camera naturally, confident and relaxed, gestures with hands." },
+                        { t: "Slow spin", v: "Actor does a slow confident spin showing off the full outfit, looking over shoulder at camera." },
+                        { t: "Walk toward camera", v: "Actor walks confidently toward camera, full body visible, natural movement." },
+                        { t: "Holds product up", v: "Actor holds the product at chest height, looks at it then back at camera with a smile." },
+                        { t: "Unboxing reveal", v: "Actor opens packaging slowly and reacts with genuine excitement when seeing the product." },
+                      ].map((c) => (
+                        <button key={c.t} type="button"
+                          onClick={() => setVisualInstructions(prev => prev ? `${prev} ${c.v}` : c.v)}
+                          className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-colors">
+                          {c.t}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="text-[10px] font-semibold text-text-secondary mt-1">💡 Lighting mood</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { t: "Warm & cozy", v: "Warm soft lighting, golden tones, intimate and welcoming feel." },
+                        { t: "Bright & clean", v: "Bright natural daylight, clean and fresh, high energy." },
+                        { t: "Luxury & dramatic", v: "Cinematic dramatic lighting, deep shadows, rich and luxurious mood." },
+                        { t: "Natural daylight", v: "Soft natural window light, authentic and real, no harsh shadows." },
+                      ].map((c) => (
+                        <button key={c.t} type="button"
+                          onClick={() => setVisualInstructions(prev => prev ? `${prev} ${c.v}` : c.v)}
+                          className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-colors">
+                          {c.t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <AIRephraseField
+                  kind="textarea"
+                  label="Or write your own instructions"
+                  hint={`${visualInstructions.length} chars`}
+                  value={visualInstructions}
+                  onChange={setVisualInstructions}
+                  placeholder={`Combine location + action + lighting in one description. Example:
+"Bright modern Lagos apartment, warm afternoon light. Actor does a slow confident spin showing the dress, then turns to face camera and gestures toward it. Cinematic, luxurious mood."`}
+                  fieldType="imagePrompt"
+                  rows={3}
+                  maxLength={500}
+                />
+                {visualInstructions && (
+                  <button type="button" onClick={() => setVisualInstructions("")}
+                    className="text-[10px] text-text-secondary hover:text-danger transition-colors">
+                    ✕ Clear all
+                  </button>
+                )}
               </div>
+
             </div>
 
           </div>
