@@ -457,10 +457,46 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
             </div>
 
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+              {/* Live script length indicator */}
+              {script.trim() && (() => {
+                const wordCount = script.trim().split(/\s+/).length;
+                const estimatedSecs = Math.round(wordCount / 2.5);
+                const maxWords = Math.round(targetSeconds * 2.5);
+                const pct = Math.min((wordCount / maxWords) * 100, 100);
+                const tooLong = wordCount > maxWords * 1.15;
+                const slightlyOver = wordCount > maxWords && !tooLong;
+                const perfect = wordCount >= maxWords * 0.7 && wordCount <= maxWords;
+                return (
+                  <div className={`mb-3 rounded-xl p-3 text-xs flex items-center justify-between gap-3 ${
+                    tooLong ? "bg-danger/10 border border-danger/20" :
+                    slightlyOver ? "bg-warning/10 border border-warning/20" :
+                    perfect ? "bg-success/10 border border-success/20" :
+                    "bg-bg-secondary border border-black/5"
+                  }`}>
+                    <div>
+                      <span className={`font-bold ${tooLong ? "text-danger" : slightlyOver ? "text-warning" : perfect ? "text-success" : "text-text-secondary"}`}>
+                        {tooLong ? "⚠️ Script too long" : slightlyOver ? "⚠️ Slightly over" : perfect ? "✅ Perfect length" : `📝 ${wordCount} words`}
+                      </span>
+                      <span className="text-text-secondary ml-2">
+                        ~{estimatedSecs}s spoken · target {targetSeconds}s · max ~{maxWords} words
+                      </span>
+                      {tooLong && <div className="text-danger mt-0.5">The actor will be cut off. Shorten your script or increase the duration.</div>}
+                      {slightlyOver && <div className="text-warning mt-0.5">A little long — trim a sentence or switch to {targetSeconds + (targetSeconds === 5 ? 5 : targetSeconds === 10 ? 5 : 15)}s.</div>}
+                    </div>
+                    <div className="flex-shrink-0 w-16">
+                      <div className="h-1.5 w-full rounded-full bg-black/10 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${tooLong ? "bg-danger" : slightlyOver ? "bg-warning" : perfect ? "bg-success" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="text-[9px] text-text-secondary text-right mt-0.5">{wordCount}/{maxWords}</div>
+                    </div>
+                  </div>
+                );
+              })()}
               <AIRephraseField
                 kind="textarea"
                 label="Script — write it in your own words"
-                hint={`${script.length} chars · ~${Math.round(script.split(/\s+/).length / 2.5)}s`}
+                hint={`${script.trim().split(/\s+/).filter(Boolean).length} words · target ${targetSeconds}s`}
                 value={script}
                 onChange={setScript}
                 placeholder={`Write exactly what you want the actor to say. Be specific about your product and who it's for.
