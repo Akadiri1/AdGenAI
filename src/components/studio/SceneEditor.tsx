@@ -247,10 +247,10 @@ export function SceneEditor({ adId }: { adId: string }) {
                 </div>
               )}
 
-              <div className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
+              <div className="absolute left-2 top-2 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-white shadow">
                 Scene {s.sceneNumber}
               </div>
-              <div className="absolute right-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
+              <div className="absolute right-2 top-2 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-bold text-text-primary shadow">
                 {s.durationSeconds}s
               </div>
               {s.status === "READY" && (
@@ -269,7 +269,7 @@ export function SceneEditor({ adId }: { adId: string }) {
             <div className="flex flex-col gap-3">
               {s.spokenLine && (
                 <div>
-                  <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                  <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
                     <Mic className="h-3 w-3" /> Spoken line
                   </div>
                   <p className="text-sm text-text-primary italic">&ldquo;{s.spokenLine}&rdquo;</p>
@@ -277,7 +277,7 @@ export function SceneEditor({ adId }: { adId: string }) {
               )}
 
               <div>
-                <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-primary">
                   Visual prompt
                 </div>
                 <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{s.prompt}</p>
