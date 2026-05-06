@@ -476,13 +476,27 @@ Bad example:
             </div>
 
             <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-heading text-sm font-bold text-text-primary">Visuals (Optional)</h3>
+              <div>
+                <h3 className="font-heading text-sm font-bold text-text-primary">Upload your product photos</h3>
+                <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                  Upload photos of <strong className="text-text-primary">what you're selling</strong> — clothes, skincare, food, gadgets, anything. The AI will composite your actor <strong className="text-text-primary">holding, wearing, or using</strong> the product in the video.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-text-secondary">
+                  <span className="rounded-md bg-bg-secondary px-2 py-0.5">👗 Clothing → actor wears it</span>
+                  <span className="rounded-md bg-bg-secondary px-2 py-0.5">💄 Skincare → actor holds/applies it</span>
+                  <span className="rounded-md bg-bg-secondary px-2 py-0.5">📱 Gadgets → actor shows it to camera</span>
+                  <span className="rounded-md bg-bg-secondary px-2 py-0.5">🍔 Food → actor holds/eats it</span>
+                </div>
+                <p className="mt-2 text-[10px] text-text-secondary">
+                  <strong className="text-text-primary">Best results:</strong> flat lay on white background, or hanger shot. Multiple angles = better compositing. Skip this if you don't have a product — the actor will just talk to camera.
+                </p>
+              </div>
 
               <div>
                 <MultiFileUpload
                   values={productImages}
                   onChange={setProductImages}
-                  label="Add product photo(s)"
+                  label="Add product photo(s) — up to 20 images"
                   previewSize="lg"
                   maxFiles={20}
                 />
