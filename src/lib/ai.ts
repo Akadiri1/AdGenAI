@@ -6,14 +6,15 @@
  * It's fast, has generous rate limits, and uses the same nvapi key for all models.
  */
 
-export type AIProvider = "nvidia" | "groq" | "gemini" | "claude";
+export type AIProvider = "openrouter" | "nvidia" | "groq" | "gemini" | "claude";
 
 export function getActiveProvider(): AIProvider {
+  if (process.env.OPENROUTER_API_KEY?.trim()) return "openrouter";
   if (process.env.NVIDIA_API_KEY?.trim()) return "nvidia";
   if (process.env.GROQ_API_KEY?.trim())  return "groq";
   if (process.env.GEMINI_API_KEY?.trim()) return "gemini";
   if (process.env.ANTHROPIC_API_KEY?.trim()) return "claude";
-  throw new Error("No AI provider configured. Set NVIDIA_API_KEY, GROQ_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY.");
+  throw new Error("No AI provider configured. Set OPENROUTER_API_KEY, NVIDIA_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY.");
 }
 
 export async function generateText(params: {
@@ -22,10 +23,63 @@ export async function generateText(params: {
   maxTokens?: number;
 }): Promise<string> {
   const provider = getActiveProvider();
+  if (provider === "openrouter") return generateWithOpenRouter(params);
   if (provider === "nvidia")  return generateWithNvidia(params);
   if (provider === "groq")    return generateWithGroq(params);
   if (provider === "gemini")  return generateWithGemini(params);
   return generateWithClaude(params);
+}
+
+// ── OpenRouter (OpenAI-compatible, many free models) ──────────────────────
+async function generateWithOpenRouter(params: {
+  system: string;
+  prompt: string;
+  maxTokens?: number;
+}): Promise<string> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error("OPENROUTER_API_KEY not set");
+
+  // Try free models in priority order, fall back on rate-limit
+  const models = [
+    process.env.OPENROUTER_MODEL,          // user override
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+    "tencent/hy3-preview:free",
+  ].filter(Boolean) as string[];
+
+  let lastError = "";
+  for (const model of models) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://famousli.vercel.app",
+          "X-Title": "Famousli",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: params.system },
+            { role: "user",   content: params.prompt },
+          ],
+          max_tokens: params.maxTokens ?? 4096,
+          temperature: 0.9,
+        }),
+      });
+      if (res.status === 429) { lastError = `${model} rate-limited`; continue; }
+      if (!res.ok) { lastError = `${model} error ${res.status}`; continue; }
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) { lastError = `${model} returned no text`; continue; }
+      return text.trim();
+    } catch (e) {
+      lastError = (e as Error).message;
+    }
+  }
+  throw new Error(`OpenRouter: all free models failed. Last: ${lastError}`);
 }
 
 // ── NVIDIA NIM (OpenAI-compatible) ─────────────────────────────────────────
