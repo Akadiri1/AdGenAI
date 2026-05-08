@@ -41,11 +41,13 @@ async function generateWithOpenRouter(params: {
 
   // Try free models in priority order, fall back on rate-limit
   const models = [
-    process.env.OPENROUTER_MODEL,          // user override
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-4-31b-it:free",
-    "nvidia/nemotron-nano-12b-v2-vl:free",
-    "tencent/hy3-preview:free",
+    process.env.OPENROUTER_MODEL,                          // user override
+    "meta-llama/llama-3.3-70b-instruct:free",             // best quality, sometimes rate-limited
+    "google/gemma-4-31b-it:free",                          // Google Gemma 4
+    "google/gemma-4-26b-a4b-it:free",                     // smaller Gemma 4
+    "poolside/laguna-m.1:free",                            // Poolside code model
+    "nvidia/nemotron-nano-12b-v2-vl:free",                // NVIDIA
+    "tencent/hy3-preview:free",                            // reasoning model (slower)
   ].filter(Boolean) as string[];
 
   let lastError = "";
@@ -72,7 +74,9 @@ async function generateWithOpenRouter(params: {
       if (res.status === 429) { lastError = `${model} rate-limited`; continue; }
       if (!res.ok) { lastError = `${model} error ${res.status}`; continue; }
       const data = await res.json();
-      const text = data.choices?.[0]?.message?.content;
+      // Some models (reasoning/thinking) put content in reasoning field when tokens are short
+      const msg = data.choices?.[0]?.message;
+      const text = msg?.content || msg?.reasoning;
       if (!text) { lastError = `${model} returned no text`; continue; }
       return text.trim();
     } catch (e) {
