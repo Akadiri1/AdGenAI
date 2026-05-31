@@ -7,7 +7,7 @@ import { PLAN_DEFS, type PlanKey, type BillingCycle } from "@/lib/plans";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  plan: z.enum(["PRO", "BUSINESS"]),
+  plan: z.enum(["STARTER", "PRO", "BUSINESS", "ENTERPRISE"]),
   cycle: z.enum(["monthly", "yearly"]),
 });
 
