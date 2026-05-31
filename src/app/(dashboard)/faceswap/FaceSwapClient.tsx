@@ -172,7 +172,12 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
         {/* Step 1: Video */}
         <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
           <h2 className="text-xl font-bold font-heading text-text-primary mb-1">1. Target Video</h2>
-          <p className="text-sm text-text-secondary mb-4">Upload the video you want to edit (Max 500MB).</p>
+          <p className="text-sm text-text-secondary mb-2">Upload the video you want to edit (Max 500MB).</p>
+          <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 mb-4">
+            <p className="text-xs text-text-primary font-medium flex items-center gap-2">
+              <span className="text-accent">💡</span> <strong>Tip:</strong> For best results, use videos with only one clearly visible person speaking to the camera.
+            </p>
+          </div>
           
           {!videoUrl ? (
             <div className="relative border-2 border-dashed border-black/10 rounded-2xl p-8 text-center hover:border-primary/50 transition-colors bg-bg-secondary/30">
