@@ -315,10 +315,14 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
         <div className="flex-1 min-h-[300px] border-2 border-dashed border-black/5 rounded-2xl flex flex-col items-center justify-center bg-bg-secondary/30 relative overflow-hidden">
           {jobId ? (
             <div className="text-center p-6">
-              <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-text-primary mb-2">Swapping Face...</h3>
-              <p className="text-sm text-text-secondary max-w-[250px]">
-                Our AI is mapping the face to the video frame by frame. This usually takes 1-2 minutes.
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 relative">
+                <Wand2 className="w-8 h-8 text-primary animate-pulse" />
+                <div className="absolute inset-0 border-4 border-primary rounded-full animate-spin border-t-transparent" style={{ animationDuration: '3s' }} />
+              </div>
+              <h3 className="text-lg font-bold text-text-primary mb-2">Enhancing Face & Swapping...</h3>
+              <p className="text-sm text-text-secondary max-w-[250px] mx-auto">
+                Step 1: Upscaling face to 4K<br />
+                Step 2: Merging with video
               </p>
               <p className="text-xs text-text-secondary mt-4">Job ID: {jobId}</p>
             </div>

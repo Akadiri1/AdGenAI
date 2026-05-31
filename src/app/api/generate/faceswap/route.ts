@@ -50,7 +50,39 @@ export async function POST(req: Request) {
       },
     });
 
-    // We'll use a standard face swap model on Replicate
+    // Step 1: Enhance the source image using CodeFormer (Synchronous Wait)
+    const enhanceRes = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait=30" // Blocks up to 30s until prediction completes
+      },
+      body: JSON.stringify({
+        version: "7de2ea26c61f14f133718f0a40af28daef7d216518fb193fa0e6b52865910bba",
+        input: {
+          image: sourceImageUrl,
+          upscale: 2,
+          face_upsample: true,
+          background_enhance: true,
+          codeformer_fidelity: 0.5
+        }
+      }),
+    });
+
+    let finalFaceUrl = sourceImageUrl; // Fallback
+    try {
+      const enhanceData = await enhanceRes.json();
+      if (enhanceRes.ok && enhanceData.status === "succeeded" && enhanceData.output) {
+        finalFaceUrl = enhanceData.output;
+      } else {
+        console.warn("Face enhancement didn't complete in time or failed:", enhanceData);
+      }
+    } catch (e) {
+      console.warn("Failed to parse face enhancement response", e);
+    }
+
+    // Step 2: We'll use a standard face swap model on Replicate
     // facefusion or roop. For example: lucataco/faceswap
     const webhookUrl = `${process.env.NEXTAUTH_URL}/api/webhooks/replicate-faceswap?secret=${process.env.REPLICATE_WEBHOOK_SECRET || "dev-secret"}`;
 
@@ -64,7 +96,7 @@ export async function POST(req: Request) {
         version: "9a4298548422074c3f57258c5d544497314ae4112df80d116f0d2109e843d20d", // lucataco/faceswap
         input: {
           target_video: targetVideoUrl,
-          swap_image: sourceImageUrl,
+          swap_image: finalFaceUrl,
         },
         webhook: webhookUrl,
         webhook_events_filter: ["completed"],
