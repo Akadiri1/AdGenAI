@@ -262,20 +262,20 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           </div>
 
           {/* Visual Instructions & Product */}
-          <div className="rounded-2xl bg-[#151522] shadow-sm p-6 space-y-5 text-white">
-            <h2 className="font-heading text-xl font-bold flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-[#FF6B35]" /> Visuals & Product <span className="text-base font-normal text-white/50">(Optional)</span>
+          <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6 space-y-5">
+            <h2 className="font-heading text-xl font-bold flex items-center gap-2 text-text-primary">
+              <Sparkles className="h-6 w-6 text-primary" /> Visuals & Product <span className="text-base font-normal text-text-secondary">(Optional)</span>
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-white/60">VISUA...</span>
-                  <span className="text-xs text-white/40">{visualInstructions.length} chars</span>
-                  <button className="flex items-center gap-1 rounded-full border border-[#2EC4B6]/30 px-3 py-1 text-[10px] font-bold text-[#2EC4B6] hover:bg-[#2EC4B6]/10 transition-colors">
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">VISUA...</span>
+                  <span className="text-xs text-text-secondary">{visualInstructions.length} chars</span>
+                  <button className="flex items-center gap-1 rounded-full border border-accent/30 px-3 py-1 text-[10px] font-bold text-accent hover:bg-accent/10 transition-colors">
                      <Lightbulb className="h-3 w-3" /> AI WRITE
                   </button>
-                  <button className="flex items-center gap-1 rounded-full border border-[#FF6B35]/30 px-3 py-1 text-[10px] font-bold text-[#FF6B35] hover:bg-[#FF6B35]/10 transition-colors">
+                  <button className="flex items-center gap-1 rounded-full border border-primary/30 px-3 py-1 text-[10px] font-bold text-primary hover:bg-primary/10 transition-colors">
                      <Wand2 className="h-3 w-3" /> AI REWRITE
                   </button>
                 </div>
@@ -285,14 +285,14 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                   onChange={(e) => setVisualInstructions(e.target.value)}
                   placeholder="E.g. Bright modern Lagos apartment, warm afternoon light. Actor does a slow confident spin showing the dress."
                   rows={4}
-                  className="w-full resize-none rounded-[24px] border-2 border-white/5 bg-[#1e1e2e] p-5 text-lg text-white/80 placeholder:text-white/30 outline-none focus:border-[#FF6B35]"
+                  className="w-full resize-none rounded-[24px] border-2 border-black/5 bg-bg-secondary p-5 text-lg text-text-primary placeholder:text-text-secondary outline-none focus:border-primary"
                 />
                 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {[
                     "Lagos apartment", "White studio", "Talks to camera", "Holds product up"
                   ].map((t) => (
-                    <button key={t} onClick={() => setVisualInstructions(prev => prev ? `${prev} ${t}.` : `${t}.`)} className="rounded-full border border-white/10 bg-[#1e1e2e] px-4 py-2 text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                    <button key={t} onClick={() => setVisualInstructions(prev => prev ? `${prev} ${t}.` : `${t}.`)} className="rounded-full border border-black/10 bg-bg-secondary px-4 py-2 text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-black/5 transition-colors">
                       + {t}
                     </button>
                   ))}
@@ -300,7 +300,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
               </div>
 
               <div className="pt-10 flex flex-col items-start">
-                <div className="w-20 h-24 rounded-[20px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-white/60 hover:bg-white/5 hover:border-white/40 transition-colors cursor-pointer mb-4 relative">
+                <div className="w-20 h-24 rounded-[20px] border-2 border-dashed border-black/10 flex flex-col items-center justify-center text-text-secondary hover:bg-bg-secondary hover:border-black/20 transition-colors cursor-pointer mb-4 relative">
                   <input
                     type="file"
                     multiple
@@ -311,10 +311,10 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                       if (e.target.files) setProductImages([...productImages, ...Array.from(e.target.files).map(f => URL.createObjectURL(f))]);
                     }}
                   />
-                  <Upload className="h-6 w-6 mb-1 text-white/80" />
-                  <span className="text-xs font-bold text-white/80">Add</span>
+                  <Upload className="h-6 w-6 mb-1 text-text-secondary" />
+                  <span className="text-xs font-bold text-text-primary">Add</span>
                 </div>
-                <p className="text-[11px] text-white/40 leading-relaxed max-w-[200px]">
+                <p className="text-[11px] text-text-secondary leading-relaxed max-w-[200px]">
                    PNG, JPG, WebP — any size, auto-compressed before upload. {productImages.length}/5 uploaded.
                 </p>
               </div>
@@ -383,28 +383,28 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
             </div>
 
             {/* Voice Settings */}
-            <div className="rounded-2xl bg-[#151522] shadow-sm p-6 space-y-4 text-white">
-              <h2 className="font-heading text-lg font-bold flex items-center gap-2 mb-4">
-                <Volume2 className="h-5 w-5 text-[#FF6B35]" /> Voice
+            <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6 space-y-4">
+              <h2 className="font-heading text-lg font-bold flex items-center gap-2 mb-4 text-text-primary">
+                <Volume2 className="h-5 w-5 text-primary" /> Voice
               </h2>
               
               <div className="grid grid-cols-2 gap-2">
                 {VOICE_PROFILES.map((v) => (
                   <button key={v.id} onClick={() => setSelectedVoiceId(v.id)}
-                    className={`flex items-center gap-2 rounded-xl border-2 p-2 text-left transition-all ${selectedVoiceId === v.id ? "border-[#FF6B35] bg-[#FF6B35]/10" : "border-white/5 hover:border-white/20 bg-[#1e1e2e]"}`}>
+                    className={`flex items-center gap-2 rounded-xl border-2 p-2 text-left transition-all ${selectedVoiceId === v.id ? "border-primary bg-primary/5" : "border-black/5 hover:border-black/10 bg-bg-secondary"}`}>
                     <span className="text-lg">{v.emoji}</span>
-                    <span className="text-xs font-bold text-white">{v.name}</span>
+                    <span className="text-xs font-bold text-text-primary">{v.name}</span>
                   </button>
                 ))}
               </div>
 
               <div className="pt-4">
-                <button onClick={() => setShowAdvancedVoice(!showAdvancedVoice)} className="text-sm text-[#FF6B35] font-bold flex items-center gap-1 hover:text-[#FF6B35]/80 transition-colors">
+                <button onClick={() => setShowAdvancedVoice(!showAdvancedVoice)} className="text-sm text-primary font-bold flex items-center gap-1 hover:text-primary-dark transition-colors">
                   {showAdvancedVoice ? "Hide" : "Show"} advanced voice settings
                 </button>
                 
                 {showAdvancedVoice && (
-                  <div className="mt-4 space-y-6 bg-[#1e1e2e] p-6 py-8 rounded-[24px]">
+                  <div className="mt-4 space-y-6 bg-bg-secondary p-6 py-8 rounded-[24px]">
                     <VoiceSlider label="Speed" value={voiceSettings.speed} min={0.5} max={2.0} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, speed: v })} />
                     <VoiceSlider label="Stability" value={voiceSettings.stability} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, stability: v })} />
                     <VoiceSlider label="Similarity" value={voiceSettings.similarity} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, similarity: v })} />
@@ -613,8 +613,8 @@ function VoiceSlider({ label, value, min, max, step, onChange }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-white">{label}</span>
-        <span className="text-xs font-mono text-white/50 bg-white/5 px-2 py-1 rounded-md">{value.toFixed(2)}</span>
+        <span className="text-sm font-bold text-text-primary">{label}</span>
+        <span className="text-xs font-mono text-text-secondary bg-black/5 px-2 py-1 rounded-md">{value.toFixed(2)}</span>
       </div>
       <div className="relative pt-1 px-4">
         {/* Invisible track but styled thumb to match screenshot precisely */}
