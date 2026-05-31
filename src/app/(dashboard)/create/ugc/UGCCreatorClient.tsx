@@ -278,23 +278,17 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">VISUA...</span>
-                  <span className="text-xs text-text-secondary">{visualInstructions.length} chars</span>
-                  <button className="flex items-center gap-1 rounded-full border border-accent/30 px-3 py-1 text-[10px] font-bold text-accent hover:bg-accent/10 transition-colors">
-                     <Lightbulb className="h-3 w-3" /> AI WRITE
-                  </button>
-                  <button className="flex items-center gap-1 rounded-full border border-primary/30 px-3 py-1 text-[10px] font-bold text-primary hover:bg-primary/10 transition-colors">
-                     <Wand2 className="h-3 w-3" /> AI REWRITE
-                  </button>
-                </div>
-                
-                <textarea
+              <div>
+                <AIRephraseField
+                  kind="textarea"
+                  label="Visual Instructions"
+                  hint={`${visualInstructions.length} chars`}
                   value={visualInstructions}
-                  onChange={(e) => setVisualInstructions(e.target.value)}
+                  onChange={setVisualInstructions}
                   placeholder="E.g. Bright modern Lagos apartment, warm afternoon light. Actor does a slow confident spin showing the dress."
+                  fieldType="imagePrompt"
                   rows={4}
-                  className="w-full resize-none rounded-[24px] border-2 border-black/5 bg-bg-secondary p-5 text-lg text-text-primary placeholder:text-text-secondary outline-none focus:border-primary"
+                  maxLength={500}
                 />
                 
                 <div className="mt-4 flex flex-wrap gap-2">
