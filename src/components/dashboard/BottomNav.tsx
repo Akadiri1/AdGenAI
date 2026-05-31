@@ -24,6 +24,7 @@ const MORE_ITEMS = [
   // { href: "/schedule", icon: CalendarDays, label: "Schedule" },
   // { href: "/templates", icon: Palette, label: "Templates" },
   // { href: "/marketplace", icon: ShoppingBag, label: "Marketplace" },
+  { href: "/faceswap", icon: Sparkles, label: "Face Swap" },
   // { href: "/connect", icon: Link2, label: "Connect" },
   // { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/settings", icon: Settings, label: "Settings" },

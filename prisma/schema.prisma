@@ -66,6 +66,7 @@ model User {
   apiKeys        ApiKey[]
   auditLogs      AuditLog[]
   actors         Actor[]
+  faceSwapJobs   FaceSwapJob[]
   accountManagerId String?
 
   @@index([email])
@@ -399,6 +400,22 @@ model MusicTrack {
 }
 
 // NextAuth models
+model FaceSwapJob {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetVideoUrl  String
+  sourceImageUrl  String
+  status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  resultVideoUrl  String?
+  replicateId     String?  @unique
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String

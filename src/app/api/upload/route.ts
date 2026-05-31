@@ -5,8 +5,8 @@ import { uploadToStorage } from "@/lib/storage";
 
 export const maxDuration = 30;
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml", "video/mp4", "video/webm", "video/quicktime"];
 
 /**
  * Generic file upload endpoint. Accepts multipart form data.
