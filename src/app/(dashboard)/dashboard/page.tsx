@@ -211,7 +211,6 @@ export default async function DashboardPage() {
               { icon: Paintbrush, label: brandComplete ? "Update brand kit" : "Complete brand kit (required)", href: "/settings/brand", highlight: !brandComplete },
               { icon: Film, label: "View my ads", href: "/ads", highlight: false },
               { icon: CreditCard, label: "Buy credits", href: "/settings/billing", highlight: false },
-              { icon: Gift, label: "Invite friends, earn 20%", href: "/referral", highlight: false },
               { icon: User2, label: "Account settings", href: "/settings/account", highlight: false },
             ].map((action) => {
               const Icon = action.icon;
