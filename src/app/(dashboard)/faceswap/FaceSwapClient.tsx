@@ -33,27 +33,45 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
     setVideoFile(file);
     setIsUploadingVideo(true);
     try {
+      let uploadUrlToUse = "";
+      let finalPublicUrl = "";
+
       const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: file.name, contentType: file.type, folder: "videos" })
       });
-      const presignData = await presignRes.json();
-      if (!presignRes.ok) throw new Error(presignData.error || "Failed to initialize upload");
-
-      const uploadRes = await fetch(presignData.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file
-      });
       
-      if (!uploadRes.ok) {
-        const errorText = await uploadRes.text();
-        console.error("S3 Upload Error:", errorText);
-        throw new Error("Cloud storage rejected the file. Check if Cloudflare CORS is configured properly.");
+      const presignData = await presignRes.json();
+      
+      if (presignRes.status === 503) {
+        // Fallback for local development if R2 is not in .env
+        console.warn("Storage not configured for presigned URLs. Falling back to direct upload (Local Dev Mode).");
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", "videos");
+        const fallbackRes = await fetch("/api/upload", { method: "POST", body: fd });
+        const fallbackData = await fallbackRes.json();
+        if (!fallbackRes.ok) throw new Error(fallbackData.error || "Fallback upload failed");
+        finalPublicUrl = fallbackData.url;
+      } else {
+        if (!presignRes.ok) throw new Error(presignData.error || "Failed to initialize upload");
+
+        const uploadRes = await fetch(presignData.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file
+        });
+        
+        if (!uploadRes.ok) {
+          const errorText = await uploadRes.text();
+          console.error("S3 Upload Error:", errorText);
+          throw new Error("Cloud storage rejected the file. Check if Cloudflare CORS is configured properly.");
+        }
+        finalPublicUrl = presignData.publicUrl;
       }
 
-      setVideoUrl(presignData.publicUrl);
+      setVideoUrl(finalPublicUrl);
       toastSuccess("Video uploaded successfully");
     } catch (err: any) {
       console.error(err);
