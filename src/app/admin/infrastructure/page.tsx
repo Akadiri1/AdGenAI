@@ -105,26 +105,26 @@ export default async function InfrastructurePage() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-4 text-center min-w-[140px]">
             <div className="text-[10px] font-bold uppercase text-primary mb-1">Step 1</div>
-            <div className="font-bold text-sm">SiliconFlow</div>
-            <div className="text-[9px] text-text-secondary">Ultra Fast</div>
+            <div className="font-bold text-sm">Groq / Claude</div>
+            <div className="text-[9px] text-text-secondary">Script & Prompt</div>
           </div>
           <div className="h-0.5 w-8 bg-black/10 hidden sm:block" />
           <div className="rounded-2xl border-2 border-accent/20 bg-accent/5 p-4 text-center min-w-[140px]">
             <div className="text-[10px] font-bold uppercase text-accent mb-1">Step 2</div>
-            <div className="font-bold text-sm">Fal.ai (Luma)</div>
-            <div className="text-[9px] text-text-secondary">Reliable Speed</div>
+            <div className="font-bold text-sm">SiliconFlow</div>
+            <div className="text-[9px] text-text-secondary">Image Generation</div>
           </div>
           <div className="h-0.5 w-8 bg-black/10 hidden sm:block" />
           <div className="rounded-2xl border-2 border-warning/20 bg-warning/5 p-4 text-center min-w-[140px]">
             <div className="text-[10px] font-bold uppercase text-warning mb-1">Step 3</div>
-            <div className="font-bold text-sm">Kling AI</div>
-            <div className="text-[9px] text-text-secondary">Premium Detail</div>
+            <div className="font-bold text-sm">Replicate</div>
+            <div className="text-[9px] text-text-secondary">Video & Stitching</div>
           </div>
           <div className="h-0.5 w-8 bg-black/10 hidden sm:block" />
           <div className="rounded-2xl border-2 border-secondary/20 bg-secondary/5 p-4 text-center min-w-[140px]">
             <div className="text-[10px] font-bold uppercase text-secondary mb-1">Step 4</div>
-            <div className="font-bold text-sm">Magic API</div>
-            <div className="text-[9px] text-text-secondary">Final AI Backup</div>
+            <div className="font-bold text-sm">ElevenLabs</div>
+            <div className="text-[9px] text-text-secondary">Voiceover & Lipsync</div>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-black/5">
