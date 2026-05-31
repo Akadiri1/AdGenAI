@@ -226,6 +226,28 @@ export function SceneEditor({ adId }: { adId: string }) {
           </p>
         </div>
       )}
+      {adStatus === "MIXING_AUDIO" && (
+        <div className="rounded-2xl border border-success/30 bg-success/5 p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-success">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Mixing Background Audio...
+          </div>
+          <p className="mt-1 text-xs text-text-secondary">
+            Adding your selected background track and applying audio ducking so the voice stays crisp!
+          </p>
+        </div>
+      )}
+      {adStatus === "CAPTIONING" && (
+        <div className="rounded-2xl border border-[#FF6B35]/30 bg-[#FF6B35]/5 p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-[#FF6B35]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Burning in TikTok Auto-Captions...
+          </div>
+          <p className="mt-1 text-xs text-text-secondary">
+            Generating big, bold subtitles so your ad performs great even on mute. Almost done!
+          </p>
+        </div>
+      )}
 
       {scenes.map((s) => {
         const isPending = s.status === "PENDING";

@@ -50,6 +50,8 @@ const bodySchema = z.object({
   targetSeconds: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30), z.literal(60)]).default(15),
   aspectRatio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
   language: z.string().default("en"),
+  backgroundMusic: z.string().url().optional().or(z.literal("")),
+  autoCaptions: z.boolean().default(false),
 });
 
 export async function POST(req: Request) {
@@ -96,7 +98,7 @@ export async function POST(req: Request) {
           platform: platformsToString(body.platforms),
           status: "PROMPT_ONLY",
           headline: body.productName ?? "AI-generated ad",
-          bodyText: plan.fullScript,
+          bodyText: plan.hashtags?.length > 0 ? `${plan.fullScript}\n\n${plan.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join(' ')}` : plan.fullScript,
           callToAction: "Generate with AI",
           script: plan.fullScript,
           musicGenre: plan.musicGenre,
@@ -253,7 +255,7 @@ export async function POST(req: Request) {
       platform: platformsToString(body.platforms),
       status: "DRAFT",
       headline: plan.headline,
-      bodyText: plan.bodyText,
+      bodyText: plan.hashtags?.length > 0 ? `${plan.bodyText}\n\n${plan.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join(' ')}` : plan.bodyText,
       callToAction: plan.callToAction,
       script: plan.fullScript,
       musicGenre: plan.musicGenre,
@@ -264,7 +266,8 @@ export async function POST(req: Request) {
       productOffer: body.productOffer,
       productImages: body.productImageUrls.length > 0 ? imagesToString(body.productImageUrls) : null,
       actorId: actorRow.id,
-      visualInstructions: body.visualInstructions ?? null,
+      visualInstructions: body.autoCaptions ? `[AUTOCAPTIONS] ${body.visualInstructions ?? ""}`.trim() : (body.visualInstructions ?? null),
+      musicTrack: body.backgroundMusic || null,
       voiceSettings: body.voiceSettings ? JSON.stringify(body.voiceSettings) : null,
       score: plan.predictedScore,
     },

@@ -21,7 +21,7 @@ const navItems = [
   // { labelKey: "nav.templates", href: "/templates", icon: Palette },
   // { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag },
   // { labelKey: "nav.connect", href: "/connect", icon: Link2 },
-  { labelKey: "nav.referrals", href: "/referral", icon: Gift },
+  { labelKey: "nav.referrals", href: "/referral", icon: Gift, comingSoon: true },
 ];
 
 export function Sidebar() {
@@ -55,15 +55,22 @@ export function Sidebar() {
             return (
               <li key={item.href}>
                 <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                  href={item.comingSoon ? "#" : item.href}
+                  className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                     active
                       ? "bg-primary/10 text-primary"
+                      : item.comingSoon
+                      ? "text-text-secondary opacity-60 cursor-default"
                       : "text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
                   }`}
                 >
-                  <Icon className="h-[18px] w-[18px]" />
-                  {t(item.labelKey)}
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-[18px] w-[18px]" />
+                    {t(item.labelKey)}
+                  </div>
+                  {item.comingSoon && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-text-secondary">Soon</span>
+                  )}
                 </Link>
               </li>
             );

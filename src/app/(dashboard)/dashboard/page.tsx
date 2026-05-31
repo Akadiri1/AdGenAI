@@ -150,25 +150,26 @@ export default async function DashboardPage() {
           return (
             <div
               key={stat.label}
-              className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm"
+              className="group relative rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
-                  <Icon className="h-5 w-5" />
+              <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.color} transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm`}>
+                  <Icon className="h-6 w-6" />
                 </div>
                 {stat.cta && (
                   <Link
                     href={stat.cta.href}
-                    className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors"
+                    className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors shadow-sm"
                   >
                     {stat.cta.label} →
                   </Link>
                 )}
               </div>
-              <div className="font-heading text-2xl font-bold text-text-primary">
+              <div className="font-heading text-3xl font-extrabold text-text-primary tracking-tight">
                 {stat.value}
               </div>
-              <div className="text-sm text-text-secondary">{stat.label}</div>
+              <div className="text-sm font-medium text-text-secondary mt-1">{stat.label}</div>
             </div>
           );
         })}
@@ -218,19 +219,19 @@ export default async function DashboardPage() {
                 <Link
                   key={action.label}
                   href={action.href}
-                  className={`flex items-center gap-3 rounded-xl p-3 text-sm font-medium transition-colors ${
+                  className={`group flex items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all ${
                     action.highlight
-                      ? "bg-warning/10 text-warning hover:bg-warning/20"
-                      : "text-text-primary hover:bg-bg-secondary"
+                      ? "bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 shadow-sm"
+                      : "text-text-primary hover:bg-bg-secondary hover:translate-x-1"
                   }`}
                 >
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                    action.highlight ? "bg-warning/20 text-warning" : "bg-bg-secondary text-text-secondary"
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${
+                    action.highlight ? "bg-warning/20 text-warning" : "bg-bg-secondary text-text-secondary shadow-sm"
                   }`}>
                     <Icon className="h-4 w-4" />
                   </div>
                   {action.label}
-                  <ChevronRight className="ml-auto h-4 w-4 text-text-secondary" />
+                  <ChevronRight className="ml-auto h-4 w-4 text-text-secondary transition-transform group-hover:translate-x-1" />
                 </Link>
               );
             })}

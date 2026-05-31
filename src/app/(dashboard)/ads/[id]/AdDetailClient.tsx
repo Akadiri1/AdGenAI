@@ -225,8 +225,9 @@ export function AdDetailClient({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+            <div className="mb-4 flex items-center justify-between relative z-10">
               <h2 className="font-heading font-bold text-text-primary">Preview</h2>
               {!isLocked && (
                 canEdit ? (
@@ -325,8 +326,9 @@ export function AdDetailClient({
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+            <div className="mb-3 flex items-center justify-between relative z-10">
               <h3 className="font-heading font-bold text-text-primary">Copy</h3>
               {!isLocked && !editingCopy && (
                 canEdit ? (
@@ -398,8 +400,9 @@ export function AdDetailClient({
             )}
           </div>
 
-          <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-            <h3 className="font-heading font-bold text-text-primary mb-3">Details</h3>
+          <div className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+            <h3 className="font-heading font-bold text-text-primary mb-3 relative z-10">Details</h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Aspect ratio</dt>

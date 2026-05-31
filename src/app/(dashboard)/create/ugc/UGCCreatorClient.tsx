@@ -5,12 +5,13 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Search, Play, Mic, Volume2, Film,
-  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2
+  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2, FileText
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
 import { AIRephraseField } from "@/components/ui/AIRephraseField";
 import { MultiFileUpload } from "@/components/ui/MultiFileUpload";
+import { TemplatesModal } from "@/components/studio/TemplatesModal";
 import { AVATAR_LIBRARY, DEFAULT_VOICE_SETTINGS, type Avatar, type VoiceSettings } from "@/lib/avatars";
 
 type Duration = 5 | 10 | 15 | 30 | 60;
@@ -63,6 +64,10 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const [targetSeconds, setTargetSeconds] = useState<Duration>(15);
   const [generating, setGenerating] = useState(false);
   const [showAdvancedVoice, setShowAdvancedVoice] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const [backgroundMusic, setBackgroundMusic] = useState<string>("");
+  const [autoCaptions, setAutoCaptions] = useState(true);
 
   const cost = estimateCredits(targetSeconds);
 
@@ -145,6 +150,8 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           productDescription: productDescription || undefined,
           productImageUrls: productImages,
           visualInstructions: visualInstructions || undefined,
+          backgroundMusic,
+          autoCaptions,
           voiceSettings: { ...voiceSettings, voiceId: selectedVoiceId },
           aspectRatio,
           targetSeconds,
@@ -196,9 +203,17 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           
           {/* Script Section */}
           <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6">
-            <h2 className="font-heading text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
-              <Film className="h-5 w-5 text-primary" /> Script
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-bold text-text-primary flex items-center gap-2">
+                <Film className="h-5 w-5 text-primary" /> Script
+              </h2>
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <FileText className="h-4 w-4" /> Templates
+              </button>
+            </div>
             
             {script.trim() && (() => {
               const wordCount = script.trim().split(/\s+/).length;
@@ -241,48 +256,67 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
               onChange={setScript}
               placeholder="Write your script here. Keep it natural and casual."
               fieldType="script"
+              targetWords={Math.round(targetSeconds * 2.5)}
               rows={8}
             />
           </div>
 
           {/* Visual Instructions & Product */}
-          <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6 space-y-5">
-            <h2 className="font-heading text-lg font-bold text-text-primary flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Visuals & Product <span className="text-sm font-normal text-text-secondary">(Optional)</span>
+          <div className="rounded-2xl bg-[#151522] shadow-sm p-6 space-y-5 text-white">
+            <h2 className="font-heading text-xl font-bold flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-[#FF6B35]" /> Visuals & Product <span className="text-base font-normal text-white/50">(Optional)</span>
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
               <div>
-                <AIRephraseField
-                  kind="textarea"
-                  label="Visual Instructions"
-                  hint={`${visualInstructions.length} chars`}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white/60">VISUA...</span>
+                  <span className="text-xs text-white/40">{visualInstructions.length} chars</span>
+                  <button className="flex items-center gap-1 rounded-full border border-[#2EC4B6]/30 px-3 py-1 text-[10px] font-bold text-[#2EC4B6] hover:bg-[#2EC4B6]/10 transition-colors">
+                     <Lightbulb className="h-3 w-3" /> AI WRITE
+                  </button>
+                  <button className="flex items-center gap-1 rounded-full border border-[#FF6B35]/30 px-3 py-1 text-[10px] font-bold text-[#FF6B35] hover:bg-[#FF6B35]/10 transition-colors">
+                     <Wand2 className="h-3 w-3" /> AI REWRITE
+                  </button>
+                </div>
+                
+                <textarea
                   value={visualInstructions}
-                  onChange={setVisualInstructions}
+                  onChange={(e) => setVisualInstructions(e.target.value)}
                   placeholder="E.g. Bright modern Lagos apartment, warm afternoon light. Actor does a slow confident spin showing the dress."
-                  fieldType="imagePrompt"
                   rows={4}
-                  maxLength={500}
+                  className="w-full resize-none rounded-[24px] border-2 border-white/5 bg-[#1e1e2e] p-5 text-lg text-white/80 placeholder:text-white/30 outline-none focus:border-[#FF6B35]"
                 />
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                
+                <div className="mt-4 flex flex-wrap gap-2">
                   {[
                     "Lagos apartment", "White studio", "Talks to camera", "Holds product up"
                   ].map((t) => (
-                    <button key={t} onClick={() => setVisualInstructions(prev => prev ? `${prev} ${t}.` : `${t}.`)} className="rounded-lg border border-black/10 bg-bg-secondary px-2 py-1 text-[10px] font-semibold text-text-secondary hover:text-primary transition-colors">
+                    <button key={t} onClick={() => setVisualInstructions(prev => prev ? `${prev} ${t}.` : `${t}.`)} className="rounded-full border border-white/10 bg-[#1e1e2e] px-4 py-2 text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                       + {t}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <MultiFileUpload
-                  values={productImages}
-                  onChange={setProductImages}
-                  label="Product Photos"
-                  previewSize="sm"
-                  maxFiles={5}
-                />
+              <div className="pt-10 flex flex-col items-start">
+                <div className="w-20 h-24 rounded-[20px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-white/60 hover:bg-white/5 hover:border-white/40 transition-colors cursor-pointer mb-4 relative">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      // Note: simplified for UI replication. Real logic would upload.
+                      if (e.target.files) setProductImages([...productImages, ...Array.from(e.target.files).map(f => URL.createObjectURL(f))]);
+                    }}
+                  />
+                  <Upload className="h-6 w-6 mb-1 text-white/80" />
+                  <span className="text-xs font-bold text-white/80">Add</span>
+                </div>
+                <p className="text-[11px] text-white/40 leading-relaxed max-w-[200px]">
+                   PNG, JPG, WebP — any size, auto-compressed before upload. {productImages.length}/5 uploaded.
+                </p>
               </div>
             </div>
           </div>
@@ -319,31 +353,58 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2 block">Background Music</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "None", url: "" },
+                    { label: "Lo-Fi", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+                    { label: "Upbeat", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+                    { label: "Corporate", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+                  ].map((bg) => (
+                    <button key={bg.label} onClick={() => setBackgroundMusic(bg.url)}
+                      className={`flex-1 min-w-[60px] rounded-xl border-2 py-2 text-xs font-bold transition-all ${backgroundMusic === bg.url ? "border-primary bg-primary/5 text-primary" : "border-black/10 text-text-secondary hover:border-black/20"}`}>
+                      {bg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">TikTok Auto-Captions</label>
+                <button
+                  onClick={() => setAutoCaptions(!autoCaptions)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoCaptions ? 'bg-primary' : 'bg-black/20'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoCaptions ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
             </div>
 
             {/* Voice Settings */}
-            <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6 space-y-4">
-              <h2 className="font-heading text-lg font-bold text-text-primary flex items-center gap-2 mb-4">
-                <Volume2 className="h-5 w-5 text-primary" /> Voice
+            <div className="rounded-2xl bg-[#151522] shadow-sm p-6 space-y-4 text-white">
+              <h2 className="font-heading text-lg font-bold flex items-center gap-2 mb-4">
+                <Volume2 className="h-5 w-5 text-[#FF6B35]" /> Voice
               </h2>
               
               <div className="grid grid-cols-2 gap-2">
                 {VOICE_PROFILES.map((v) => (
                   <button key={v.id} onClick={() => setSelectedVoiceId(v.id)}
-                    className={`flex items-center gap-2 rounded-xl border-2 p-2 text-left transition-all ${selectedVoiceId === v.id ? "border-primary bg-primary/5" : "border-black/10 hover:border-black/20"}`}>
+                    className={`flex items-center gap-2 rounded-xl border-2 p-2 text-left transition-all ${selectedVoiceId === v.id ? "border-[#FF6B35] bg-[#FF6B35]/10" : "border-white/5 hover:border-white/20 bg-[#1e1e2e]"}`}>
                     <span className="text-lg">{v.emoji}</span>
-                    <span className="text-xs font-bold text-text-primary">{v.name}</span>
+                    <span className="text-xs font-bold text-white">{v.name}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="pt-2">
-                <button onClick={() => setShowAdvancedVoice(!showAdvancedVoice)} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+              <div className="pt-4">
+                <button onClick={() => setShowAdvancedVoice(!showAdvancedVoice)} className="text-sm text-[#FF6B35] font-bold flex items-center gap-1 hover:text-[#FF6B35]/80 transition-colors">
                   {showAdvancedVoice ? "Hide" : "Show"} advanced voice settings
                 </button>
                 
                 {showAdvancedVoice && (
-                  <div className="mt-4 space-y-3 bg-bg-secondary p-4 rounded-xl">
+                  <div className="mt-4 space-y-6 bg-[#1e1e2e] p-6 py-8 rounded-[24px]">
                     <VoiceSlider label="Speed" value={voiceSettings.speed} min={0.5} max={2.0} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, speed: v })} />
                     <VoiceSlider label="Stability" value={voiceSettings.stability} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, stability: v })} />
                     <VoiceSlider label="Similarity" value={voiceSettings.similarity} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, similarity: v })} />
@@ -543,17 +604,55 @@ function VoiceSlider({ label, value, min, max, step, onChange }: {
   onChange: (v: number) => void;
 }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-bold text-text-primary">{label}</span>
-        <span className="text-[10px] font-mono text-text-secondary bg-black/5 px-1.5 py-0.5 rounded">{value.toFixed(2)}</span>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-bold text-white">{label}</span>
+        <span className="text-xs font-mono text-white/50 bg-white/5 px-2 py-1 rounded-md">{value.toFixed(2)}</span>
       </div>
-      <input
-        type="range"
-        min={min} max={max} step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none bg-black/10 cursor-pointer accent-primary"
+      <div className="relative pt-1 px-4">
+        {/* Invisible track but styled thumb to match screenshot precisely */}
+        <input
+          type="range"
+          min={min} max={max} step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full h-1 appearance-none bg-transparent cursor-pointer"
+          style={{
+            WebkitAppearance: 'none',
+          }}
+        />
+        <style dangerouslySetInnerHTML={{__html: `
+          input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            margin-top: -6px;
+          }
+          input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #FF6B35;
+            cursor: pointer;
+            border: none;
+          }
+          input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 2px;
+          }
+        `}} />
+      </div>
+      <TemplatesModal
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onSelect={(content) => {
+          setScript(content);
+        }}
       />
     </div>
   );

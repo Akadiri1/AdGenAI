@@ -15,6 +15,8 @@ const bodySchema = z.object({
   fieldType: z.enum(["headline", "body", "cta", "script", "imagePrompt", "generic"]).default("generic"),
   tone: z.enum(["punchy", "professional", "playful", "urgent", "empathetic"]).optional(),
   maxLength: z.number().min(10).max(2000).optional(),
+  targetWords: z.number().optional(),
+  lengthAction: z.enum(["shorten", "expand"]).optional(),
   mode: z.enum(["rewrite", "generate"]).default("rewrite"),
 });
 
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
 
   try {
     const json = await req.json();
-    const { text, fieldType, tone, maxLength, mode } = bodySchema.parse(json);
+    const { text, fieldType, tone, maxLength, targetWords, lengthAction, mode } = bodySchema.parse(json);
 
     // Get user's brand context and preferred language
     const [user, brandContext] = await Promise.all([
@@ -70,7 +72,18 @@ export async function POST(req: Request) {
     const langName = langNames[userLang] ?? "English";
     const langInstruction = userLang !== "en" ? `\nIMPORTANT: Write in ${langName}.` : "";
 
-    const guideline = FIELD_GUIDELINES[fieldType];
+    let guideline = FIELD_GUIDELINES[fieldType];
+    if (fieldType === "script" && targetWords) {
+      guideline = `A UGC video ad script spoken by a real person.
+STRICT RULES:
+- MUST be exactly around ${targetWords} words. Do NOT exceed this limit significantly.
+- Sound like a real person texting a friend, not a company announcement.
+- NEVER include: hex color codes, URLs, website names, "Join thousands of...", "AI-powered", or any corporate language.
+- Start with a hook (pattern interrupt, confession, or result-first).
+- End with a soft CTA like "link in bio" or "try it free".
+- Use fragments, fillers ("honestly", "like", "okay so"), specific numbers.
+- Brand colors, logos, and technical details are VISUAL — they do NOT belong in spoken scripts.`;
+    }
 
     // For scripts, strip color codes and URLs from brand context — they confuse the AI into saying them aloud
     const cleanedContext = fieldType === "script"
@@ -88,9 +101,15 @@ ${langInstruction}
 
 Return ONLY the final text. No labels, no quotes, no explanations.`;
 
-    const prompt = mode === "generate"
+    let prompt = mode === "generate"
       ? `Write a ${fieldType} for this brand/product.`
       : `Improve this ${fieldType} — keep the core idea but make it sound more natural and human:\n"${text}"`;
+
+    if (lengthAction === "shorten") {
+      prompt = `Shorten this script so it is exactly around ${targetWords} words long. Keep the main message but cut the fluff:\n"${text}"`;
+    } else if (lengthAction === "expand") {
+      prompt = `Expand this script so it is exactly around ${targetWords} words long. Add more engaging details, filler words, or a stronger hook:\n"${text}"`;
+    }
 
     await deductCredits(session.user.id, cost);
 

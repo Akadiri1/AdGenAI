@@ -15,7 +15,7 @@ const PRIMARY_TABS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
   { href: "/create", icon: Sparkles, label: "Create" },
   { href: "/ads", icon: Film, label: "My Ads" },
-  { href: "/referral", icon: Gift, label: "Refer" },
+  { href: "/referral", icon: Gift, label: "Refer", comingSoon: true },
 ];
 
 const MORE_ITEMS = [
@@ -53,16 +53,16 @@ export function BottomNav() {
               return (
                 <Link
                   key={tab.href}
-                  href={tab.href}
-                  className="flex flex-col items-center min-w-[56px]"
+                  href={tab.comingSoon ? "#" : tab.href}
+                  className={`flex flex-col items-center min-w-[56px] ${tab.comingSoon ? "opacity-60 cursor-default" : ""}`}
                 >
                   <div className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${
                     active ? "bg-primary text-white shadow-md shadow-primary/30" : "text-text-secondary"
                   }`}>
                     <Icon className="h-[18px] w-[18px]" />
                   </div>
-                  <span className={`mt-0.5 text-[9px] font-semibold leading-none ${active ? "text-primary" : "text-text-secondary"}`}>
-                    {tab.label}
+                  <span className={`mt-0.5 text-[9px] font-semibold leading-none ${active ? "text-primary" : "text-text-secondary"} ${tab.comingSoon ? "line-through decoration-text-secondary decoration-[2px]" : ""}`}>
+                    {tab.comingSoon ? "Soon" : tab.label}
                   </span>
                 </Link>
               );

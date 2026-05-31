@@ -83,15 +83,16 @@ export function Features() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent blur-3xl" />
           {features.map((f) => {
             const Icon = f.icon;
             return (
               <div
                 key={f.title}
-                className="group rounded-2xl border border-black/5 bg-white p-5 sm:p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/20"
+                className="group relative rounded-2xl border border-black/5 bg-white/60 backdrop-blur-md p-5 sm:p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 hover:bg-white"
               >
-                <div className={`mb-4 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl ${f.color} transition-transform group-hover:scale-110`}>
+                <div className={`mb-4 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl ${f.color} transition-transform group-hover:scale-110 group-hover:rotate-3`}>
                   <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <h3 className="font-heading text-base sm:text-lg font-bold text-text-primary mb-2">{f.title}</h3>

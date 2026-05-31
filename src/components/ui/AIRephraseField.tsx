@@ -14,6 +14,7 @@ type BaseProps = {
   onChange: (v: string) => void;
   placeholder?: string;
   maxLength?: number;
+  targetWords?: number;
   fieldType: FieldType;
   businessContext?: string;
 };
@@ -22,7 +23,7 @@ type InputProps = BaseProps & { kind?: "input" };
 type TextareaProps = BaseProps & { kind: "textarea"; rows?: number };
 
 export function AIRephraseField(props: InputProps | TextareaProps) {
-  const { label, hint, value, onChange, placeholder, maxLength, fieldType, businessContext } = props;
+  const { label, hint, value, onChange, placeholder, maxLength, targetWords, fieldType, businessContext } = props;
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState<"write" | "rewrite" | null>(null);
   const [tone, setTone] = useState<Tone | "">("");
@@ -44,6 +45,7 @@ export function AIRephraseField(props: InputProps | TextareaProps) {
           fieldType,
           tone: tone || undefined,
           maxLength,
+          targetWords,
           mode: "generate",
         }),
       });
@@ -75,6 +77,7 @@ export function AIRephraseField(props: InputProps | TextareaProps) {
           fieldType,
           tone: tone || undefined,
           maxLength,
+          targetWords,
         }),
       });
       const data = await res.json();
@@ -88,7 +91,33 @@ export function AIRephraseField(props: InputProps | TextareaProps) {
       setAction(null);
     }
   }
-
+  async function fixLength(lengthAction: "shorten" | "expand") {
+    if (!value.trim()) return;
+    setLoading(true);
+    setAction("rewrite");
+    try {
+      const res = await fetch("/api/ai/rephrase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: value,
+          fieldType,
+          targetWords,
+          lengthAction,
+          mode: "rewrite",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Rewrite failed");
+      setSuggestion(data.text);
+      setShowTone(false);
+    } catch (err) {
+      error((err as Error).message);
+    } finally {
+      setLoading(false);
+      setAction(null);
+    }
+  }
   function accept() {
     if (suggestion) onChange(suggestion);
     setSuggestion(null);
@@ -136,6 +165,18 @@ export function AIRephraseField(props: InputProps | TextareaProps) {
             {loading && action === "rewrite" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
             {loading && action === "rewrite" ? "Rewriting..." : "AI Rewrite"}
           </button>
+          
+          {fieldType === "script" && targetWords && value.trim().split(/\s+/).filter(Boolean).length > targetWords * 1.15 && (
+             <button type="button" onClick={() => fixLength("shorten")} disabled={loading} className="flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-warning transition-all hover:bg-warning/10 disabled:opacity-50">
+               {loading && action === "rewrite" ? <Loader2 className="h-3 w-3 animate-spin" /> : "✂️ Shorten"}
+             </button>
+          )}
+          
+          {fieldType === "script" && targetWords && value.trim().split(/\s+/).filter(Boolean).length < targetWords * 0.7 && value.trim().split(/\s+/).filter(Boolean).length > 5 && (
+             <button type="button" onClick={() => fixLength("expand")} disabled={loading} className="flex items-center gap-1 rounded-lg border border-success/30 bg-success/5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-success transition-all hover:bg-success/10 disabled:opacity-50">
+               {loading && action === "rewrite" ? <Loader2 className="h-3 w-3 animate-spin" /> : "➕ Expand"}
+             </button>
+          )}
         </div>
       </div>
 

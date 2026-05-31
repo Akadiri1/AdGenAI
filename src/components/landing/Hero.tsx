@@ -5,17 +5,17 @@ import { TIKTOK_VIDEOS } from "@/lib/tiktokVideos";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-32">
+    <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-32 bg-white">
       {/* Background effects */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute right-0 top-40 h-[200px] w-[200px] sm:h-[400px] sm:w-[400px] rounded-full bg-accent/8 blur-3xl" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-white to-white">
+        <div className="absolute left-1/2 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-x-1/2 rounded-full bg-primary/10 blur-[100px] animate-pulse" />
+        <div className="absolute right-0 top-40 h-[200px] w-[200px] sm:h-[400px] sm:w-[400px] rounded-full bg-accent/10 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl relative z-10">
         {/* Top badge */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/50 backdrop-blur-md px-5 py-2 text-xs font-semibold text-primary shadow-sm hover:shadow-md transition-shadow">
             <Sparkles className="h-3.5 w-3.5" />
             UGC video ads for ecommerce sellers
           </div>
@@ -23,9 +23,11 @@ export function Hero() {
 
         {/* Headline */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-text-primary">
+          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-text-primary drop-shadow-sm">
             Real-looking UGC ads{" "}
-            <span className="gradient-text">without the actor fees</span>
+            <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-300% animate-gradient">
+              without the actor fees
+            </span>
           </h1>
           <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-text-secondary">
             Pick an AI actor. Upload your product. Get a finished video — voiceover, lip-sync, the works.
@@ -34,18 +36,19 @@ export function Hero() {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16">
           <Link
             href="/auth/signup"
-            className="group flex h-13 sm:h-14 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-primary px-6 sm:px-8 text-base font-semibold text-white shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary-dark hover:shadow-xl"
+            className="group relative flex h-14 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-primary px-8 text-base font-bold text-white shadow-[0_0_40px_rgba(255,107,53,0.3)] transition-all hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(255,107,53,0.5)] overflow-hidden"
           >
+            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
             <Sparkles className="h-5 w-5" />
             Create Your First Ad Free
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
             href="/tools/hook-generator"
-            className="flex h-13 sm:h-14 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border-2 border-black/10 bg-white px-6 sm:px-8 text-base font-semibold text-text-primary transition-all hover:border-black/20 hover:bg-bg-secondary"
+            className="flex h-14 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border-2 border-black/5 bg-white/60 backdrop-blur-sm px-8 text-base font-bold text-text-primary shadow-sm transition-all hover:border-black/10 hover:bg-white hover:-translate-y-1"
           >
             Try Free Hook Generator
           </Link>

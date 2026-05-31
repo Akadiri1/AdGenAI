@@ -169,26 +169,26 @@ export default async function AdminOverviewPage() {
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {recentSignups.length === 0 ? (
               <p className="text-sm text-text-secondary py-6 text-center">No users yet</p>
             ) : recentSignups.map((u) => (
               <Link key={u.id} href={`/admin/users/${u.id}`}
-                className="flex items-center justify-between rounded-xl border border-black/5 p-3 hover:bg-bg-secondary transition-colors">
+                className="group flex items-center justify-between rounded-2xl border border-black/5 bg-white/50 p-4 hover:bg-white hover:shadow-md hover:-translate-y-0.5 hover:border-primary/20 transition-all">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-text-primary truncate">
+                  <div className="text-sm font-bold text-text-primary truncate group-hover:text-primary transition-colors">
                     {u.name ?? u.businessName ?? u.email ?? "Anonymous"}
                   </div>
-                  <div className="text-xs text-text-secondary truncate">{u.email}</div>
+                  <div className="text-xs font-medium text-text-secondary truncate mt-0.5">{u.email}</div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                  <span className={`rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
                     u.plan === "FREE" ? "bg-gray-100 text-gray-700"
                     : "bg-success/10 text-success"
                   }`}>
                     {u.plan}
                   </span>
-                  <span className="text-xs text-text-secondary">
+                  <span className="text-xs font-medium text-text-secondary">
                     {new Date(u.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -231,13 +231,14 @@ function MetricCard({ icon: Icon, label, value, sub, color }: {
   label: string; value: string; sub?: string; color: string;
 }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
-      <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
-        <Icon className="h-5 w-5" />
+    <div className="group relative rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 overflow-hidden">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${color} transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm`}>
+        <Icon className="h-6 w-6" />
       </div>
-      <div className="font-heading text-2xl font-bold text-text-primary">{value}</div>
-      <div className="text-xs text-text-secondary">{label}</div>
-      {sub && <div className="mt-1 text-[10px] text-text-secondary">{sub}</div>}
+      <div className="font-heading text-3xl font-extrabold text-text-primary tracking-tight">{value}</div>
+      <div className="text-sm font-medium text-text-secondary mt-1">{label}</div>
+      {sub && <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-text-secondary opacity-80">{sub}</div>}
     </div>
   );
 }

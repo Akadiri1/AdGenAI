@@ -271,3 +271,59 @@ export async function concatVideos(params: {
   if (typeof url !== "string") throw new Error("Concat produced no URL");
   return url;
 }
+
+// =====================================================================
+// Audio Mixing — mixes a background track with the video's voiceover
+// Uses standard ffmpeg on Replicate
+// =====================================================================
+export async function mixBackgroundAudio(videoUrl: string, bgAudioUrl: string): Promise<string> {
+  if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
+  
+  // We use `nateraw/ffmpeg` or similar generic ffmpeg wrapper on Replicate.
+  // Model version for a reliable ffmpeg node: 8c8872fdbcc047fa5ec8747f259f9cbfa9c30d9703411dbb5b9e0f6b4d36efec (just an example of `cjwbw/ffmpeg` or similar).
+  // Actually, we'll use `lucataco/ffmpeg`
+  const prediction = await createPrediction(
+    "lucataco/ffmpeg",
+    undefined,
+    {
+      video: videoUrl,
+      audio: bgAudioUrl,
+      command: `-i input_video -i input_audio -filter_complex "[1:a]volume=0.1[bg];[0:a][bg]amix=inputs=2:duration=first:dropout_transition=2[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k output.mp4`
+    }
+  );
+  
+  const output = await waitForPrediction(prediction.id, 120_000);
+  const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
+  if (typeof url !== "string") throw new Error("Audio mixing produced no URL");
+  return url;
+}
+
+// =====================================================================
+// Auto-Captions — burns in TikTok-style subtitles
+// Uses fictionsai/autocaption
+// =====================================================================
+export async function addAutoCaptions(videoUrl: string): Promise<string> {
+  if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
+
+  const prediction = await createPrediction(
+    "fictionsai/autocaption",
+    undefined,
+    {
+      video_file_input: videoUrl,
+      font: "Montserrat",
+      font_size: 45,
+      font_color: "white",
+      highlight_color: "#FF6B35",
+      kerning: -1.5,
+      stroke_color: "black",
+      stroke_width: 3.5,
+      align: "center",
+      margin_bottom: 250, // Keep it above the bottom UI elements on TikTok/Reels
+    }
+  );
+
+  const output = await waitForPrediction(prediction.id, 300_000);
+  const url = typeof output === "string" ? output : Array.isArray(output) ? output[0] : null;
+  if (typeof url !== "string") throw new Error("Auto-captioning produced no URL");
+  return url;
+}

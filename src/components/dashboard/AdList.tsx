@@ -145,8 +145,8 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
         {filteredAds.map(ad => {
           const isSelected = selectedIds.has(ad.id);
           return (
-            <Link key={ad.id} href={`/ads/${ad.id}`} className={`group block bg-white rounded-2xl border ${isSelected ? 'border-primary ring-1 ring-primary shadow-md' : 'border-black/5'} overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 relative`}>
-              
+            <Link key={ad.id} href={`/ads/${ad.id}`} className={`group block bg-white/80 backdrop-blur-md rounded-2xl border ${isSelected ? 'border-primary ring-1 ring-primary shadow-lg' : 'border-black/5'} overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-1 hover:border-primary/20 relative`}>
+              <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
               <div 
                 className="absolute top-3 left-3 z-10 p-1.5"
                 onClick={(e) => toggleSelect(e, ad.id)}
@@ -204,9 +204,9 @@ export function AdList({ initialAds }: { initialAds: Ad[] }) {
                 </div>
               </div>
               
-              <div className="px-5 py-3 border-t border-black/5 bg-bg-secondary/50 flex items-center justify-between text-sm group-hover:bg-primary/5 transition-colors">
-                <span className="font-semibold text-primary">View Details</span>
-                <ChevronRight className="h-4 w-4 text-primary" />
+              <div className="px-5 py-3 border-t border-black/5 bg-black/[0.02] flex items-center justify-between text-sm group-hover:bg-primary/5 transition-colors">
+                <span className="font-bold text-primary group-hover:translate-x-1 transition-transform">View Details</span>
+                <ChevronRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           );

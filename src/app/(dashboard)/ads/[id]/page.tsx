@@ -25,14 +25,34 @@ export default async function AdDetailPage({
   }
 
   const [ad, user] = await Promise.all([
-    prisma.ad.findUnique({ where: { id } }),
+    prisma.ad.findUnique({ 
+      where: { id },
+      include: {
+        actor: { select: { thumbnailUrl: true } },
+        scenes: {
+          orderBy: { sceneNumber: "asc" },
+          take: 1,
+          select: { compositeImageUrl: true, finalClipUrl: true, videoClipUrl: true },
+        },
+      }
+    }),
     prisma.user.findUnique({ where: { id: session.user.id }, select: { plan: true } }),
   ]);
   if (!ad || ad.userId !== session.user.id) notFound();
 
   const canEdit = ["STARTER", "PRO", "BUSINESS", "ENTERPRISE"].includes(user?.plan ?? "FREE");
+  const scene = ad.scenes?.[0];
+  const computedThumbnail =
+    ad.thumbnailUrl ??
+    scene?.finalClipUrl ??
+    scene?.compositeImageUrl ??
+    scene?.videoClipUrl ??
+    ad.actor?.thumbnailUrl ??
+    null;
+
   const normalized = {
     ...ad,
+    thumbnailUrl: computedThumbnail,
     platform: stringToPlatforms(ad.platform),
     images: stringToImages(ad.images),
   };

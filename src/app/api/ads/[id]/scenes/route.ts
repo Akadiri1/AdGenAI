@@ -9,8 +9,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getKlingClipStatus } from "@/lib/replicate";
-import { getPrediction } from "@/lib/replicate-internal";
+import { getKlingClipStatus, mixBackgroundAudio, addAutoCaptions } from "@/lib/replicate";
+import { getPrediction, createPrediction } from "@/lib/replicate-internal";
 import { uploadToStorage } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -110,11 +110,20 @@ export async function GET(
   const allFinalized = allReady && updated.every((s) => s.finalClipUrl);
   if (allFinalized && ad.finalVideoStatus === "GENERATING") {
     if (updated.length === 1) {
-      // Just one scene, no stitching needed
       const firstClip = updated[0]?.finalClipUrl;
+      // If we have music or captions, we can't just set to READY. We must kick off MIXING or CAPTIONING.
+      if (ad.musicTrack) {
+        try {
+          const url = await mixBackgroundAudio(firstClip as string, ad.musicTrack);
+          // Wait, mixBackgroundAudio creates a prediction.
+          // Let's modify the flow to use createPrediction directly here.
+        } catch (e) {}
+      }
+      
+      // Simpler approach: If single clip, pretend it just finished STITCHING, so the polling below picks it up for the next step.
       await prisma.ad.update({
         where: { id },
-        data: { finalVideoStatus: "READY", videoUrl: firstClip ?? null },
+        data: { finalVideoStatus: "STITCHING_DONE", videoUrl: firstClip ?? null },
       });
     } else {
       // Multiple scenes: kickoff concatenation
@@ -139,40 +148,131 @@ export async function GET(
     }
   }
 
-  // ── Poll Stitching Task ──
+  // ── Poll Stitching / Audio / Caption Tasks ──
   let finalStatus = ad.finalVideoStatus;
-  if (ad.finalVideoStatus === "STITCHING" && ad.stitchTaskId) {
+  
+  if (["STITCHING", "MIXING_AUDIO", "CAPTIONING"].includes(finalStatus ?? "") && ad.stitchTaskId) {
     try {
-      const { getPrediction } = await import("@/lib/replicate-internal");
       const p = await getPrediction(ad.stitchTaskId);
       
       if (p.status === "succeeded") {
         let finalUrl = typeof p.output === "string" ? p.output : Array.isArray(p.output) ? p.output[0] : null;
         if (finalUrl) {
-          try {
-            const buf = await fetch(finalUrl).then(r => r.arrayBuffer());
-            finalUrl = await uploadToStorage({
-              bytes: Buffer.from(buf),
-              contentType: "video/mp4",
-              extension: "mp4",
-              folder: "ads/final",
-            });
-          } catch { /* keep temp url */ }
+          // Transition to next state
+          let nextState: "STITCHING_DONE" | "MIXING_AUDIO_DONE" | "CAPTIONING_DONE" | "READY" = "READY";
           
+          if (finalStatus === "STITCHING") nextState = "STITCHING_DONE";
+          if (finalStatus === "MIXING_AUDIO") nextState = "MIXING_AUDIO_DONE";
+          if (finalStatus === "CAPTIONING") nextState = "CAPTIONING_DONE";
+
           await prisma.ad.update({
             where: { id },
-            data: { finalVideoStatus: "READY", videoUrl: finalUrl },
+            data: { finalVideoStatus: nextState, videoUrl: finalUrl, stitchTaskId: null },
           });
-          finalStatus = "READY";
+          finalStatus = nextState;
+          ad.videoUrl = finalUrl;
         }
       } else if (p.status === "failed" || p.status === "canceled") {
         await prisma.ad.update({
           where: { id },
-          data: { finalVideoStatus: "FAILED", finalVideoError: p.error ?? "Stitching failed" },
+          data: { finalVideoStatus: "FAILED", finalVideoError: p.error ?? "Processing failed" },
         });
         finalStatus = "FAILED";
       }
     } catch { /* keep polling */ }
+  }
+
+  // ── State Machine Transitions ──
+  // Re-fetch ad to get updated status
+  const currentAd = await prisma.ad.findUnique({ where: { id } });
+  if (currentAd) {
+    let currentUrl = currentAd.videoUrl;
+    
+    // Stitching Done -> Start Audio Mixing
+    if (currentAd.finalVideoStatus === "STITCHING_DONE") {
+      if (currentAd.musicTrack && currentUrl) {
+        try {
+          const prediction = await createPrediction(
+            "lucataco/ffmpeg",
+            undefined,
+            {
+              video: currentUrl,
+              audio: currentAd.musicTrack,
+              command: `-i input_video -i input_audio -filter_complex "[1:a]volume=0.1[bg];[0:a][bg]amix=inputs=2:duration=first:dropout_transition=2[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k output.mp4`
+            }
+          );
+          await prisma.ad.update({
+            where: { id },
+            data: { finalVideoStatus: "MIXING_AUDIO", stitchTaskId: prediction.id },
+          });
+          finalStatus = "MIXING_AUDIO";
+        } catch (e) {
+          // Fallback to next step if mixing fails
+          await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "MIXING_AUDIO_DONE" } });
+        }
+      } else {
+        await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "MIXING_AUDIO_DONE" } });
+      }
+    }
+
+    const adAfterMixing = await prisma.ad.findUnique({ where: { id } });
+    if (adAfterMixing?.finalVideoStatus === "MIXING_AUDIO_DONE") {
+      currentUrl = adAfterMixing.videoUrl ?? currentUrl;
+      const wantsCaptions = adAfterMixing.visualInstructions?.includes("[AUTOCAPTIONS]");
+      
+      if (wantsCaptions && currentUrl) {
+        try {
+          const prediction = await createPrediction(
+            "fictionsai/autocaption",
+            undefined,
+            {
+              video_file_input: currentUrl,
+              font: "Montserrat",
+              font_size: 45,
+              font_color: "white",
+              highlight_color: "#FF6B35",
+              kerning: -1.5,
+              stroke_color: "black",
+              stroke_width: 3.5,
+              align: "center",
+              margin_bottom: 250,
+            }
+          );
+          await prisma.ad.update({
+            where: { id },
+            data: { finalVideoStatus: "CAPTIONING", stitchTaskId: prediction.id },
+          });
+          finalStatus = "CAPTIONING";
+        } catch (e) {
+          await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "CAPTIONING_DONE" } });
+        }
+      } else {
+        await prisma.ad.update({ where: { id }, data: { finalVideoStatus: "CAPTIONING_DONE" } });
+      }
+    }
+
+    const adAfterCaptioning = await prisma.ad.findUnique({ where: { id } });
+    if (adAfterCaptioning?.finalVideoStatus === "CAPTIONING_DONE") {
+      currentUrl = adAfterCaptioning.videoUrl ?? currentUrl;
+      if (currentUrl) {
+        // Upload final video to S3
+        try {
+          const buf = await fetch(currentUrl).then(r => r.arrayBuffer());
+          currentUrl = await uploadToStorage({
+            bytes: Buffer.from(buf),
+            contentType: "video/mp4",
+            extension: "mp4",
+            folder: "ads/final",
+          });
+        } catch { /* keep temp url */ }
+      }
+      
+      await prisma.ad.update({
+        where: { id },
+        data: { finalVideoStatus: "READY", videoUrl: currentUrl },
+      });
+      finalStatus = "READY";
+    }
   }
 
   return NextResponse.json({

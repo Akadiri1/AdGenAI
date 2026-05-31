@@ -70,6 +70,19 @@ export const AVATAR_LIBRARY: Avatar[] = [
     tags: ["friendly", "casual", "beauty"],
     voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — ElevenLabs
   },
+  {
+    id: "ava-ng-f",
+    name: "Ngozi",
+    gender: "female",
+    age: "young",
+    situation: "studio",
+    ethnicity: "nigerian",
+    thumbnailUrl: "https://images.unsplash.com/photo-1531123414708-1e16441b08b5?w=400&h=400&fit=crop&crop=faces",
+    isPro: false,
+    isHD: true,
+    tags: ["relatable", "vibrant", "beauty"],
+    voiceId: "en_AOT", // Will map to an African voice TTS if available, else standard
+  },
   // --- Male ---
   {
     id: "ava-011",
@@ -83,6 +96,32 @@ export const AVATAR_LIBRARY: Avatar[] = [
     isHD: true,
     tags: ["confident", "casual", "streetwear"],
     voiceId: "nPczCjzI2devNBz1zQrb", // Brian — ElevenLabs
+  },
+  {
+    id: "ava-ng-m1",
+    name: "Chidi",
+    gender: "male",
+    age: "young",
+    situation: "studio",
+    ethnicity: "nigerian",
+    thumbnailUrl: "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=400&h=400&fit=crop&crop=faces",
+    isPro: false,
+    isHD: true,
+    tags: ["energetic", "casual", "tech"],
+    voiceId: "en_oversea_male1",
+  },
+  {
+    id: "ava-ng-m2",
+    name: "Tunde",
+    gender: "male",
+    age: "middle",
+    situation: "office",
+    ethnicity: "nigerian",
+    thumbnailUrl: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=400&h=400&fit=crop&crop=faces",
+    isPro: false,
+    isHD: true,
+    tags: ["professional", "trustworthy", "business"],
+    voiceId: "en_oversea_male1",
   },
 ];
 
