@@ -8,10 +8,15 @@ export const dynamic = "force-dynamic";
 export default async function InfrastructurePage() {
   await requireAdmin();
 
-  // Safety check: ensure apiProvider exists on prisma (requires db push)
-  const providers = (prisma as any).apiProvider 
-    ? await (prisma as any).apiProvider.findMany({ orderBy: { priority: "asc" } })
-    : [];
+  let providers: any[] = [];
+  try {
+    providers = (prisma as any).apiProvider 
+      ? await (prisma as any).apiProvider.findMany({ orderBy: { priority: "asc" } })
+      : [];
+  } catch (err) {
+    // DB table doesn't exist yet, fallback to empty
+    providers = [];
+  }
 
   return (
     <div className="space-y-6">

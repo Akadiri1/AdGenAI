@@ -12,12 +12,12 @@ import {
 const PRIMARY_TABS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
+  { href: "/admin/finance", label: "Finance", icon: Receipt },
   { href: "/admin/ads", label: "Ads", icon: Film },
 ];
 
 const MORE_ITEMS = [
-  { href: "/admin/finance", label: "Finance & API Costs", icon: Receipt },
+  { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/infrastructure", label: "Infrastructure", icon: Server },
   { href: "/admin/activity", label: "Activity log", icon: Activity },
   { href: "/admin/sitemap", label: "Sitemap (all pages)", icon: Map },

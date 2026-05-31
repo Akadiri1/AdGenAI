@@ -154,24 +154,7 @@ export function StudioBriefPanel({ initialAd }: { initialAd: BriefAd }) {
             </div>
           </div>
 
-          {isDraft ? (
-            <AIRephraseField
-              kind="textarea"
-              label="Script"
-              hint={`${script.length} chars · ~${Math.round(script.split(/\s+/).filter(Boolean).length / 2.5)}s read time`}
-              value={script}
-              onChange={setScript}
-              fieldType="script"
-              rows={6}
-              maxLength={2000}
-              businessContext={productName ? `Product: ${productName}${productOffer ? ` (Offer: ${productOffer})` : ""}` : undefined}
-            />
-          ) : (
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">Script</label>
-              <p className="rounded-xl bg-bg-secondary p-3 text-sm whitespace-pre-wrap">{script || "—"}</p>
-            </div>
-          )}
+          {/* Master Script is hidden in the Studio to avoid confusion, but it remains in the DB. The user edits individual scene spoken lines instead. */}
 
           <div className="grid gap-4 md:grid-cols-3">
             <div>
