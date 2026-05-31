@@ -300,19 +300,42 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
               </div>
 
               <div className="pt-10 flex flex-col items-start">
-                <div className="w-20 h-24 rounded-[20px] border-2 border-dashed border-black/10 flex flex-col items-center justify-center text-text-secondary hover:bg-bg-secondary hover:border-black/20 transition-colors cursor-pointer mb-4 relative">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      // Note: simplified for UI replication. Real logic would upload.
-                      if (e.target.files) setProductImages([...productImages, ...Array.from(e.target.files).map(f => URL.createObjectURL(f))]);
-                    }}
-                  />
-                  <Upload className="h-6 w-6 mb-1 text-text-secondary" />
-                  <span className="text-xs font-bold text-text-primary">Add</span>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {productImages.map((url, i) => (
+                    <div key={i} className="relative w-20 h-24 rounded-[20px] overflow-hidden border border-black/10 group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="upload" className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => setProductImages(productImages.filter((_, index) => index !== i))}
+                        className="absolute top-1 right-1 bg-black/50 hover:bg-black/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {productImages.length < 5 && (
+                    <div className="w-20 h-24 rounded-[20px] border-2 border-dashed border-black/10 flex flex-col items-center justify-center text-text-secondary hover:bg-bg-secondary hover:border-black/20 transition-colors cursor-pointer relative">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            const newImages = Array.from(e.target.files).map(f => URL.createObjectURL(f));
+                            const combined = [...productImages, ...newImages].slice(0, 5);
+                            setProductImages(combined);
+                            if (productImages.length + newImages.length > 5) {
+                              toastError("You can only upload up to 5 images.");
+                            }
+                          }
+                        }}
+                      />
+                      <Upload className="h-6 w-6 mb-1 text-text-secondary" />
+                      <span className="text-xs font-bold text-text-primary">Add</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-[11px] text-text-secondary leading-relaxed max-w-[200px]">
                    PNG, JPG, WebP — any size, auto-compressed before upload. {productImages.length}/5 uploaded.
