@@ -171,8 +171,9 @@ model Ad {
 
   images          String?           // JSON array as string (composited scene images)
   videoUrl        String?           // FINAL stitched + lipsynced ad MP4
-  finalVideoStatus String?          // null | "GENERATING" | "READY" | "FAILED"
+  finalVideoStatus String?          // null | "GENERATING" | "STITCHING" | "READY" | "FAILED"
   finalVideoError  String?          // Last error message if finalization failed
+  stitchTaskId     String?          // Background task ID for server-side video stitching
   thumbnailUrl    String?
   musicTrack      String?
   musicGenre      String?

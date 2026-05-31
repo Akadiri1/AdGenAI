@@ -208,10 +208,21 @@ export function SceneEditor({ adId }: { adId: string }) {
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-accent">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Generating your ad...
+            Generating your ad scenes...
           </div>
           <p className="mt-1 text-xs text-text-secondary">
             Each scene takes about 30-60 seconds. We&apos;ll keep this page in sync — refresh anytime.
+          </p>
+        </div>
+      )}
+      {adStatus === "STITCHING" && (
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Stitching scenes together...
+          </div>
+          <p className="mt-1 text-xs text-text-secondary">
+            Your scenes are done! We are now combining them into one final seamless video.
           </p>
         </div>
       )}

@@ -100,20 +100,79 @@ export async function GET(
     }),
   );
 
-  // Mark ad READY when all scene clips are done
+  // ── Mark ad READY when all scene clips are done (before lip-sync)
   const allReady = updated.length > 0 && updated.every((s) => s.status === "READY");
   if (allReady && ad.status !== "READY") {
     await prisma.ad.update({ where: { id }, data: { status: "READY" } });
   }
 
-  // Mark finalization READY when all finalClipUrls are set
+  // ── Finalization Phase: Trigger Stitching or Complete ──
   const allFinalized = allReady && updated.every((s) => s.finalClipUrl);
   if (allFinalized && ad.finalVideoStatus === "GENERATING") {
-    const firstClip = updated[0]?.finalClipUrl;
-    await prisma.ad.update({
-      where: { id },
-      data: { finalVideoStatus: "READY", videoUrl: firstClip ?? null },
-    });
+    if (updated.length === 1) {
+      // Just one scene, no stitching needed
+      const firstClip = updated[0]?.finalClipUrl;
+      await prisma.ad.update({
+        where: { id },
+        data: { finalVideoStatus: "READY", videoUrl: firstClip ?? null },
+      });
+    } else {
+      // Multiple scenes: kickoff concatenation
+      try {
+        const urls = updated.map(s => s.finalClipUrl as string);
+        const { createPrediction } = await import("@/lib/replicate-internal");
+        
+        // Use lucataco/ffmpeg-concat model
+        const prediction = await createPrediction("lucataco/ffmpeg-concat", undefined, { videos: urls });
+        
+        await prisma.ad.update({
+          where: { id },
+          data: { finalVideoStatus: "STITCHING", stitchTaskId: prediction.id },
+        });
+      } catch (err) {
+        console.error("Concat start failed:", err);
+        await prisma.ad.update({
+          where: { id },
+          data: { finalVideoStatus: "FAILED", finalVideoError: "Stitching failed" },
+        });
+      }
+    }
+  }
+
+  // ── Poll Stitching Task ──
+  let finalStatus = ad.finalVideoStatus;
+  if (ad.finalVideoStatus === "STITCHING" && ad.stitchTaskId) {
+    try {
+      const { getPrediction } = await import("@/lib/replicate-internal");
+      const p = await getPrediction(ad.stitchTaskId);
+      
+      if (p.status === "succeeded") {
+        let finalUrl = typeof p.output === "string" ? p.output : Array.isArray(p.output) ? p.output[0] : null;
+        if (finalUrl) {
+          try {
+            const buf = await fetch(finalUrl).then(r => r.arrayBuffer());
+            finalUrl = await uploadToStorage({
+              bytes: Buffer.from(buf),
+              contentType: "video/mp4",
+              extension: "mp4",
+              folder: "ads/final",
+            });
+          } catch { /* keep temp url */ }
+          
+          await prisma.ad.update({
+            where: { id },
+            data: { finalVideoStatus: "READY", videoUrl: finalUrl },
+          });
+          finalStatus = "READY";
+        }
+      } else if (p.status === "failed" || p.status === "canceled") {
+        await prisma.ad.update({
+          where: { id },
+          data: { finalVideoStatus: "FAILED", finalVideoError: p.error ?? "Stitching failed" },
+        });
+        finalStatus = "FAILED";
+      }
+    } catch { /* keep polling */ }
   }
 
   return NextResponse.json({
