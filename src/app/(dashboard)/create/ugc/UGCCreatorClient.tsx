@@ -5,7 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Search, Play, Mic, Volume2, Film,
-  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2, FileText, Lightbulb
+  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2, FileText, Lightbulb,
+  CheckCircle2, AlertTriangle, User, Smile, Zap, Briefcase
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
@@ -39,12 +40,12 @@ function estimateCredits(targetSeconds: Duration): {
 const DURATIONS: Duration[] = [5, 10, 15, 30, 60];
 
 const VOICE_PROFILES = [
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah",   gender: "female" as const, description: "Young woman · warm & friendly",     emoji: "👩" },
-  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily",    gender: "female" as const, description: "Young woman · upbeat & energetic",  emoji: "💃" },
-  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel",  gender: "female" as const, description: "Mature woman · calm & trusted",     emoji: "👩‍💼" },
-  { id: "nPczCjzI2devNBz1zQrb", name: "Brian",   gender: "male"   as const, description: "Young man · deep & confident",      emoji: "👨" },
-  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam",    gender: "male"   as const, description: "Young man · casual & friendly",    emoji: "🧑" },
-  { id: "pqHfZKP75CvOlQylNhV4", name: "Bill",    gender: "male"   as const, description: "Mature man · authoritative",        emoji: "👨‍💼" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah",   gender: "female" as const, description: "Young woman · warm & friendly",     icon: Smile },
+  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily",    gender: "female" as const, description: "Young woman · upbeat & energetic",  icon: Zap },
+  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel",  gender: "female" as const, description: "Mature woman · calm & trusted",     icon: Briefcase },
+  { id: "nPczCjzI2devNBz1zQrb", name: "Brian",   gender: "male"   as const, description: "Young man · deep & confident",      icon: User2 },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam",    gender: "male"   as const, description: "Young man · casual & friendly",    icon: Smile },
+  { id: "pqHfZKP75CvOlQylNhV4", name: "Bill",    gender: "male"   as const, description: "Mature man · authoritative",        icon: Briefcase },
 ];
 
 export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) {
@@ -231,8 +232,16 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                   "bg-bg-secondary border border-black/5"
                 }`}>
                   <div>
-                    <span className={`font-bold ${tooLong ? "text-danger" : slightlyOver ? "text-warning" : perfect ? "text-success" : "text-text-secondary"}`}>
-                      {tooLong ? "⚠️ Script too long" : slightlyOver ? "⚠️ Slightly over" : perfect ? "✅ Perfect length" : `📝 ${wordCount} words`}
+                    <span className={`font-bold flex items-center gap-1.5 ${tooLong ? "text-danger" : slightlyOver ? "text-warning" : perfect ? "text-success" : "text-text-secondary"}`}>
+                      {tooLong ? (
+                        <><AlertTriangle className="h-3.5 w-3.5" /> Script too long</>
+                      ) : slightlyOver ? (
+                        <><AlertTriangle className="h-3.5 w-3.5" /> Slightly over</>
+                      ) : perfect ? (
+                        <><CheckCircle2 className="h-3.5 w-3.5" /> Perfect length</>
+                      ) : (
+                        <><FileText className="h-3.5 w-3.5" /> {wordCount} words</>
+                      )}
                     </span>
                     <span className="text-text-secondary ml-2">
                       ~{estimatedSecs}s spoken · target {targetSeconds}s · max ~{maxWords} words
@@ -412,13 +421,18 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
               </h2>
               
               <div className="grid grid-cols-2 gap-2">
-                {VOICE_PROFILES.map((v) => (
+                {VOICE_PROFILES.map((v) => {
+                  const Icon = v.icon;
+                  return (
                   <button key={v.id} onClick={() => setSelectedVoiceId(v.id)}
                     className={`flex items-center gap-2 rounded-xl border-2 p-2 text-left transition-all ${selectedVoiceId === v.id ? "border-primary bg-primary/5" : "border-black/5 hover:border-black/10 bg-bg-secondary"}`}>
-                    <span className="text-lg">{v.emoji}</span>
+                    <div className={`p-1.5 rounded-lg ${selectedVoiceId === v.id ? 'bg-primary/20 text-primary' : 'bg-black/5 text-text-secondary'}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
                     <span className="text-xs font-bold text-text-primary">{v.name}</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="pt-4">
