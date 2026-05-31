@@ -46,12 +46,22 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
         headers: { "Content-Type": file.type },
         body: file
       });
-      if (!uploadRes.ok) throw new Error("Failed to upload video to cloud storage");
+      
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        console.error("S3 Upload Error:", errorText);
+        throw new Error("Cloud storage rejected the file. Check if Cloudflare CORS is configured properly.");
+      }
 
       setVideoUrl(presignData.publicUrl);
       toastSuccess("Video uploaded successfully");
     } catch (err: any) {
-      toastError(err.message);
+      console.error(err);
+      if (err.name === "TypeError" && err.message.includes("Failed to fetch")) {
+        toastError("Upload blocked by browser. You MUST configure Cloudflare CORS settings.");
+      } else {
+        toastError(err.message || "An unexpected error occurred during upload.");
+      }
       setVideoFile(null);
     } finally {
       setIsUploadingVideo(false);
