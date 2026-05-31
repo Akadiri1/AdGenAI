@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Search, Play, Mic, Volume2, Film,
-  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2, FileText
+  Loader2, Crown, SlidersHorizontal, User2, Upload, Pause, Wand2, Sparkles, Check, X, Settings2, FileText, Lightbulb
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
@@ -595,6 +595,13 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
         </div>
       )}
 
+      <TemplatesModal
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onSelect={(content) => {
+          setScript(content);
+        }}
+      />
     </div>
   );
 }
@@ -647,13 +654,6 @@ function VoiceSlider({ label, value, min, max, step, onChange }: {
           }
         `}} />
       </div>
-      <TemplatesModal
-        isOpen={showTemplates}
-        onClose={() => setShowTemplates(false)}
-        onSelect={(content) => {
-          setScript(content);
-        }}
-      />
     </div>
   );
 }
