@@ -21,6 +21,7 @@ const navItems = [
   // { labelKey: "nav.templates", href: "/templates", icon: Palette },
   // { labelKey: "nav.marketplace", href: "/marketplace", icon: ShoppingBag },
   // { labelKey: "nav.connect", href: "/connect", icon: Link2 },
+  { labelKey: "Face Swap", href: "/faceswap", icon: Sparkles },
   { labelKey: "nav.referrals", href: "/referral", icon: Gift, comingSoon: true },
 ];
 

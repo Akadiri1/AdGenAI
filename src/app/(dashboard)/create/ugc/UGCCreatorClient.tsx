@@ -278,7 +278,6 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
               <div>
-              <div>
                 <AIRephraseField
                   kind="textarea"
                   label="Visual Instructions"
