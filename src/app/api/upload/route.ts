@@ -5,7 +5,7 @@ import { uploadToStorage } from "@/lib/storage";
 
 export const maxDuration = 30;
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml", "video/mp4", "video/webm", "video/quicktime"];
 
 /**
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 });
+    return NextResponse.json({ error: "File too large (max 500MB)" }, { status: 400 });
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
