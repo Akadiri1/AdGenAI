@@ -18,6 +18,11 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
   const [textPrompt, setTextPrompt] = useState("");
   const [isGeneratingFace, setIsGeneratingFace] = useState(false);
 
+  // --- NEW VOICE FEATURE STATES ---
+  const [useVoice, setUseVoice] = useState(false);
+  const [voiceScript, setVoiceScript] = useState("");
+  const [voiceModel, setVoiceModel] = useState("alloy");
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
 
@@ -140,24 +145,32 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
       toastError("Please provide a face image (upload or generate)");
       return;
     }
-    if (credits < 3) {
-      toastError("Not enough credits. Face Swap requires 3 credits.");
+    const requiredCredits = useVoice && voiceScript.trim() ? 6 : 3;
+
+    if (credits < requiredCredits) {
+      toastError(`Not enough credits. This action requires ${requiredCredits} credits.`);
       return;
     }
 
     setIsProcessing(true);
     try {
+      const payload: any = { targetVideoUrl: videoUrl, sourceImageUrl: faceUrl };
+      if (useVoice && voiceScript.trim()) {
+        payload.script = voiceScript.trim();
+        payload.voice = voiceModel;
+      }
+
       const res = await fetch("/api/generate/faceswap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetVideoUrl: videoUrl, sourceImageUrl: faceUrl }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start face swap");
       
       setJobId(data.jobId);
-      setCredits(prev => prev - 3);
-      toastSuccess("Face Swap job started! This usually takes 1-2 minutes.");
+      setCredits(prev => prev - requiredCredits);
+      toastSuccess(`Job started! This usually takes ${useVoice ? "3-5" : "1-2"} minutes.`);
     } catch (err: any) {
       toastError(err.message);
       setIsProcessing(false);
@@ -301,6 +314,56 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
             </div>
           )}
         </div>
+
+        {/* Step 3: Voice & Script (Optional) */}
+        <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xl font-bold font-heading text-text-primary">3. Voice & Script <span className="text-sm font-normal text-text-secondary">(Optional)</span></h2>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={useVoice} onChange={(e) => setUseVoice(e.target.checked)} />
+              <div className="w-11 h-6 bg-black/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-black/10 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+          
+          {useVoice ? (
+            <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 opacity-100 duration-300">
+              <p className="text-sm text-text-secondary">
+                The AI will replace the original audio with your script, and automatically lip-sync the video to match!
+              </p>
+              
+              <div>
+                <label className="block text-xs font-bold text-text-secondary mb-1">Select AI Voice</label>
+                <select 
+                  value={voiceModel} 
+                  onChange={(e) => setVoiceModel(e.target.value)}
+                  className="w-full rounded-xl border-2 border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="alloy">Alloy (Neutral Female)</option>
+                  <option value="echo">Echo (Neutral Male)</option>
+                  <option value="fable">Fable (British Male)</option>
+                  <option value="onyx">Onyx (Deep Male)</option>
+                  <option value="nova">Nova (Energetic Female)</option>
+                  <option value="shimmer">Shimmer (Clear Female)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text-secondary mb-1">What should they say?</label>
+                <textarea
+                  value={voiceScript}
+                  onChange={(e) => setVoiceScript(e.target.value)}
+                  placeholder="Type the script here. Keep it under 60 seconds of speaking."
+                  rows={4}
+                  className="w-full resize-none rounded-xl border-2 border-black/10 p-3 text-sm focus:border-primary outline-none"
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-text-secondary mt-1">
+              Currently disabled. The final video will keep its original background audio and voice.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* RIGHT COLUMN: Output */}
@@ -337,11 +400,11 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
 
         <button
           onClick={handleStartSwap}
-          disabled={!videoUrl || !faceUrl || isProcessing}
+          disabled={!videoUrl || !faceUrl || isProcessing || (useVoice && !voiceScript.trim())}
           className="mt-6 w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:bg-primary-hover transition-all"
         >
           {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wand2 className="h-5 w-5" />}
-          {isProcessing ? "Processing..." : "Generate Face Swap (3 Credits)"}
+          {isProcessing ? "Processing..." : `Generate Face Swap (${useVoice && voiceScript.trim() ? "6" : "3"} Credits)`}
         </button>
       </div>
     </div>
