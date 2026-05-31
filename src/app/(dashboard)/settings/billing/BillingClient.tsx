@@ -297,7 +297,7 @@ export function BillingClient({
             return (
               <div
                 key={planKey}
-                className={`relative rounded-2xl border-2 p-6 transition-all ${
+                className={`relative flex flex-col rounded-2xl border-2 p-6 transition-all ${
                   popular ? "border-primary bg-primary/5" : "border-black/10 bg-white"
                 }`}
               >
@@ -320,7 +320,7 @@ export function BillingClient({
                   )}
                 </div>
 
-                <ul className="mb-5 space-y-2 text-sm">
+                <ul className="mb-5 flex-1 space-y-2 text-sm">
                   {def.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
                       <svg className="h-4 w-4 flex-shrink-0 text-success mt-0.5" fill="currentColor" viewBox="0 0 20 20">
