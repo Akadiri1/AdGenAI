@@ -129,7 +129,7 @@ const jsonLd = {
 
 export default function Home() {
   return (
-    <>
+    <div className="dark bg-bg-primary min-h-screen flex flex-col text-text-primary">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -147,6 +147,6 @@ export default function Home() {
         <CTA />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

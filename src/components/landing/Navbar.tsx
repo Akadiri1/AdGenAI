@@ -8,7 +8,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-lg">
+    <nav className="sticky top-0 z-50 w-full border-b border-black/5 bg-bg-primary/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/">
           <Logo size="sm" className="flex md:hidden" />
@@ -60,7 +60,7 @@ export function Navbar() {
       </div>
 
       {open && (
-        <div className="border-t border-black/5 bg-white md:hidden">
+        <div className="border-t border-black/5 bg-bg-primary md:hidden">
           <div className="flex flex-col gap-4 px-6 py-4">
             <a href="#features" onClick={() => setOpen(false)} className="text-sm font-medium">Features</a>
             <a href="#how-it-works" onClick={() => setOpen(false)} className="text-sm font-medium">How it works</a>

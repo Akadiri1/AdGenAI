@@ -5,9 +5,9 @@ import { TIKTOK_VIDEOS } from "@/lib/tiktokVideos";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-32 bg-white">
+    <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 md:py-32">
       {/* Background effects */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-white to-white">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent">
         <div className="absolute left-1/2 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-x-1/2 rounded-full bg-primary/10 blur-[100px] animate-pulse" />
         <div className="absolute right-0 top-40 h-[200px] w-[200px] sm:h-[400px] sm:w-[400px] rounded-full bg-accent/10 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
       </div>

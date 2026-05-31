@@ -135,8 +135,9 @@ export default async function AdminOverviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Plan distribution */}
-        <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-          <h2 className="font-heading text-lg font-bold text-text-primary mb-4">Plan Distribution</h2>
+        <div className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+          <h2 className="font-heading text-lg font-bold text-text-primary mb-4 relative z-10">Plan Distribution</h2>
           <div className="space-y-3">
             {["FREE", "STARTER", "PRO", "BUSINESS", "ENTERPRISE"].map((plan) => {
               const count = planMap[plan] ?? 0;
@@ -162,8 +163,9 @@ export default async function AdminOverviewPage() {
         </div>
 
         {/* Recent signups */}
-        <div className="lg:col-span-2 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <h2 className="font-heading text-lg font-bold text-text-primary">Recent Signups</h2>
             <Link href="/admin/users" className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
               View all <ArrowUpRight className="h-3 w-3" />
@@ -200,24 +202,27 @@ export default async function AdminOverviewPage() {
 
       {/* Quick links */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <Link href="/admin/activity" className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white p-4 hover:shadow-md transition-shadow">
-          <Activity className="h-5 w-5 text-primary" />
+        <Link href="/admin/activity" className="group relative flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md p-4 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 hover:border-primary/20 overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <Activity className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
           <div>
-            <div className="text-sm font-semibold text-text-primary">Activity Log</div>
+            <div className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">Activity Log</div>
             <div className="text-xs text-text-secondary">Live audit trail</div>
           </div>
         </Link>
-        <Link href="/admin/revenue" className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white p-4 hover:shadow-md transition-shadow">
-          <DollarSign className="h-5 w-5 text-accent" />
+        <Link href="/admin/revenue" className="group relative flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md p-4 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 hover:border-primary/20 overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <DollarSign className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
           <div>
-            <div className="text-sm font-semibold text-text-primary">Revenue Details</div>
+            <div className="text-sm font-semibold text-text-primary group-hover:text-accent transition-colors">Revenue Details</div>
             <div className="text-xs text-text-secondary">All transactions</div>
           </div>
         </Link>
-        <Link href="/admin/users" className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white p-4 hover:shadow-md transition-shadow">
-          <Users className="h-5 w-5 text-warning" />
+        <Link href="/admin/users" className="group relative flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md p-4 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 hover:border-primary/20 overflow-hidden">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <Users className="h-5 w-5 text-warning group-hover:scale-110 transition-transform" />
           <div>
-            <div className="text-sm font-semibold text-text-primary">Manage Users</div>
+            <div className="text-sm font-semibold text-text-primary group-hover:text-warning transition-colors">Manage Users</div>
             <div className="text-xs text-text-secondary">Suspend, refund, impersonate</div>
           </div>
         </Link>
