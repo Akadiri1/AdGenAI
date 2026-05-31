@@ -3,6 +3,7 @@
 // Meta's Graph API requires publicly reachable URLs, so we must upload somewhere.
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
@@ -103,4 +104,29 @@ export async function ensurePublicUrl(urlOrDataUrl: string, folder = "ads/images
 
 export function isStorageConfigured(): boolean {
   return useR2;
+}
+
+/**
+ * Generates a presigned URL for direct browser uploads to R2.
+ */
+export async function generatePresignedUrl(fileName: string, contentType: string, folder = "uploads"): Promise<{ uploadUrl: string, publicUrl: string }> {
+  if (!useR2) {
+    throw new Error("Presigned URLs are only supported when Cloudflare R2 is configured.");
+  }
+
+  const id = crypto.randomBytes(12).toString("hex");
+  const extension = fileName.split(".").pop() ?? "bin";
+  const key = `${folder}/${id}.${extension}`;
+
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET!,
+    Key: key,
+    ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
+  });
+
+  const uploadUrl = await getSignedUrl(r2(), command, { expiresIn: 3600 });
+  const publicUrl = `${R2_PUBLIC_URL!.replace(/\/$/, "")}/${key}`;
+
+  return { uploadUrl, publicUrl };
 }

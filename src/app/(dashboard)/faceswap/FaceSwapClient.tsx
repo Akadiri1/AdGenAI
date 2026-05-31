@@ -26,20 +26,29 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      toastError("Video is too large (max 50MB)");
+    if (file.size > 500 * 1024 * 1024) {
+      toastError("Video is too large (max 500MB)");
       return;
     }
     setVideoFile(file);
     setIsUploadingVideo(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", "videos");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to upload video");
-      setVideoUrl(data.url);
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, folder: "videos" })
+      });
+      const presignData = await presignRes.json();
+      if (!presignRes.ok) throw new Error(presignData.error || "Failed to initialize upload");
+
+      const uploadRes = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file
+      });
+      if (!uploadRes.ok) throw new Error("Failed to upload video to cloud storage");
+
+      setVideoUrl(presignData.publicUrl);
       toastSuccess("Video uploaded successfully");
     } catch (err: any) {
       toastError(err.message);
@@ -135,7 +144,7 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
         {/* Step 1: Video */}
         <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
           <h2 className="text-xl font-bold font-heading text-text-primary mb-1">1. Target Video</h2>
-          <p className="text-sm text-text-secondary mb-4">Upload the video you want to edit (Max 50MB).</p>
+          <p className="text-sm text-text-secondary mb-4">Upload the video you want to edit (Max 500MB).</p>
           
           {!videoUrl ? (
             <div className="relative border-2 border-dashed border-black/10 rounded-2xl p-8 text-center hover:border-primary/50 transition-colors bg-bg-secondary/30">
@@ -158,7 +167,7 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
                       <FileVideo className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm font-bold text-text-primary">Click or drag video here</p>
-                    <p className="text-xs text-text-secondary mt-1">MP4, WebM (max 50MB)</p>
+                    <p className="text-xs text-text-secondary mt-1">MP4, WebM (max 500MB)</p>
                   </>
                 )}
               </div>
