@@ -21,7 +21,7 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
 
-  const { toastError, toastSuccess } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
