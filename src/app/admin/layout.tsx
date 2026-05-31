@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </header>
 
       {/* Main content — extra bottom padding so content isn't hidden behind nav */}
-      <main className="px-3 py-4 sm:p-6 pb-24">
+      <main className="px-3 py-4 sm:p-6 pb-32 sm:pb-36">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 

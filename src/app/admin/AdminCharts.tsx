@@ -52,13 +52,15 @@ function ChartCard({
   const padding = 2;
 
   return (
-    <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-      <div className="flex items-baseline justify-between mb-4">
+    <div className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-md p-6 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-50" />
+      <div className="flex items-baseline justify-between mb-4 relative z-10">
         <h2 className="font-heading text-lg font-bold text-text-primary">{title}</h2>
         <div className="text-sm font-bold text-text-primary">{formatValue(total)}</div>
       </div>
-      <svg viewBox={`0 0 ${w} ${h + 30}`} className="w-full h-auto">
-        {data.map((v, i) => {
+      <div className="relative z-10 w-full overflow-hidden">
+        <svg viewBox={`0 0 ${w} ${h + 30}`} className="w-full h-auto drop-shadow-sm">
+          {data.map((v, i) => {
           const barH = (v / max) * h;
           return (
             <g key={i}>
@@ -78,7 +80,8 @@ function ChartCard({
         <line x1={0} y1={h} x2={w} y2={h} stroke="#e5e7eb" strokeWidth={1} />
         <text x={0} y={h + 18} fontSize={11} fill="#6B7280">30d ago</text>
         <text x={w} y={h + 18} fontSize={11} fill="#6B7280" textAnchor="end">today</text>
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }
