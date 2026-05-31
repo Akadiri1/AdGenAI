@@ -348,7 +348,12 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1">What should they say?</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-text-secondary">What should they say?</label>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                    {voiceScript.trim().split(/\s+/).filter(w => w.length > 0).length} words
+                  </span>
+                </div>
                 <textarea
                   value={voiceScript}
                   onChange={(e) => setVoiceScript(e.target.value)}
@@ -356,6 +361,9 @@ export function FaceSwapClient({ initialCredits }: { initialCredits: number }) {
                   rows={4}
                   className="w-full resize-none rounded-xl border-2 border-black/10 p-3 text-sm focus:border-primary outline-none"
                 />
+                <p className="text-[11px] font-medium text-text-secondary mt-1.5 flex items-center gap-1">
+                  <span className="text-accent">💡</span> <strong>Tip:</strong> Aim for about 2.5 words per second of your video.
+                </p>
               </div>
             </div>
           ) : (
