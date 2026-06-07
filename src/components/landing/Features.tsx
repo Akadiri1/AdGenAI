@@ -56,7 +56,7 @@ const features: Feature[] = [
   {
     icon: Sparkles,
     title: "Free Prompts Forever",
-    description: "Free plan generates copy-paste prompts for Kling, Veo, Sora — even if you never pay.",
+    description: "Free plan generates copy-paste prompts for any AI video tool — even if you never pay.",
     color: "text-accent bg-accent/10",
   },
   {

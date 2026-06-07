@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { stringToImages } from "@/lib/adHelpers";
 import { uploadToStorage } from "@/lib/storage";
 import { generateKlingVideoClip, getKlingClipStatus, isReplicateConfigured } from "@/lib/replicate";
+import { generateQwenVideo, getQwenVideoStatus, isQwenConfigured } from "@/lib/qwen";
 import { checkCredits, deductCredits, addCredits } from "@/lib/credits";
 import { z } from "zod";
 
@@ -33,9 +34,9 @@ export async function POST(
   const ad = await prisma.ad.findUnique({ where: { id } });
   if (!ad || ad.userId !== userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (!isReplicateConfigured()) {
+  if (!isReplicateConfigured() && !isQwenConfigured()) {
     return NextResponse.json({
-      error: "Video generation not configured. Set REPLICATE_API_TOKEN.",
+      error: "Video generation not configured. Set REPLICATE_API_TOKEN or QWEN_API_KEY.",
     }, { status: 503 });
   }
 
@@ -62,24 +63,47 @@ export async function POST(
     || (ad.headline ? `Cinematic commercial advertisement: ${ad.headline}. Professional, photorealistic, smooth camera motion.` : "Cinematic commercial advertisement, photorealistic, smooth camera motion.");
 
   try {
-    const { predictionId } = await generateKlingVideoClip({
-      imageUrl: images[0],
-      prompt,
-      durationSeconds,
-      aspectRatio: (ad.aspectRatio as "9:16" | "16:9" | "1:1") || "9:16",
-    });
-
-    // Poll until ready
     let videoUrl: string | undefined;
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const status = await getKlingClipStatus(predictionId);
-      if (status.status === "succeeded" && status.videoUrl) {
-        videoUrl = status.videoUrl;
-        break;
+
+    if (isQwenConfigured()) {
+      const { taskId } = await generateQwenVideo({
+        prompt,
+        imageUrl: images[0],
+        duration: durationSeconds as any,
+        aspectRatio: (ad.aspectRatio as "9:16" | "16:9" | "1:1") || "9:16",
+      });
+
+      // Poll Qwen task status
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const status = await getQwenVideoStatus(taskId);
+        if (status.status === "succeeded" && status.videoUrl) {
+          videoUrl = status.videoUrl;
+          break;
+        }
+        if (status.status === "failed") {
+          throw new Error(status.error ?? "Qwen generation failed");
+        }
       }
-      if (status.status === "failed") {
-        throw new Error(status.error ?? "Kling generation failed");
+    } else {
+      const { predictionId } = await generateKlingVideoClip({
+        imageUrl: images[0],
+        prompt,
+        durationSeconds,
+        aspectRatio: (ad.aspectRatio as "9:16" | "16:9" | "1:1") || "9:16",
+      });
+
+      // Poll until ready (Replicate)
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const status = await getKlingClipStatus(predictionId);
+        if (status.status === "succeeded" && status.videoUrl) {
+          videoUrl = status.videoUrl;
+          break;
+        }
+        if (status.status === "failed") {
+          throw new Error(status.error ?? "Kling generation failed");
+        }
       }
     }
     if (!videoUrl) throw new Error("Video generation timed out");

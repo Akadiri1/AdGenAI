@@ -64,8 +64,8 @@ export async function POST(
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
 
-  if (!isReplicateConfigured()) {
-    return NextResponse.json({ error: "Replicate not configured" }, { status: 503 });
+  if (!isReplicateConfigured() && !isQwenConfigured()) {
+    return NextResponse.json({ error: "Neither Replicate nor Qwen is configured" }, { status: 503 });
   }
 
   const ad = await prisma.ad.findUnique({

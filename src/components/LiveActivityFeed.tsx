@@ -59,7 +59,7 @@ export function LiveActivityFeed({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, []);
 

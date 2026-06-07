@@ -140,9 +140,9 @@ export async function POST(req: Request) {
   // ============================================================
   // PAID TIER: DRAFT mode — plan only, no credits, no Replicate
   // ============================================================
-  if (!isReplicateConfigured()) {
+  if (!isReplicateConfigured() && !isQwenConfigured()) {
     return NextResponse.json({
-      error: "Video generation isn't configured yet. The owner needs to set REPLICATE_API_TOKEN.",
+      error: "Video generation isn't configured yet. Set REPLICATE_API_TOKEN or QWEN_API_KEY.",
     }, { status: 503 });
   }
 

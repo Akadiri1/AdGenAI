@@ -1,20 +1,21 @@
 /**
  * AI provider abstraction.
- * Priority: NVIDIA → GROQ → GEMINI → ANTHROPIC
- *
- * NVIDIA NIM hosts Llama 3.3 70B, DeepSeek, and others via OpenAI-compatible API.
- * It's fast, has generous rate limits, and uses the same nvapi key for all models.
+ * Priority: QWEN → NVIDIA → GROQ → GEMINI → ANTHROPIC
  */
 
-export type AIProvider = "openrouter" | "nvidia" | "groq" | "gemini" | "claude";
+import { logApiHealth } from "./apiHealth";
+import { generateQwenText, isQwenConfigured } from "./qwen";
+
+export type AIProvider = "openrouter" | "nvidia" | "groq" | "gemini" | "claude" | "qwen";
 
 export function getActiveProvider(): AIProvider {
+  if (isQwenConfigured()) return "qwen";
   if (process.env.OPENROUTER_API_KEY?.trim()) return "openrouter";
   if (process.env.NVIDIA_API_KEY?.trim()) return "nvidia";
   if (process.env.GROQ_API_KEY?.trim())  return "groq";
   if (process.env.GEMINI_API_KEY?.trim()) return "gemini";
   if (process.env.ANTHROPIC_API_KEY?.trim()) return "claude";
-  throw new Error("No AI provider configured. Set OPENROUTER_API_KEY, NVIDIA_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY.");
+  throw new Error("No AI provider configured. Set QWEN_API_KEY, OPENROUTER_API_KEY, NVIDIA_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY.");
 }
 
 export async function generateText(params: {
@@ -23,6 +24,7 @@ export async function generateText(params: {
   maxTokens?: number;
 }): Promise<string> {
   const provider = getActiveProvider();
+  if (provider === "qwen") return generateQwenText(params);
   if (provider === "openrouter") return generateWithOpenRouter(params);
   if (provider === "nvidia")  return generateWithNvidia(params);
   if (provider === "groq")    return generateWithGroq(params);
@@ -39,15 +41,14 @@ async function generateWithOpenRouter(params: {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error("OPENROUTER_API_KEY not set");
 
-  // Try free models in priority order, fall back on rate-limit
   const models = [
-    process.env.OPENROUTER_MODEL,                          // user override
-    "meta-llama/llama-3.3-70b-instruct:free",             // best quality, sometimes rate-limited
-    "google/gemma-4-31b-it:free",                          // Google Gemma 4
-    "google/gemma-4-26b-a4b-it:free",                     // smaller Gemma 4
-    "poolside/laguna-m.1:free",                            // Poolside code model
-    "nvidia/nemotron-nano-12b-v2-vl:free",                // NVIDIA
-    "tencent/hy3-preview:free",                            // reasoning model (slower)
+    process.env.OPENROUTER_MODEL,
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "poolside/laguna-m.1:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+    "tencent/hy3-preview:free",
   ].filter(Boolean) as string[];
 
   let lastError = "";
@@ -74,7 +75,6 @@ async function generateWithOpenRouter(params: {
       if (res.status === 429) { lastError = `${model} rate-limited`; continue; }
       if (!res.ok) { lastError = `${model} error ${res.status}`; continue; }
       const data = await res.json();
-      // Some models (reasoning/thinking) put content in reasoning field when tokens are short
       const msg = data.choices?.[0]?.message;
       const text = msg?.content || msg?.reasoning;
       if (!text) { lastError = `${model} returned no text`; continue; }

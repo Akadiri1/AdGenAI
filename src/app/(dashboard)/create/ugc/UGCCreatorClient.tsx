@@ -323,12 +323,32 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                         multiple
                         accept="image/*"
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            const newImages = Array.from(e.target.files).map(f => URL.createObjectURL(f));
-                            const combined = [...productImages, ...newImages].slice(0, 5);
-                            setProductImages(combined);
-                            if (productImages.length + newImages.length > 5) {
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            const remaining = 5 - productImages.length;
+                            const files = Array.from(e.target.files).slice(0, remaining);
+                            
+                            const { useToast } = await import("@/components/ui/Toast");
+                            const { compressImage } = await import("@/lib/compressImage");
+
+                            for (const f of files) {
+                              try {
+                                const compressed = await compressImage(f, 2.5);
+                                const fd = new FormData();
+                                fd.append("file", compressed);
+                                fd.append("folder", "products");
+                                
+                                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                                
+                                setProductImages(prev => [...prev, data.url]);
+                              } catch (err) {
+                                toastError((err as Error).message);
+                              }
+                            }
+
+                            if (productImages.length + files.length > 5) {
                               toastError("You can only upload up to 5 images.");
                             }
                           }

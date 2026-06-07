@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     q: "Is there a free plan?",
-    a: "Yes — Free generates AI scripts and scene prompts you can copy into Kling, Veo, Sora, or any other AI video tool. No video rendering on Famousli at the free tier. No credit card required.",
+    a: "Yes — Free generates AI scripts and scene prompts you can copy into any other AI video tool. No video rendering on Famousli at the free tier. No credit card required.",
   },
   {
     q: "What payment methods do you accept?",

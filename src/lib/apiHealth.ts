@@ -1,11 +1,12 @@
 import { prisma } from "./prisma";
 
-export async function logApiHealth(name: string, success: boolean, error?: string) {
+export async function logApiHealth(name: string, success: boolean, error?: string, tokens?: number) {
   try {
     await prisma.apiProvider.upsert({
       where: { name },
       update: {
         lastUsedAt: new Date(),
+        ...(tokens ? { tokensUsed: { increment: tokens } } : {}),
         ...(success 
           ? { lastSuccessAt: new Date(), status: "online", errorCount: 0, lastError: null }
           : { status: "degraded", lastError: error, errorCount: { increment: 1 } }
@@ -17,6 +18,7 @@ export async function logApiHealth(name: string, success: boolean, error?: strin
         lastSuccessAt: success ? new Date() : null,
         lastError: error,
         errorCount: success ? 0 : 1,
+        tokensUsed: tokens || 0,
       },
     });
 

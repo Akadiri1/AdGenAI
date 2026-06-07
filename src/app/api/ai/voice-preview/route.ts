@@ -1,9 +1,8 @@
 /**
  * POST /api/ai/voice-preview
- * Returns audio as a base64 data URL so the browser can play it instantly
- * without any storage dependency (no R2, no localhost URL mismatch).
+ * Returns audio as a base64 data URL so the browser can play it instantly.
  *
- * Cost: ~60 chars × $0.10/1K ElevenLabs = $0.006 per click.
+ * Priority: Qwen (New Default) → ElevenLabs → Replicate
  */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -12,11 +11,11 @@ import { z } from "zod";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { isElevenLabsConfigured } from "@/lib/elevenlabs";
 import { isReplicateConfigured } from "@/lib/replicate";
+import { generateQwenSpeech, isQwenConfigured } from "@/lib/qwen";
 
 const bodySchema = z.object({
   voiceId: z.string().min(3).max(100).optional(),
   gender: z.enum(["male", "female"]).optional(),
-  // Voice settings from the sliders (app range: speed 0.5–2.0, others 0–1)
   speed:             z.number().min(0.5).max(2.0).optional(),
   stability:         z.number().min(0).max(1).optional(),
   similarity:        z.number().min(0).max(1).optional(),
@@ -41,47 +40,74 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (isElevenLabsConfigured()) {
-      const apiKey = process.env.ELEVENLABS_API_KEY!;
-      const voiceId = body.voiceId ?? (body.gender === "male" ? "nPczCjzI2devNBz1zQrb" : "EXAVITQu4vr4xnSDxMaL");
+    // 1. QWEN CLOUD (Primary)
+    if (isQwenConfigured()) {
+      try {
+        // If voiceId looks like an ElevenLabs ID (20 chars alphanumeric), 
+        // ignore it and use Qwen defaults for this provider.
+        const isExternalId = body.voiceId && /^[a-zA-Z0-9]{15,}$/.test(body.voiceId);
+        const voice = (isExternalId || !body.voiceId) 
+          ? (body.gender === "male" ? "Ethan" : "Cherry")
+          : body.voiceId;
 
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: "POST",
-        headers: {
-          "xi-api-key": apiKey,
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({
+        console.log(`[voice-preview] Using Qwen voice: ${voice} (Original: ${body.voiceId})`);
+        
+        const audioUrl = await generateQwenSpeech({
           text: PREVIEW_PHRASE,
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability:        body.stability         ?? 0.5,
-            similarity_boost: body.similarity        ?? 0.75,
-            style:            body.styleExaggeration ?? 0.1,
-            // ElevenLabs speed is clamped to 0.7–1.2 regardless of app slider range
-            speed: Math.min(1.2, Math.max(0.7, body.speed ?? 1.0)),
-            use_speaker_boost: true,
-          },
-        }),
-      });
+          voice,
+          speed: body.speed,
+        });
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`ElevenLabs ${res.status}: ${err.slice(0, 200)}`);
+        const res = await fetch(audioUrl);
+        const buf = Buffer.from(await res.arrayBuffer());
+        const dataUrl = `data:audio/mpeg;base64,${buf.toString("base64")}`;
+        return NextResponse.json({ url: dataUrl, provider: "qwen" });
+      } catch (err) {
+        console.warn("[voice-preview] Qwen failed, falling back:", (err as Error).message);
       }
-
-      const buf = Buffer.from(await res.arrayBuffer());
-      const dataUrl = `data:audio/mpeg;base64,${buf.toString("base64")}`;
-      return NextResponse.json({ url: dataUrl, provider: "elevenlabs" });
     }
 
+    // 2. ELEVENLABS (Secondary - currently restricted for Free tier)
+    if (isElevenLabsConfigured()) {
+      try {
+        const apiKey = process.env.ELEVENLABS_API_KEY!;
+        const voiceId = body.voiceId ?? (body.gender === "male" ? "nPczCjzI2devNBz1zQrb" : "EXAVITQu4vr4xnSDxMaL");
+
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: "POST",
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
+            Accept: "audio/mpeg",
+          },
+          body: JSON.stringify({
+            text: PREVIEW_PHRASE,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability:        body.stability         ?? 0.5,
+              similarity_boost: body.similarity        ?? 0.75,
+              style:            body.styleExaggeration ?? 0.1,
+              speed: Math.min(1.2, Math.max(0.7, body.speed ?? 1.0)),
+              use_speaker_boost: true,
+            },
+          }),
+        });
+
+        if (res.ok) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          const dataUrl = `data:audio/mpeg;base64,${buf.toString("base64")}`;
+          return NextResponse.json({ url: dataUrl, provider: "elevenlabs" });
+        }
+      } catch (err) {
+        console.warn("[voice-preview] ElevenLabs failed, falling back:", (err as Error).message);
+      }
+    }
+
+    // 3. REPLICATE (Final Fallback)
     if (isReplicateConfigured()) {
-      // Kokoro fallback — returns a URL from Replicate (publicly accessible temp URL)
       const { generateVoiceover } = await import("@/lib/replicate");
       const voice = body.gender === "male" ? "am_michael" : "af_bella";
       const audioUrl = await generateVoiceover({ text: PREVIEW_PHRASE, voice });
-      // Fetch and convert to data URL so browser doesn't face CORS issues
       const res = await fetch(audioUrl);
       const buf = Buffer.from(await res.arrayBuffer());
       const dataUrl = `data:audio/mpeg;base64,${buf.toString("base64")}`;

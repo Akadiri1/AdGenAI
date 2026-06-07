@@ -50,6 +50,7 @@ export function SceneEditor({ adId }: { adId: string }) {
   const [refining, setRefining] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const isDraft = adStatus === "DRAFT";
 
@@ -164,6 +165,32 @@ export function SceneEditor({ adId }: { adId: string }) {
     }
   }
 
+  async function rerenderAll() {
+    const ok = await confirm({
+      title: "Rerender all scenes?",
+      message: "This will reset all scenes and allow you to generate them again. You will be charged credits once you hit Start.",
+      confirmLabel: "Reset to Draft",
+      danger: true,
+    });
+    if (!ok) return;
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/ads/${adId}/rerender-all`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Reset failed");
+      success("Ad reset to draft. Adjust prompts and hit Start when ready.");
+      setAdStatus("DRAFT");
+      // Refresh scenes
+      const scenesRes = await fetch(`/api/ads/${adId}/scenes`);
+      const scenesData = await scenesRes.json();
+      setScenes(scenesData.scenes ?? []);
+    } catch (err) {
+      error((err as Error).message);
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-text-secondary" /></div>;
   }
@@ -182,7 +209,7 @@ export function SceneEditor({ adId }: { adId: string }) {
   return (
     <div className="space-y-4">
       {/* Confirm & Start CTA — sticky at top of scene list when DRAFT */}
-      {isDraft && (
+      {isDraft ? (
         <div className="sticky top-2 z-20 rounded-2xl border-2 border-primary/30 bg-gradient-to-r from-primary/10 to-warning/10 p-4 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-text-primary">
@@ -203,7 +230,19 @@ export function SceneEditor({ adId }: { adId: string }) {
             </button>
           </div>
         </div>
+      ) : adStatus !== "GENERATING" && adStatus !== "STITCHING" && adStatus !== "MIXING_AUDIO" && adStatus !== "CAPTIONING" && (
+        <div className="flex justify-end">
+          <button
+            onClick={rerenderAll}
+            disabled={resetting}
+            className="flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold text-text-secondary hover:bg-bg-secondary transition-all"
+          >
+            {resetting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+            Rerender all scenes
+          </button>
+        </div>
       )}
+
       {adStatus === "GENERATING" && (
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-accent">

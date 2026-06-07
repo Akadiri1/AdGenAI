@@ -17,6 +17,7 @@ export async function GET(req: Request) {
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       take: limit,
+      select: { id: true, action: true, resource: true, metadata: true, createdAt: true },
     }),
     prisma.ad.findMany({
       where: { userId: session.user.id },
@@ -28,6 +29,7 @@ export async function GET(req: Request) {
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       take: 10,
+      select: { id: true, type: true, amount: true, status: true, provider: true, createdAt: true },
     }),
   ]);
 

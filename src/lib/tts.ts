@@ -2,7 +2,8 @@
  * TTS abstraction.
  * Picks the best available provider:
  *   1. ElevenLabs (premium quality, supports voice settings + 29 languages) — preferred
- *   2. Kokoro on Replicate (free-tier friendly, English only, no voice cloning)
+ *   2. Qwen TTS (high quality, International DashScope)
+ *   3. Kokoro on Replicate (free-tier friendly, English only, no voice cloning)
  */
 import {
   isElevenLabsConfigured,
@@ -11,6 +12,7 @@ import {
   type ElevenLabsVoiceSettings,
 } from "@/lib/elevenlabs";
 import { generateVoiceover as kokoroVoice, pickVoiceForActor as kokoroPickVoice } from "@/lib/replicate";
+import { generateQwenSpeech, isQwenConfigured } from "@/lib/qwen";
 
 export type VoiceoverInput = {
   text: string;
@@ -29,12 +31,12 @@ export type VoiceoverInput = {
 
 export type VoiceoverResult = {
   audioUrl: string;
-  provider: "elevenlabs" | "kokoro";
+  provider: "elevenlabs" | "qwen" | "kokoro";
   voiceName: string;
 };
 
 export async function generateVoiceover(input: VoiceoverInput): Promise<VoiceoverResult> {
-  // Premium path: ElevenLabs
+  // 1. ElevenLabs (Premium)
   if (isElevenLabsConfigured()) {
     const picked = input.settings?.voiceId
       ? { id: input.settings.voiceId, name: input.settings.voiceId }
@@ -44,7 +46,6 @@ export async function generateVoiceover(input: VoiceoverInput): Promise<Voiceove
           vibe: input.actor?.vibe,
         });
 
-    // Map our 0-1 sliders into ElevenLabs ranges
     const elSettings: ElevenLabsVoiceSettings = {
       stability: clamp(input.settings?.stability ?? 0.5, 0, 1),
       similarity_boost: clamp(input.settings?.similarity ?? 0.75, 0, 1),
@@ -61,7 +62,24 @@ export async function generateVoiceover(input: VoiceoverInput): Promise<Voiceove
     return { audioUrl, provider: "elevenlabs", voiceName: picked.name };
   }
 
-  // Fallback: Kokoro (free-tier, English only)
+  // 2. Qwen TTS (DashScope International)
+  if (isQwenConfigured()) {
+    const defaultVoice = input.actor?.gender === "male" ? "Ethan" : "Cherry";
+    const isExternalId = input.settings?.voiceId && /^[a-zA-Z0-9]{15,}$/.test(input.settings.voiceId);
+    
+    const voice = (isExternalId || !input.settings?.voiceId) 
+      ? defaultVoice 
+      : input.settings.voiceId;
+
+    const audioUrl = await generateQwenSpeech({
+      text: input.text,
+      voice,
+      speed: input.settings?.speed,
+    });
+    return { audioUrl, provider: "qwen", voiceName: voice };
+  }
+
+  // 3. Kokoro (Fallback)
   const voice = kokoroPickVoice(input.actor?.gender ?? null);
   const audioUrl = await kokoroVoice({
     text: input.text,

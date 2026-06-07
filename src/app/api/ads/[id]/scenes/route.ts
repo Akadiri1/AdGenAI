@@ -10,6 +10,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getKlingClipStatus, mixBackgroundAudio, addAutoCaptions } from "@/lib/replicate";
+import { getQwenVideoStatus } from "@/lib/qwen";
 import { getPrediction, createPrediction } from "@/lib/replicate-internal";
 import { uploadToStorage } from "@/lib/storage";
 
@@ -32,21 +33,42 @@ export async function GET(
   const updated = await Promise.all(
     ad.scenes.map(async (s) => {
 
-      // ── 1. Poll Kling video generation ──────────────────────────────────
+      // ── 1. Poll video generation ────────────────────────────────────────
       if (s.status === "GENERATING_VIDEO" && s.klingTaskId) {
         try {
-          const result = await getKlingClipStatus(s.klingTaskId);
+          let result;
+          try {
+            // Try Qwen status first
+            result = await getQwenVideoStatus(s.klingTaskId);
+          } catch (e) {
+            // Fallback to Kling
+            result = await getKlingClipStatus(s.klingTaskId);
+          }
+
           if (result.status === "succeeded" && result.videoUrl) {
             let permanentUrl = result.videoUrl;
-            try {
-              const buf = await fetch(result.videoUrl).then((r) => r.arrayBuffer());
-              permanentUrl = await uploadToStorage({
-                bytes: Buffer.from(buf),
-                contentType: "video/mp4",
-                extension: "mp4",
-                folder: "ads/scenes",
-              });
-            } catch { /* keep temp URL */ }
+            
+            // ── IMPORTANT: Only permanentize if using EXTERNAL storage (R2).
+            // If we are in local dev and R2 isn't set, uploadToStorage returns a 'localhost' URL.
+            // Cloud workers (like Lip Sync or Stitching) CANNOT reach your localhost.
+            // We must keep the provider's original public URL so they can fetch it.
+            const { isStorageConfigured } = await import("@/lib/storage");
+            if (isStorageConfigured()) {
+              try {
+                const buf = await fetch(result.videoUrl).then((r) => r.arrayBuffer());
+                permanentUrl = await uploadToStorage({
+                  bytes: Buffer.from(buf),
+                  contentType: "video/mp4",
+                  extension: "mp4",
+                  folder: "ads/scenes",
+                });
+              } catch (e) { 
+                console.warn("[scenes] Failed to upload to R2, keeping provider URL:", (e as Error).message);
+              }
+            } else {
+              console.log("[scenes] Local dev detected. Keeping original public URL for cloud workers:", result.videoUrl);
+            }
+
             return prisma.scene.update({
               where: { id: s.id },
               data: { status: "READY", videoClipUrl: permanentUrl },

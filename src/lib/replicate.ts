@@ -8,6 +8,8 @@
  * Replicate uses an async pattern: create prediction → poll status → fetch URL.
  */
 
+import { logApiHealth } from "./apiHealth";
+
 const REPLICATE_API = "https://api.replicate.com/v1";
 
 export function isReplicateConfigured(): boolean {
@@ -43,9 +45,13 @@ async function createPrediction(model: string, version: string | undefined, inpu
   // Retry up to 3× on 429 rate-limit with exponential backoff
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await callReplicate(path, { method: "POST", body: JSON.stringify(body) });
-    if (res.ok) return (await res.json()) as Prediction;
+    if (res.ok) {
+      await logApiHealth("replicate", true);
+      return (await res.json()) as Prediction;
+    }
     const text = await res.text();
     if (res.status === 429) {
+      await logApiHealth("replicate", false, "Rate limited");
       const retryAfter = (() => { try { return JSON.parse(text).retry_after ?? 15; } catch { return 15; } })();
       if (attempt < 2) {
         await new Promise((r) => setTimeout(r, (retryAfter + 2) * 1000));
@@ -53,6 +59,7 @@ async function createPrediction(model: string, version: string | undefined, inpu
       }
       throw new Error(`Replicate rate limited. Add credit at https://replicate.com/account/billing to increase your limit. (${text.slice(0, 200)})`);
     }
+    await logApiHealth("replicate", false, `HTTP ${res.status}: ${text}`);
     throw new Error(`Replicate create failed: ${res.status} ${text}`);
   }
   throw new Error("Replicate create failed after 3 attempts");
@@ -280,8 +287,6 @@ export async function mixBackgroundAudio(videoUrl: string, bgAudioUrl: string): 
   if (!isReplicateConfigured()) throw new Error("REPLICATE_API_TOKEN not set");
   
   // We use `nateraw/ffmpeg` or similar generic ffmpeg wrapper on Replicate.
-  // Model version for a reliable ffmpeg node: 8c8872fdbcc047fa5ec8747f259f9cbfa9c30d9703411dbb5b9e0f6b4d36efec (just an example of `cjwbw/ffmpeg` or similar).
-  // Actually, we'll use `lucataco/ffmpeg`
   const prediction = await createPrediction(
     "lucataco/ffmpeg",
     undefined,

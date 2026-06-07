@@ -87,7 +87,7 @@ model AuditLog {
   userAgent String?
   createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([action])
   @@index([createdAt])
 }
@@ -139,13 +139,14 @@ model ApiKey {
 
 model ApiProvider {
   id            String   @id @default(cuid())
-  name          String   @unique // siliconflow, fal, kling, magic
+  name          String   @unique // qwen, replicate, etc.
   status        String   @default("online") // online, degraded, offline
   lastUsedAt    DateTime @default(now())
   lastSuccessAt DateTime?
   lastError     String?
   errorCount    Int      @default(0)
   priority      Int      @default(1)
+  tokensUsed    Int      @default(0)
   updatedAt     DateTime @updatedAt
 }
 
@@ -205,6 +206,7 @@ model Ad {
   updatedAt       DateTime  @updatedAt
 
   @@index([userId, status])
+  @@index([userId, createdAt])
   @@index([scheduledAt])
   @@index([campaignId])
   @@index([actorId])
@@ -346,7 +348,7 @@ model Transaction {
   providerId String?
   createdAt  DateTime @default(now())
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([providerId])
 }
 

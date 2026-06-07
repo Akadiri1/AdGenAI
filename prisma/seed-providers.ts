@@ -3,12 +3,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   const providers = [
-    { name: "groq", priority: 1, status: "online" },
-    { name: "siliconflow", priority: 2, status: "online" },
-    { name: "replicate", priority: 3, status: "online" },
-    { name: "elevenlabs", priority: 4, status: "online" },
-    { name: "stripe", priority: 5, status: "online" },
-    { name: "paystack", priority: 6, status: "online" }
+    { name: "qwen", priority: 1, status: "online" },
+    { name: "replicate", priority: 2, status: "online" },
   ];
 
   for (const p of providers) {
