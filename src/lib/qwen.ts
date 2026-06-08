@@ -59,6 +59,20 @@ export async function generateQwenText(params: {
   return text.trim();
 }
 
+/**
+ * Use Qwen Text to expand a short video prompt into a rich cinematic description.
+ */
+export async function extendPromptWithQwen(prompt: string): Promise<string> {
+  const system = "You are an expert AI video director. Expand the user's short prompt into a detailed, cinematic description including lighting, camera movement, and textures. Keep it under 200 words.";
+  try {
+    const extended = await generateQwenText({ system, prompt: `Expand this for a high-quality video: ${prompt}` });
+    return extended;
+  } catch (e) {
+    console.warn("[Qwen] Manual prompt extension failed, using original:", (e as Error).message);
+    return prompt;
+  }
+}
+
 // ── VIDEO GENERATION (WANX) ────────────────────────────────────────────────
 
 export async function generateQwenVideo(params: {
@@ -67,16 +81,29 @@ export async function generateQwenVideo(params: {
   duration?: 5 | 10;
   aspectRatio?: "9:16" | "16:9" | "1:1";
   model?: string;
+  promptExtend?: boolean;
 }): Promise<{ taskId: string }> {
   const key = process.env.QWEN_API_KEY;
   if (!key) throw new Error("QWEN_API_KEY not set");
 
-  const model = params.model ?? (params.imageUrl ? "wan2.1-i2v-plus" : "wan2.1-t2v-plus");
+  // Default to turbo for better reliability if plus is failing
+  const model = params.model ?? (params.imageUrl ? "wan2.1-i2v-plus" : "wan2.1-t2v-turbo");
   const resolutionMap = {
     "9:16": "720*1280",
     "16:9": "1280*720",
     "1:1": "960*960"
   };
+
+  let finalPrompt = params.prompt;
+  let useInternalExtend = params.promptExtend ?? true;
+
+  // If prompt is short and we want extension, but suspect internal rewriter is broken,
+  // we do it manually.
+  if (useInternalExtend && finalPrompt.length < 100) {
+    console.log("[Qwen] Performing manual prompt extension...");
+    finalPrompt = await extendPromptWithQwen(finalPrompt);
+    useInternalExtend = false; // Disable internal since we did it manually
+  }
 
   const res = await fetch(`${DASHSCOPE_INTL_BASE}/services/aigc/video-generation/video-synthesis`, {
     method: "POST",
@@ -88,13 +115,13 @@ export async function generateQwenVideo(params: {
     body: JSON.stringify({
       model,
       input: {
-        prompt: params.prompt,
+        prompt: finalPrompt,
         ...(params.imageUrl && { img_url: params.imageUrl })
       },
       parameters: {
         resolution: resolutionMap[params.aspectRatio ?? "9:16"],
         duration: params.duration ?? 5,
-        prompt_extend: true
+        prompt_extend: useInternalExtend
       }
     }),
   });
@@ -149,9 +176,22 @@ export async function generateQwenSpeech(params: {
   text: string;
   voice?: string;
   speed?: number;
+  instructions?: string;
+  voiceUrl?: string;
 }): Promise<string> {
   const key = process.env.QWEN_API_KEY;
   if (!key) throw new Error("QWEN_API_KEY not set");
+
+  // Determine model based on inputs
+  // - If voiceUrl is provided, use Voice Cloning (vc)
+  // - If instructions are provided, use Voice Design (instruct)
+  // - Otherwise use standard flash
+  let model = "qwen3-tts-flash";
+  if (params.voiceUrl) {
+    model = "qwen3-tts-vc-flash";
+  } else if (params.instructions) {
+    model = "qwen3-tts-instruct-flash";
+  }
 
   // DashScope TTS v2 (CosyVoice based)
   const res = await fetch(`${DASHSCOPE_INTL_BASE}/services/aigc/multimodal-generation/generation`, {
@@ -161,12 +201,16 @@ export async function generateQwenSpeech(params: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "qwen3-tts-flash",
-      input: { text: params.text },
+      model,
+      input: { 
+        text: params.text,
+        ...(params.voiceUrl && { voice_url: params.voiceUrl })
+      },
       parameters: {
         voice: params.voice ?? "Cherry",
         format: "mp3",
         speech_rate: params.speed ?? 1.0,
+        ...(params.instructions && { instructions: params.instructions })
       }
     }),
   });

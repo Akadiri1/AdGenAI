@@ -45,6 +45,8 @@ const bodySchema = z.object({
     stability: z.number().min(0).max(1).default(0.5),
     similarity: z.number().min(0).max(1).default(0.5),
     styleExaggeration: z.number().min(0).max(1).default(0.3),
+    voicePrompt: z.string().optional(),
+    voiceUrl: z.string().url().optional().or(z.literal("")),
   }).optional(),
 
   platforms: z.array(z.string()).min(1).default(["INSTAGRAM"]),

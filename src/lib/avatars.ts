@@ -86,6 +86,33 @@ export const AVATAR_LIBRARY: Avatar[] = [
     tags: ["confident", "casual", "streetwear"],
     voiceId: "nPczCjzI2devNBz1zQrb", // Brian — ElevenLabs
   },
+  // --- Nigerian Regional ---
+  {
+    id: "ava-ng-001",
+    name: "Aisha",
+    gender: "female",
+    age: "young",
+    situation: "studio",
+    ethnicity: "nigerian",
+    thumbnailUrl: "https://images.unsplash.com/photo-1523824921871-d6f1a15151f1?w=400&h=400&fit=crop&crop=faces",
+    isPro: true,
+    isHD: true,
+    tags: ["nigerian", "friendly", "entrepreneur"],
+    voiceId: "9Dbo4hEvXQ5l7MXGZFQA", // Olufunmilola (NG Female)
+  },
+  {
+    id: "ava-ng-011",
+    name: "Kwame",
+    gender: "male",
+    age: "young",
+    situation: "office",
+    ethnicity: "west-african",
+    thumbnailUrl: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=400&h=400&fit=crop&crop=faces",
+    isPro: true,
+    isHD: true,
+    tags: ["nigerian", "professional", "tech"],
+    voiceId: "8P18CIVcRlwP98FOjZDm", // Ola (NG Male)
+  },
 ];
 
 export type VoiceSettings = {
@@ -93,6 +120,8 @@ export type VoiceSettings = {
   stability: number;
   similarity: number;
   styleExaggeration: number;
+  voicePrompt?: string; // for Qwen Instruct / ElevenLabs design
+  voiceUrl?: string;    // for Qwen/ElevenLabs cloning
 };
 
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {

@@ -24,12 +24,17 @@ export type ElevenLabsVoiceSettings = {
 
 const DEFAULT_VOICES = {
   // Pre-built ElevenLabs voices — stable IDs that ship with every account
-  "female-warm":    { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },     // young female, conversational
-  "female-upbeat":  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily" },      // bright female
-  "female-mature":  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel" },    // calm female
-  "male-warm":      { id: "nPczCjzI2devNBz1zQrb", name: "Brian" },     // deep male
-  "male-friendly":  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam" },      // young male
-  "male-deep":      { id: "pqHfZKP75CvOlQylNhV4", name: "Bill" },      // older male
+  "female-warm":     { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },     // young female, conversational
+  "female-upbeat":   { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily" },      // bright female
+  "female-mature":   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel" },    // calm female
+  "male-warm":       { id: "nPczCjzI2devNBz1zQrb", name: "Brian" },     // deep male
+  "male-friendly":   { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam" },      // young male
+  "male-deep":       { id: "pqHfZKP75CvOlQylNhV4", name: "Bill" },      // older male
+
+  // Nigerian Community Voices (High Quality)
+  "female-ng":       { id: "9Dbo4hEvXQ5l7MXGZFQA", name: "Olufunmilola" }, // Nigerian Female
+  "male-ng-story":   { id: "8P18CIVcRlwP98FOjZDm", name: "Ola" },          // Nigerian Male
+  "male-ng-deep":    { id: "unqqMxNhRqWL4QxPGPFl", name: "AZ" },           // Deep Nigerian Male
 } as const;
 
 export type VoiceKey = keyof typeof DEFAULT_VOICES;
@@ -39,15 +44,23 @@ export function pickElevenLabsVoice(params: {
   gender?: string | null;
   age?: string | null;
   vibe?: string | null;
+  language?: string | null;
 }): { id: string; name: string; key: VoiceKey } {
   const isMale = params.gender === "male";
-  // Accept both simple ("young","senior") and DB-style ("young-adult","mature") age values
   const normalizedAge = params.age?.replace("young-adult", "young").replace("adult", "middle").replace("mature", "senior") ?? "";
   const isYoung = normalizedAge === "young";
   const vibe = (params.vibe ?? "").toLowerCase();
+  const isNigerian = vibe.includes("nigerian") || params.language === "yo" || params.language === "yo-NG" || params.language === "en-NG";
 
   let key: VoiceKey;
-  if (isMale) {
+
+  if (isNigerian) {
+    if (isMale) {
+      key = vibe.includes("deep") ? "male-ng-deep" : "male-ng-story";
+    } else {
+      key = "female-ng";
+    }
+  } else if (isMale) {
     if (normalizedAge === "senior" || vibe.includes("trust")) key = "male-deep";
     else if (isYoung || vibe.includes("energetic")) key = "male-friendly";
     else key = "male-warm";
@@ -56,7 +69,8 @@ export function pickElevenLabsVoice(params: {
     else if (vibe.includes("energetic") || vibe.includes("bold")) key = "female-upbeat";
     else key = "female-warm";
   }
-  const voice = DEFAULT_VOICES[key];
+
+  const voice = DEFAULT_VOICES[key] || DEFAULT_VOICES["female-warm"];
   return { id: voice.id, name: voice.name, key };
 }
 

@@ -23,6 +23,8 @@ export type VoiceoverInput = {
     similarity?: number;
     styleExaggeration?: number;
     voiceId?: string; // explicit override
+    voicePrompt?: string; // natural language description (Qwen Instruct)
+    voiceUrl?: string; // reference audio URL (Qwen Cloning)
   };
   /** Used for default voice selection when no voiceId set */
   actor?: { gender?: string | null; age?: string | null; vibe?: string | null };
@@ -44,6 +46,7 @@ export async function generateVoiceover(input: VoiceoverInput): Promise<Voiceove
           gender: input.actor?.gender,
           age: input.actor?.age,
           vibe: input.actor?.vibe,
+          language: input.language,
         });
 
     const elSettings: ElevenLabsVoiceSettings = {
@@ -71,10 +74,25 @@ export async function generateVoiceover(input: VoiceoverInput): Promise<Voiceove
       ? defaultVoice 
       : input.settings.voiceId;
 
+    // Handle Nigerian accent for Qwen if not explicitly overridden by voicePrompt/voiceUrl
+    let instructions = input.settings?.voicePrompt;
+    if (!instructions && !input.settings?.voiceUrl) {
+      const isNigerian = (input.actor?.vibe?.toLowerCase().includes("nigerian")) || 
+                         (input.language === "en-NG") || 
+                         (input.language === "yo-NG");
+      
+      if (isNigerian) {
+        const gender = input.actor?.gender === "male" ? "male" : "female";
+        instructions = `A professional ${gender} voice with a natural Nigerian accent, speaking clearly and warmly.`;
+      }
+    }
+
     const audioUrl = await generateQwenSpeech({
       text: input.text,
       voice,
       speed: input.settings?.speed,
+      instructions,
+      voiceUrl: input.settings?.voiceUrl,
     });
     return { audioUrl, provider: "qwen", voiceName: voice };
   }

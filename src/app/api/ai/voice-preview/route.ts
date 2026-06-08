@@ -20,6 +20,8 @@ const bodySchema = z.object({
   stability:         z.number().min(0).max(1).optional(),
   similarity:        z.number().min(0).max(1).optional(),
   styleExaggeration: z.number().min(0).max(1).optional(),
+  voicePrompt:       z.string().optional(),
+  voiceUrl:          z.string().url().optional().or(z.literal("")),
 });
 
 const PREVIEW_PHRASE =
@@ -35,7 +37,8 @@ export async function POST(req: Request) {
   let body: z.infer<typeof bodySchema>;
   try {
     body = bodySchema.parse(await req.json());
-  } catch {
+  } catch (err) {
+    console.error("[voice-preview] Validation error:", err);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
@@ -50,12 +53,23 @@ export async function POST(req: Request) {
           ? (body.gender === "male" ? "Ethan" : "Cherry")
           : body.voiceId;
 
+        let instructions = body.voicePrompt;
+        if (!instructions && !body.voiceUrl) {
+          // Check if it's a known Nigerian voice ID or if gender matches Nigerian actors
+          const isNigerianId = body.voiceId === "9Dbo4hEvXQ5l7MXGZFQA" || body.voiceId === "8P18CIVcRlwP98FOjZDm";
+          if (isNigerianId) {
+            instructions = `A professional ${body.gender ?? "female"} voice with a natural Nigerian accent, speaking clearly and warmly.`;
+          }
+        }
+
         console.log(`[voice-preview] Using Qwen voice: ${voice} (Original: ${body.voiceId})`);
         
         const audioUrl = await generateQwenSpeech({
           text: PREVIEW_PHRASE,
           voice,
           speed: body.speed,
+          instructions,
+          voiceUrl: body.voiceUrl || undefined,
         });
 
         const res = await fetch(audioUrl);

@@ -75,6 +75,7 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
   const [customActorImage, setCustomActorImage] = useState("");
   const [customActorGender, setCustomActorGender] = useState<"female" | "male">("female");
   const [uploadingActor, setUploadingActor] = useState(false);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const [previewingVoice, setPreviewingVoice] = useState(false);
@@ -115,6 +116,8 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           stability:         voiceSettings.stability,
           similarity:        voiceSettings.similarity,
           styleExaggeration: voiceSettings.styleExaggeration,
+          voicePrompt:       voiceSettings.voicePrompt,
+          voiceUrl:          voiceSettings.voiceUrl,
         }),
       });
       const data = await res.json();
@@ -153,7 +156,12 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
           visualInstructions: visualInstructions || undefined,
           backgroundMusic,
           autoCaptions,
-          voiceSettings: { ...voiceSettings, voiceId: selectedVoiceId },
+          voiceSettings: { 
+            ...voiceSettings, 
+            voiceId: selectedVoiceId,
+            voiceUrl: voiceSettings.voiceUrl || undefined,
+            voicePrompt: voiceSettings.voicePrompt || undefined,
+          },
           aspectRatio,
           targetSeconds,
         }),
@@ -455,10 +463,75 @@ export function UGCCreatorClient({ isFree = false }: { isFree?: boolean } = {}) 
                 
                 {showAdvancedVoice && (
                   <div className="mt-4 space-y-6 bg-bg-secondary p-6 py-8 rounded-[24px]">
-                    <VoiceSlider label="Speed" value={voiceSettings.speed} min={0.5} max={2.0} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, speed: v })} />
-                    <VoiceSlider label="Stability" value={voiceSettings.stability} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, stability: v })} />
-                    <VoiceSlider label="Similarity" value={voiceSettings.similarity} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, similarity: v })} />
-                    <VoiceSlider label="Emotion" value={voiceSettings.styleExaggeration} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, styleExaggeration: v })} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <VoiceSlider label="Speed" value={voiceSettings.speed} min={0.5} max={2.0} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, speed: v })} />
+                      <VoiceSlider label="Stability" value={voiceSettings.stability} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, stability: v })} />
+                      <VoiceSlider label="Similarity" value={voiceSettings.similarity} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, similarity: v })} />
+                      <VoiceSlider label="Emotion" value={voiceSettings.styleExaggeration} min={0} max={1} step={0.05} onChange={(v) => setVoiceSettings({ ...voiceSettings, styleExaggeration: v })} />
+                    </div>
+
+                    <div className="border-t border-black/5 pt-6 space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2 block">Voice Accent / Description</label>
+                        <input 
+                          type="text"
+                          value={voiceSettings.voicePrompt || ""}
+                          onChange={(e) => setVoiceSettings({ ...voiceSettings, voicePrompt: e.target.value })}
+                          placeholder="e.g. A natural Nigerian accent, warm and professional"
+                          className="w-full bg-white border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2 block">Clone Your Voice (10-30s Sample)</label>
+                        <div className="relative group">
+                          <input
+                            type="file"
+                            accept="audio/mp3,audio/wav,audio/mpeg"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setUploadingVoice(true);
+                              try {
+                                const fd = new FormData();
+                                fd.append("file", file);
+                                fd.append("folder", "voices");
+                                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                                setVoiceSettings({ ...voiceSettings, voiceUrl: data.url });
+                                success("Voice sample uploaded successfully!");
+                              } catch (err) {
+                                toastError((err as Error).message);
+                              } finally {
+                                setUploadingVoice(false);
+                              }
+                            }}
+                          />
+                          <div className={`flex items-center justify-between gap-3 p-4 rounded-xl border-2 border-dashed transition-all ${voiceSettings.voiceUrl ? "border-success/50 bg-success/5" : "border-black/10 bg-white hover:border-primary/50"}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${voiceSettings.voiceUrl ? "bg-success/20 text-success" : "bg-primary/10 text-primary"}`}>
+                                {uploadingVoice ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-bold text-text-primary">
+                                  {voiceSettings.voiceUrl ? "Voice Loaded" : "Upload Voice Sample"}
+                                </p>
+                                <p className="text-[10px] text-text-secondary">
+                                  {voiceSettings.voiceUrl ? "Using your custom voice" : "MP3 or WAV, clear recording"}
+                                </p>
+                              </div>
+                            </div>
+                            {voiceSettings.voiceUrl && (
+                              <button onClick={(e) => { e.stopPropagation(); setVoiceSettings({ ...voiceSettings, voiceUrl: undefined }); }} className="p-2 hover:bg-black/5 rounded-full text-text-secondary">
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
