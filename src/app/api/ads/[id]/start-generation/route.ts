@@ -76,7 +76,6 @@ export async function POST(
     await deductCredits(userId, cost);
     await prisma.ad.update({ where: { id }, data: { status: "GENERATING" } });
 
-    const productImages = stringToImages(ad.productImages);
     const aspectRatio = (ad.aspectRatio as "9:16" | "1:1" | "16:9") ?? "9:16";
     let actorImageUrl = ad.actor!.imageUrl;
 

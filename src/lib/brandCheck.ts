@@ -1,4 +1,46 @@
 import { isStorageConfigured } from "./storage";
+import { prisma } from "./prisma";
+
+/**
+ * Checks if a user has completed their brand kit/business profile.
+ */
+export async function checkBrandKit(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      businessName: true,
+      businessDescription: true,
+      businessIndustry: true,
+      targetAudience: true,
+      brandVoice: true,
+      brandColors: true,
+    },
+  });
+
+  if (!user) return { complete: false, missing: ["User not found"], percentage: 0 };
+
+  const fields = [
+    { key: "businessName", label: "Business Name" },
+    { key: "businessDescription", label: "Business Description" },
+    { key: "businessIndustry", label: "Industry" },
+    { key: "targetAudience", label: "Target Audience" },
+    { key: "brandVoice", label: "Brand Voice" },
+    { key: "brandColors", label: "Brand Colors" },
+  ];
+
+  const missing = fields
+    .filter((f) => !user[f.key as keyof typeof user])
+    .map((f) => f.label);
+
+  const completeCount = fields.length - missing.length;
+  const percentage = Math.round((completeCount / fields.length) * 100);
+
+  return {
+    complete: missing.length === 0,
+    missing,
+    percentage,
+  };
+}
 
 /**
  * Checks if a URL is likely unreachable by external AI providers (Replicate, Kling, Qwen).
