@@ -30,12 +30,14 @@ export type Avatar = {
   };
 };
 
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+
 // PORTRAIT_OVERRIDES_START
 // FLUX-generated UGC-style portraits — selfie/creator style, not stock photos
 const PORTRAIT_OVERRIDES: Record<string, string> = {
-  "ava-001": "/actors/ava-001.png",
-  "ava-003": "/actors/ava-003.png",
-  "ava-011": "/actors/ava-011.png",
+  "ava-001": `${BASE_URL}/actors/ava-001.png`,
+  "ava-003": `${BASE_URL}/actors/ava-003.png`,
+  "ava-011": `${BASE_URL}/actors/ava-011.png`,
 };
 // PORTRAIT_OVERRIDES_END
 

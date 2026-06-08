@@ -14,6 +14,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isReplicateConfigured, KLING_VOICES } from "@/lib/replicate";
+import { isQwenConfigured } from "@/lib/qwen";
 import { uploadToStorage } from "@/lib/storage";
 import { checkCredits, deductCredits } from "@/lib/credits";
 import { generateVoiceover } from "@/lib/tts";
@@ -128,17 +129,23 @@ export async function POST(
         console.warn("[finalize] TTS failed, will use text lipsync:", (ttsErr as Error).message);
       }
 
-      // 2. Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
-      const { createPrediction } = await import("@/lib/replicate-internal");
-      const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
-      if (audioUrl) {
-        input.audio_file = audioUrl;
+      // 2. Lip Sync
+      if (!isReplicateConfigured()) {
+        // Skip lip sync, just copy the URL so UI knows it's done
+        await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
       } else {
-        input.text = spokenText;
-        input.voice_id = klingVoiceId;
+        // Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
+        const { createPrediction } = await import("@/lib/replicate-internal");
+        const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
+        if (audioUrl) {
+          input.audio_file = audioUrl;
+        } else {
+          input.text = spokenText;
+          input.voice_id = klingVoiceId;
+        }
+        const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
+        await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
       }
-      const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
-      await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
 
     } catch (err) {
       console.error(`[finalize] Scene ${scene.sceneNumber} failed:`, (err as Error).message);

@@ -138,7 +138,10 @@ export function VideoStitcher({ clips, adId }: Props) {
       {busy && (
         <div className="space-y-1">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-secondary">
-            <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div 
+              className="h-full bg-primary transition-all duration-500 animate-shimmer" 
+              style={{ width: `${progress}%` }} 
+            />
           </div>
           <p className="text-[10px] text-text-secondary text-center">
             {state === "loading-ffmpeg" && "First time only — cached after this"}

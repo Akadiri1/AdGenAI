@@ -1,56 +1,47 @@
-import { prisma } from "@/lib/prisma";
+import { isStorageConfigured } from "./storage";
 
-export type BrandCheckResult = {
-  complete: boolean;
-  missing: string[];
-  percentage: number;
-};
-
-const REQUIRED_FIELDS = [
-  { key: "businessName", label: "Business name" },
-  { key: "businessIndustry", label: "Industry" },
-  { key: "businessDescription", label: "Business description" },
-  { key: "targetAudience", label: "Target audience" },
-] as const;
-
-const OPTIONAL_FIELDS = [
-  { key: "businessType", label: "Business type" },
-  { key: "brandTagline", label: "Tagline" },
-  { key: "brandVoice", label: "Brand voice" },
-  { key: "brandLogo", label: "Logo" },
-] as const;
-
-export async function checkBrandKit(userId: string): Promise<BrandCheckResult> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      businessName: true,
-      businessType: true,
-      businessIndustry: true,
-      businessDescription: true,
-      targetAudience: true,
-      brandTagline: true,
-      brandVoice: true,
-      brandLogo: true,
-    },
-  });
-
-  if (!user) return { complete: false, missing: ["User not found"], percentage: 0 };
-
-  const record = user as Record<string, string | null>;
-  const missing: string[] = [];
-
-  for (const f of REQUIRED_FIELDS) {
-    if (!record[f.key]?.trim()) missing.push(f.label);
+/**
+ * Checks if a URL is likely unreachable by external AI providers (Replicate, Kling, Qwen).
+ * Returns true if the URL is problematic (localhost, 127.0.0.1, or private IP).
+ */
+export function isUnreachableUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  
+  // Localhost / Loopback
+  if (u.includes("localhost") || u.includes("127.0.0.1")) return true;
+  
+  // Private IP ranges
+  // 10.0.0.0 – 10.255.255.255
+  // 172.16.0.0 – 172.31.255.255
+  // 192.168.0.0 – 192.168.255.255
+  if (u.includes("//10.") || u.includes("//192.168.") || u.includes("//172.")) {
+    // Basic check for common private IP patterns
+    return true;
   }
 
-  const allFields = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
-  const filled = allFields.filter((f) => !!record[f.key]?.trim()).length;
-  const percentage = Math.round((filled / allFields.length) * 100);
+  return false;
+}
 
-  return {
-    complete: missing.length === 0,
-    missing,
-    percentage,
-  };
+/**
+ * Validates that generation can proceed. 
+ * Returns an error message if connectivity is broken, or null if okay.
+ */
+export function validateConnectivity(params: {
+  actorImageUrl?: string | null;
+  productImageUrls?: string[];
+}): string | null {
+  if (isStorageConfigured()) return null;
+
+  if (isUnreachableUrl(params.actorImageUrl)) {
+    return "Connectivity Error: Your actor image is on 'localhost'. External AI providers (Replicate/Kling) cannot reach it. Use ngrok to make your local server public.";
+  }
+
+  for (const url of params.productImageUrls ?? []) {
+    if (isUnreachableUrl(url)) {
+      return "Connectivity Error: One of your product images is on 'localhost'. External AI providers cannot reach it. Use ngrok.";
+    }
+  }
+
+  return null;
 }

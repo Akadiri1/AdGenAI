@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Play, Loader2, Wand2, Check, AlertCircle, RotateCcw,
-  Image as ImageIcon, Mic, Lightbulb, Pencil,
+  Image as ImageIcon, Mic, Lightbulb, Pencil, Film,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useCredits } from "@/components/CreditsProvider";
@@ -15,6 +15,7 @@ type Scene = {
   id: string;
   sceneNumber: number;
   status: SceneStatus;
+  statusMessage?: string;
   durationSeconds: number;
   prompt: string;
   spokenLine: string | null;
@@ -132,6 +133,9 @@ export function SceneEditor({ adId }: { adId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Refine failed");
+      
+      setScenes((prev) => prev.map((s) => s.id === sceneId ? { ...s, ...data.scene } : s));
+      
       success("Re-rendering with your instruction");
       closeEditor();
       refreshCredits();
@@ -245,22 +249,36 @@ export function SceneEditor({ adId }: { adId: string }) {
 
       {adStatus === "GENERATING" && (
         <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 text-sm">
-          <div className="flex items-center gap-2 font-semibold text-accent">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Generating your ad scenes...
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 font-semibold text-accent">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating your ad scenes...
+            </div>
+            <div className="text-[10px] font-bold text-accent uppercase tracking-tighter">
+              {scenes.filter(s => s.status === "READY").length} / {scenes.length} Ready
+            </div>
           </div>
-          <p className="mt-1 text-xs text-text-secondary">
+          <div className="h-1.5 w-full bg-black/5 rounded-full overflow-hidden mb-2">
+            <div 
+              className="h-full bg-accent transition-all duration-1000 ease-out animate-shimmer"
+              style={{ width: `${(scenes.filter(s => s.status === "READY").length / scenes.length) * 100}%` }}
+            />
+          </div>
+          <p className="text-xs text-text-secondary">
             Each scene takes about 30-60 seconds. We&apos;ll keep this page in sync — refresh anytime.
           </p>
         </div>
       )}
       {adStatus === "STITCHING" && (
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
-          <div className="flex items-center gap-2 font-semibold text-primary">
+          <div className="flex items-center gap-2 font-semibold text-primary mb-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             Stitching scenes together...
           </div>
-          <p className="mt-1 text-xs text-text-secondary">
+          <div className="h-1.5 w-full bg-black/5 rounded-full overflow-hidden mb-2">
+            <div className="h-full bg-primary animate-shimmer" style={{ width: "90%" }} />
+          </div>
+          <p className="text-xs text-text-secondary">
             Your scenes are done! We are now combining them into one final seamless video.
           </p>
         </div>
@@ -294,7 +312,7 @@ export function SceneEditor({ adId }: { adId: string }) {
         <div key={s.id} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[200px_1fr]">
             {/* Preview — capped on mobile so it doesn't take half the screen */}
-            <div className="relative aspect-[9/16] w-full max-w-[180px] mx-auto md:mx-0 md:max-w-none overflow-hidden rounded-xl bg-bg-secondary">
+            <div className={`relative aspect-[9/16] w-full max-w-[180px] mx-auto md:mx-0 md:max-w-none overflow-hidden rounded-xl bg-bg-secondary ${(!s.videoClipUrl && !s.finalClipUrl && s.status !== "PENDING" && s.status !== "FAILED") ? "animate-pulse-fast" : ""}`}>
               {(s.finalClipUrl || s.videoClipUrl) ? (
                 <video src={s.finalClipUrl ?? s.videoClipUrl ?? ""} controls className="h-full w-full object-cover" />
               ) : s.compositeImageUrl ? (
@@ -304,17 +322,26 @@ export function SceneEditor({ adId }: { adId: string }) {
                   {(s.status === "GENERATING_VIDEO" || s.status === "COMPOSITING") && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                       <div className="flex flex-col items-center gap-2 text-white">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                        <span className="text-[10px] font-semibold uppercase">Rendering video</span>
+                        <div className="relative">
+                          <Film className="h-8 w-8 text-white/20" />
+                          <Loader2 className="absolute inset-0 h-8 w-8 animate-spin text-white" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                          {s.statusMessage ? s.statusMessage.replace("_", " ") : "Rendering"}
+                        </span>
                       </div>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
-                  <ImageIcon className="h-8 w-8 text-text-secondary/50" />
+                <div className={`flex h-full flex-col items-center justify-center gap-2 p-3 text-center ${s.status !== "PENDING" ? "animate-shimmer" : ""}`}>
+                  {s.status === "GENERATING_VIDEO" || s.status === "COMPOSITING" ? (
+                    <Film className="h-8 w-8 text-primary/30 animate-bounce" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-text-secondary/50" />
+                  )}
                   <span className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">
-                    {isPending ? "Will render after Confirm" : "No preview yet"}
+                    {isPending ? "Will render after Confirm" : s.status === "FAILED" ? "Generation Failed" : s.statusMessage ? s.statusMessage.replace("_", " ") : "Rendering video..."}
                   </span>
                 </div>
               )}

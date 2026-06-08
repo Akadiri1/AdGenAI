@@ -1,9 +1,8 @@
 /**
  * POST /api/ads/[id]/start-generation
  *
- * Confirm a DRAFT ad and start the real Replicate pipeline.
- * For each PENDING scene we composite (Nano Banana) and kick off Kling video.
- * Credits are deducted here — not at draft creation time.
+ * Confirm a DRAFT ad and start the real AI pipeline.
+ * Speed Optimization: Parallelizes scene submission for Qwen Cloud.
  */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -47,6 +46,17 @@ export async function POST(
     }
     if (!ad.actor) return NextResponse.json({ error: "Ad has no actor — pick one before starting" }, { status: 400 });
     if (!ad.actor.imageUrl) return NextResponse.json({ error: "Actor is missing an image URL — re-select an actor" }, { status: 400 });
+
+    // ── Local Dev Connectivity Check ────────────────────────────────────────
+    const { validateConnectivity } = await import("@/lib/brandCheck");
+    const productImages = stringToImages(ad.productImages);
+    const connError = validateConnectivity({
+      actorImageUrl: ad.actor.imageUrl,
+      productImageUrls: productImages,
+    });
+    if (connError) {
+      return NextResponse.json({ error: connError }, { status: 400 });
+    }
 
     const pendingScenes = ad.scenes.filter((s) => s.status === "PENDING");
     if (pendingScenes.length === 0) {
@@ -101,8 +111,6 @@ export async function POST(
         });
       } catch (err) {
         console.warn("[start-gen] composite failed, falling back:", (err as Error).message);
-        // If using Qwen, set to undefined to trigger T2V (High Quality imagination).
-        // If using Replicate, we MUST use actorImageUrl as fallback.
         if (isQwenConfigured()) {
            sharedCompositeUrl = undefined;
         } else {
@@ -111,57 +119,71 @@ export async function POST(
       }
     }
 
-    // ── Video generation per scene ──────────────────────────────────────────
+    // ── Video generation per scene (Parallelized) ──────────────────────────
     const videoProvider = isQwenConfigured() ? "qwen" : "replicate";
 
-    for (const scene of pendingScenes) {
-      try {
-        if (videoProvider === "qwen") {
-          const { taskId } = await generateQwenVideo({
-            prompt: scene.prompt,
-            imageUrl: sharedCompositeUrl,
-            duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
-            aspectRatio,
-          });
+    // Speed Optimization: Instantly set all scenes to GENERATING_VIDEO
+    // so the frontend UI updates immediately without waiting for API responses.
+    await prisma.scene.updateMany({
+      where: { id: { in: pendingScenes.map((s) => s.id) } },
+      data: { status: "GENERATING_VIDEO" },
+    });
 
+    const runGenerations = async () => {
+      const generationPromises = pendingScenes.map(async (scene, index) => {
+        try {
+          // If Replicate, add a staggered delay to avoid burst limits
+          if (videoProvider === "replicate") {
+            await new Promise((r) => setTimeout(r, index * 5000));
+          }
+
+          if (videoProvider === "qwen") {
+            const { taskId } = await generateQwenVideo({
+              prompt: scene.prompt,
+              imageUrl: sharedCompositeUrl,
+              duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
+              aspectRatio,
+            });
+
+            await prisma.scene.update({
+              where: { id: scene.id },
+              data: {
+                compositeImageUrl: sharedCompositeUrl || null,
+                klingTaskId: taskId,
+              },
+            });
+          } else {
+            const { predictionId } = await generateKlingVideoClip({
+              imageUrl: sharedCompositeUrl || actorImageUrl,
+              prompt: scene.prompt,
+              durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
+              aspectRatio,
+            });
+
+            await prisma.scene.update({
+              where: { id: scene.id },
+              data: {
+                compositeImageUrl: sharedCompositeUrl || actorImageUrl,
+                klingTaskId: predictionId,
+              },
+            });
+          }
+        } catch (err) {
+          console.error(`[start-gen] Scene ${scene.id} failed:`, err);
           await prisma.scene.update({
             where: { id: scene.id },
             data: {
-              status: "GENERATING_VIDEO",
-              compositeImageUrl: sharedCompositeUrl || null,
-              klingTaskId: taskId,
-            },
-          });
-        } else {
-          const { predictionId } = await generateKlingVideoClip({
-            imageUrl: sharedCompositeUrl || actorImageUrl,
-            prompt: scene.prompt,
-            durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
-            aspectRatio,
-          });
-
-          await prisma.scene.update({
-            where: { id: scene.id },
-            data: {
-              status: "GENERATING_VIDEO",
-              compositeImageUrl: sharedCompositeUrl || actorImageUrl,
-              klingTaskId: predictionId,
+              status: "FAILED",
+              editInstructions: `Generation error: ${(err as Error).message}`,
             },
           });
         }
-      } catch (err) {
-        await prisma.scene.update({
-          where: { id: scene.id },
-          data: {
-            status: "FAILED",
-            editInstructions: `Generation error: ${(err as Error).message}`,
-          },
-        });
-      }
-      if (videoProvider === "replicate" && pendingScenes.indexOf(scene) < pendingScenes.length - 1) {
-        await new Promise((r) => setTimeout(r, 12000));
-      }
-    }
+      });
+      await Promise.all(generationPromises);
+    };
+
+    // Run in background (Node.js/dev environment)
+    runGenerations().catch(console.error);
 
     return NextResponse.json({
       success: true,

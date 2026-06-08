@@ -37,12 +37,19 @@ export async function GET(
       if (s.status === "GENERATING_VIDEO" && s.klingTaskId) {
         try {
           let result;
+          // Qwen task IDs are typically UUID-like (with hyphens)
+          // Replicate (Kling) IDs are usually alphanumeric strings without hyphens
+          const isQwenTask = s.klingTaskId.includes("-");
+
           try {
-            // Try Qwen status first
-            result = await getQwenVideoStatus(s.klingTaskId);
+            if (isQwenTask) {
+              result = await getQwenVideoStatus(s.klingTaskId);
+            } else {
+              result = await getKlingClipStatus(s.klingTaskId);
+            }
           } catch (e) {
-            // Fallback to Kling
-            result = await getKlingClipStatus(s.klingTaskId);
+            console.warn(`[scenes] Status check failed for ${isQwenTask ? "Qwen" : "Kling"} task ${s.klingTaskId}:`, (e as Error).message);
+            return s;
           }
 
           if (result.status === "succeeded" && result.videoUrl) {
@@ -75,11 +82,24 @@ export async function GET(
             });
           }
           if (result.status === "failed" || result.status === "canceled") {
+            let error = result.error ?? "Kling generation failed";
+            
+            // Helpful hint for local dev connectivity issues
+            if (error.includes("failed to read the first frame") || error.includes("MoviePy") || error.includes("download") || error.includes("fetch")) {
+              const actor = await prisma.actor.findFirst({ where: { ads: { some: { id: ad.id } } } });
+              if (actor?.imageUrl?.includes("localhost")) {
+                error = `Connectivity Error: External AI providers (Qwen/Replicate) cannot reach your localhost actor image. Use ngrok or configure R2 storage. (Original error: ${error})`;
+              }
+            }
+
             return prisma.scene.update({
               where: { id: s.id },
-              data: { status: "FAILED", editInstructions: result.error ?? "Kling generation failed" },
+              data: { status: "FAILED", editInstructions: error },
             });
           }
+
+          // ── Pass detailed status to UI
+          return { ...s, statusMessage: result.status };
         } catch { /* keep polling */ }
         return s;
       }

@@ -42,6 +42,17 @@ export async function POST(
     if (!scene) return NextResponse.json({ error: "Scene not found" }, { status: 404 });
     if (!ad.actor) return NextResponse.json({ error: "Ad has no actor" }, { status: 400 });
 
+    // ── Connectivity Check ──────────────────────────────────────────────────
+    const { validateConnectivity } = await import("@/lib/brandCheck");
+    const productImages = stringToImages(ad.productImages);
+    const connError = validateConnectivity({
+      actorImageUrl: ad.actor.imageUrl,
+      productImageUrls: productImages,
+    });
+    if (connError) {
+      return NextResponse.json({ error: connError }, { status: 400 });
+    }
+
     // Cost: 1 scene re-render = scene duration in credits + 2 for composite
     const cost = scene.durationSeconds + 2;
     if (!(await checkCredits(session.user.id, cost))) {
@@ -58,71 +69,85 @@ export async function POST(
 
     await deductCredits(session.user.id, cost);
 
-    // Step 2: re-composite
-    const productImages = stringToImages(ad.productImages);
-    let newCompositeUrl: string | undefined = undefined;
-    
-    try {
-      newCompositeUrl = await compositeActorWithProduct({
-        actorImageUrl: ad.actor.imageUrl,
-        productImageUrls: productImages,
-        prompt: `${refined.visualPrompt}. Photorealistic commercial photography, sharp focus, no text overlays.`,
-      });
-    } catch (err) {
-      // Graceful Fallback: If composite fails (e.g. Replicate out of credits), 
-      // we'll try to use the actor image directly or skip it to trigger Text-to-Video in Qwen.
-      console.warn("[refine] Composite failed, falling back:", (err as Error).message);
-      
-      // If we are using Qwen, we can set newCompositeUrl to undefined 
-      // so generateQwenVideo uses Text-to-Video (T2V) which is very powerful.
-      // If using Replicate, we MUST have a start image for Kling I2V.
-      if (!isQwenConfigured()) {
-         newCompositeUrl = ad.actor.imageUrl;
-      }
-    }
-
-    // Step 3: kick off new render (Qwen if configured, otherwise Kling/Replicate)
-    let taskIdOrPredictionId: string;
-    try {
-      if (isQwenConfigured()) {
-        const { taskId } = await generateQwenVideo({
-          prompt: refined.visualPrompt,
-          imageUrl: newCompositeUrl, // If undefined, triggers T2V
-          duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
-          aspectRatio: (ad.aspectRatio as any) ?? "9:16",
-        });
-        taskIdOrPredictionId = taskId;
-      } else {
-        const { predictionId } = await generateKlingVideoClip({
-          imageUrl: newCompositeUrl || ad.actor.imageUrl,
-          prompt: refined.visualPrompt,
-          durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
-          aspectRatio: (ad.aspectRatio as any) ?? "9:16",
-        });
-        taskIdOrPredictionId = predictionId;
-      }
-    } catch (err) {
-      return NextResponse.json({ error: "Generation start failed", details: (err as Error).message }, { status: 400 });
-    }
-
-    // Update scene
+    // Update scene to GENERATING immediately so UI reflects it
     const updated = await prisma.scene.update({
       where: { id: sceneId },
       data: {
         prompt: refined.visualPrompt,
-        compositeImageUrl: newCompositeUrl || null,
-        klingTaskId: taskIdOrPredictionId,
         status: "GENERATING_VIDEO",
         videoClipUrl: null,
         editInstructions: instruction,
       },
     });
 
+    const actorImageUrl = ad.actor.imageUrl;
+
+    const runRefine = async () => {
+      // Step 2: re-composite
+      const productImages = stringToImages(ad.productImages);
+      let newCompositeUrl: string | undefined = undefined;
+      
+      try {
+        newCompositeUrl = await compositeActorWithProduct({
+          actorImageUrl: actorImageUrl,
+          productImageUrls: productImages,
+          prompt: `${refined.visualPrompt}. Photorealistic commercial photography, sharp focus, no text overlays.`,
+        });
+      } catch (err) {
+        console.warn("[refine] Composite failed, falling back:", (err as Error).message);
+        if (!isQwenConfigured()) {
+           newCompositeUrl = actorImageUrl;
+        }
+      }
+
+      // Step 3: kick off new render
+      let taskIdOrPredictionId: string;
+      try {
+        if (isQwenConfigured()) {
+          const { taskId } = await generateQwenVideo({
+            prompt: refined.visualPrompt,
+            imageUrl: newCompositeUrl,
+            duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
+            aspectRatio: (ad.aspectRatio as any) ?? "9:16",
+          });
+          taskIdOrPredictionId = taskId;
+        } else {
+          const { predictionId } = await generateKlingVideoClip({
+            imageUrl: newCompositeUrl || actorImageUrl,
+            prompt: refined.visualPrompt,
+            durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
+            aspectRatio: (ad.aspectRatio as any) ?? "9:16",
+          });
+          taskIdOrPredictionId = predictionId;
+        }
+
+        await prisma.scene.update({
+          where: { id: sceneId },
+          data: {
+            compositeImageUrl: newCompositeUrl || null,
+            klingTaskId: taskIdOrPredictionId,
+          },
+        });
+      } catch (err) {
+        console.error(`[refine] Generation start failed for scene ${sceneId}:`, err);
+        await prisma.scene.update({
+          where: { id: sceneId },
+          data: {
+            status: "FAILED",
+            editInstructions: `Generation error: ${(err as Error).message}`,
+          },
+        });
+      }
+    };
+
+    // Run in background so it doesn't block response
+    runRefine().catch(console.error);
+
     return NextResponse.json({
       success: true,
       scene: {
         id: updated.id,
-        status: updated.status,
+        status: "GENERATING_VIDEO",
         prompt: updated.prompt,
         compositeImageUrl: updated.compositeImageUrl,
       },

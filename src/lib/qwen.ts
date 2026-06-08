@@ -138,7 +138,8 @@ export async function getQwenVideoStatus(taskId: string): Promise<{
   } else if (status === "FAILED") {
     return { status: "failed", error: data.output?.message };
   } else {
-    return { status: "processing" };
+    // Return lowercase status for more granular UI feedback (e.g. queued, pending)
+    return { status: (status?.toLowerCase() || "processing") as any };
   }
 }
 

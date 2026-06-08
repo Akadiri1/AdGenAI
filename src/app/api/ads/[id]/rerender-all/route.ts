@@ -47,6 +47,7 @@ export async function POST(
           finalClipUrl: null,
           lipSyncTaskId: null,
           klingTaskId: null,
+          editInstructions: null,
         },
       }),
     ]);

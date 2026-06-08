@@ -71,7 +71,14 @@ export async function uploadToStorage(input: UploadInput): Promise<string> {
   const filePath = path.join(publicDir, `${id}.${extension}`);
   fs.writeFileSync(filePath, bytes as Buffer);
 
-  const publicUrl = "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const publicUrl = baseUrl.replace(/\/$/, "");
+  
+  if (publicUrl.includes("localhost") || publicUrl.includes("127.0.0.1")) {
+    console.warn(`[storage] ⚠️  Using localhost URL: ${publicUrl}/${folder}/${id}.${extension}`);
+    console.warn("[storage] External AI providers (Replicate, Kling, Qwen) CANNOT reach your localhost. Use ngrok or configure R2.");
+  }
+
   return `${publicUrl}/${folder}/${id}.${extension}`;
 }
 

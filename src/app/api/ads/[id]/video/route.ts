@@ -57,6 +57,15 @@ export async function POST(
     return NextResponse.json({ error: "No source image. Upload one or use Create flow." }, { status: 400 });
   }
 
+  // ── Connectivity Check ──────────────────────────────────────────────────
+  const { validateConnectivity } = await import("@/lib/brandCheck");
+  const connError = validateConnectivity({
+    actorImageUrl: images[0], // In this legacy route, images[0] is the source
+  });
+  if (connError) {
+    return NextResponse.json({ error: connError }, { status: 400 });
+  }
+
   await deductCredits(userId, cost);
 
   const prompt = ad.visualInstructions

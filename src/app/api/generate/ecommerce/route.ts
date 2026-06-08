@@ -19,6 +19,7 @@ import {
   generatePromptsOnly,
 } from "@/lib/ecommerceAdPlanner";
 import { isReplicateConfigured } from "@/lib/replicate";
+import { isQwenConfigured } from "@/lib/qwen";
 import { platformsToString, imagesToString } from "@/lib/adHelpers";
 import { rateLimit, getClientKey } from "@/lib/rateLimit";
 import { AVATAR_LIBRARY } from "@/lib/avatars";
