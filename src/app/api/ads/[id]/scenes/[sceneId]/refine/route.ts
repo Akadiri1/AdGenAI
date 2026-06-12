@@ -83,7 +83,6 @@ export async function POST(
     const actorImageUrl = ad.actor.imageUrl;
 
     // Step 2: re-composite
-    const productImages = stringToImages(ad.productImages);
     let newCompositeUrl: string | undefined = undefined;
     
     try {
