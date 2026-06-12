@@ -128,8 +128,12 @@ export async function POST(
       data: { status: "GENERATING_VIDEO" },
     });
 
-    const runGenerations = async () => {
-      const generationPromises = pendingScenes.map(async (scene, index) => {
+    // ── Submit all scenes to Qwen/Replicate ─────────────────────────────────
+    // IMPORTANT: We MUST await this before returning the response.
+    // On Vercel serverless, the function is killed after the response is sent,
+    // so fire-and-forget promises will never complete.
+    const generationResults = await Promise.allSettled(
+      pendingScenes.map(async (scene, index) => {
         try {
           // If Replicate, add a staggered delay to avoid burst limits
           if (videoProvider === "replicate") {
@@ -177,17 +181,16 @@ export async function POST(
             },
           });
         }
-      });
-      await Promise.all(generationPromises);
-    };
+      })
+    );
 
-    // Run in background (Node.js/dev environment)
-    runGenerations().catch(console.error);
+    const failedCount = generationResults.filter(r => r.status === "rejected").length;
 
     return NextResponse.json({
       success: true,
       adId: ad.id,
       sceneCount: pendingScenes.length,
+      failedCount,
       creditsCharged: cost,
       message: "Generation started. Watch progress in Studio.",
     });

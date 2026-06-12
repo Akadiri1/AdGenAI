@@ -156,14 +156,25 @@ export async function getQwenVideoStatus(taskId: string): Promise<{
   const data = await res.json();
   const status = data.output?.task_status;
 
+  console.log(`[Qwen] Task ${taskId} status: ${status}`, JSON.stringify(data.output).slice(0, 300));
+
   if (status === "SUCCEEDED") {
     let videoUrl = data.output?.video_url;
+    // Fallback: some newer Qwen models return results array instead of video_url
+    if (!videoUrl && data.output?.results?.[0]?.url) {
+      videoUrl = data.output.results[0].url;
+    }
     if (videoUrl && videoUrl.startsWith("http://")) {
       videoUrl = videoUrl.replace("http://", "https://");
     }
+    if (!videoUrl) {
+      console.error("[Qwen] SUCCEEDED but no video URL found in response:", JSON.stringify(data.output));
+      return { status: "failed", error: "Video completed but no URL was returned by Qwen" };
+    }
     return { status: "succeeded", videoUrl };
   } else if (status === "FAILED") {
-    return { status: "failed", error: data.output?.message };
+    console.error("[Qwen] Task FAILED:", JSON.stringify(data.output));
+    return { status: "failed", error: data.output?.message || data.output?.code || "Unknown Qwen error" };
   } else {
     // Return lowercase status for more granular UI feedback (e.g. queued, pending)
     return { status: (status?.toLowerCase() || "processing") as any };
