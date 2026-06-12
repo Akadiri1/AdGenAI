@@ -141,21 +141,35 @@ export async function POST(
           // Skip lip sync, just copy the URL so UI knows it's done
           await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
         } else {
-          // Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
-          const { createPrediction } = await import("@/lib/replicate-internal");
-          const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
-          if (audioUrl) {
-            input.audio_file = audioUrl;
-          } else {
-            input.text = spokenText;
-            input.voice_id = klingVoiceId;
+          try {
+            // Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
+            const { createPrediction } = await import("@/lib/replicate-internal");
+            const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
+            if (audioUrl) {
+              input.audio_file = audioUrl;
+            } else {
+              input.text = spokenText;
+              input.voice_id = klingVoiceId;
+            }
+            const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
+            await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
+          } catch (predErr) {
+            console.error(`[finalize] Lip Sync failed for scene ${scene.sceneNumber}:`, (predErr as Error).message);
+            // If out of credits or API error, fallback to skipping lip-sync
+            // Set finalClipUrl to videoClipUrl so the process doesn't hang
+            await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
+            
+            if ((predErr as Error).message.includes("402") || (predErr as Error).message.includes("Insufficient credit")) {
+              await prisma.ad.update({ 
+                where: { id: ad.id }, 
+                data: { finalVideoError: "Replicate API is out of credits. Lip-sync was skipped." } 
+              });
+            }
           }
-          const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
-          await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
         }
-
       } catch (err) {
         console.error(`[finalize] Scene ${scene.sceneNumber} failed:`, (err as Error).message);
+        await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
       }
     })
   );
