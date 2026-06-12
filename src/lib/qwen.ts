@@ -88,10 +88,11 @@ export async function generateQwenVideo(params: {
 
   // Default to turbo for better reliability if plus is failing
   const model = params.model ?? (params.imageUrl ? "wan2.1-i2v-plus" : "wan2.1-t2v-turbo");
+  // Qwen API now requires "720P" or "480P" instead of pixel dimensions
   const resolutionMap = {
-    "9:16": "720*1280",
-    "16:9": "1280*720",
-    "1:1": "960*960"
+    "9:16": "720P",
+    "16:9": "720P",
+    "1:1": "720P"
   };
 
   let finalPrompt = params.prompt;
@@ -121,7 +122,8 @@ export async function generateQwenVideo(params: {
       parameters: {
         resolution: resolutionMap[params.aspectRatio ?? "9:16"],
         duration: params.duration ?? 5,
-        prompt_extend: useInternalExtend
+        prompt_extend: useInternalExtend,
+        aspect_ratio: params.aspectRatio ?? "9:16"
       }
     }),
   });
