@@ -126,7 +126,6 @@ export async function generateQwenVideo(params: {
         },
         parameters: {
           resolution: resolutionMap[params.aspectRatio ?? "9:16"],
-          duration: params.duration ?? 5,
           prompt_extend: useInternalExtend,
           aspect_ratio: params.aspectRatio ?? "9:16"
         }
