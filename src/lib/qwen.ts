@@ -106,32 +106,54 @@ export async function generateQwenVideo(params: {
     useInternalExtend = false; // Disable internal since we did it manually
   }
 
-  const res = await fetch(`${DASHSCOPE_INTL_BASE}/services/aigc/video-generation/video-synthesis`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "X-DashScope-Async": "enable"
-    },
-    body: JSON.stringify({
-      model,
-      input: {
-        prompt: finalPrompt,
-        ...(params.imageUrl && { img_url: params.imageUrl })
-      },
-      parameters: {
-        resolution: resolutionMap[params.aspectRatio ?? "9:16"],
-        duration: params.duration ?? 5,
-        prompt_extend: useInternalExtend,
-        aspect_ratio: params.aspectRatio ?? "9:16"
-      }
-    }),
-  });
+  let res: Response;
+  let attempt = 0;
+  const maxAttempts = 5;
 
-  if (!res.ok) {
-    const error = await res.text();
-    await logApiHealth("qwen", false, `Video Error ${res.status}: ${error}`);
-    throw new Error(`Qwen Video API error ${res.status}: ${error}`);
+  while (true) {
+    res = await fetch(`${DASHSCOPE_INTL_BASE}/services/aigc/video-generation/video-synthesis`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "X-DashScope-Async": "enable"
+      },
+      body: JSON.stringify({
+        model,
+        input: {
+          prompt: finalPrompt,
+          ...(params.imageUrl && { img_url: params.imageUrl })
+        },
+        parameters: {
+          resolution: resolutionMap[params.aspectRatio ?? "9:16"],
+          duration: params.duration ?? 5,
+          prompt_extend: useInternalExtend,
+          aspect_ratio: params.aspectRatio ?? "9:16"
+        }
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.text();
+      // Handle Rate Limits (429 or Throttling.RateQuota in 400)
+      if (res.status === 429 || error.includes("Throttling.RateQuota")) {
+        attempt++;
+        if (attempt >= maxAttempts) {
+          await logApiHealth("qwen", false, `Rate Limit Error: ${error}`);
+          throw new Error(`Qwen Video API error 429: ${error}`);
+        }
+        // Exponential backoff: 5s, 10s, 20s, 40s + jitter
+        const waitMs = Math.min(5000 * Math.pow(2, attempt - 1) + Math.random() * 2000, 60000);
+        console.warn(`[Qwen] Rate limited. Retrying attempt ${attempt}/${maxAttempts} in ${Math.round(waitMs/1000)}s...`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      
+      await logApiHealth("qwen", false, `Video Error ${res.status}: ${error}`);
+      throw new Error(`Qwen Video API error ${res.status}: ${error}`);
+    }
+    
+    break; // Success
   }
 
   const data = await res.json();

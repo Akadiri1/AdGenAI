@@ -82,66 +82,66 @@ export async function POST(
 
     const actorImageUrl = ad.actor.imageUrl;
 
-    const runRefine = async () => {
-      // Step 2: re-composite
-      const productImages = stringToImages(ad.productImages);
-      let newCompositeUrl: string | undefined = undefined;
-      
-      try {
-        newCompositeUrl = await compositeActorWithProduct({
-          actorImageUrl: actorImageUrl,
-          productImageUrls: productImages,
-          prompt: `${refined.visualPrompt}. Photorealistic commercial photography, sharp focus, no text overlays.`,
+    // Step 2: re-composite
+    const productImages = stringToImages(ad.productImages);
+    let newCompositeUrl: string | undefined = undefined;
+    
+    try {
+      newCompositeUrl = await compositeActorWithProduct({
+        actorImageUrl: actorImageUrl,
+        productImageUrls: productImages,
+        prompt: `${refined.visualPrompt}. Photorealistic commercial photography, sharp focus, no text overlays.`,
+      });
+    } catch (err) {
+      console.warn("[refine] Composite failed, falling back:", (err as Error).message);
+      if (!isQwenConfigured()) {
+         newCompositeUrl = actorImageUrl;
+      }
+    }
+
+    // Step 3: kick off new render
+    let taskIdOrPredictionId: string;
+    try {
+      if (isQwenConfigured()) {
+        const { taskId } = await generateQwenVideo({
+          prompt: refined.visualPrompt,
+          imageUrl: newCompositeUrl,
+          duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
+          aspectRatio: (ad.aspectRatio as any) ?? "9:16",
         });
-      } catch (err) {
-        console.warn("[refine] Composite failed, falling back:", (err as Error).message);
-        if (!isQwenConfigured()) {
-           newCompositeUrl = actorImageUrl;
-        }
+        taskIdOrPredictionId = taskId;
+      } else {
+        const { predictionId } = await generateKlingVideoClip({
+          imageUrl: newCompositeUrl || actorImageUrl,
+          prompt: refined.visualPrompt,
+          durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
+          aspectRatio: (ad.aspectRatio as any) ?? "9:16",
+        });
+        taskIdOrPredictionId = predictionId;
       }
 
-      // Step 3: kick off new render
-      let taskIdOrPredictionId: string;
-      try {
-        if (isQwenConfigured()) {
-          const { taskId } = await generateQwenVideo({
-            prompt: refined.visualPrompt,
-            imageUrl: newCompositeUrl,
-            duration: scene.durationSeconds <= 5 ? (5 as any) : (10 as any),
-            aspectRatio: (ad.aspectRatio as any) ?? "9:16",
-          });
-          taskIdOrPredictionId = taskId;
-        } else {
-          const { predictionId } = await generateKlingVideoClip({
-            imageUrl: newCompositeUrl || actorImageUrl,
-            prompt: refined.visualPrompt,
-            durationSeconds: scene.durationSeconds <= 5 ? 5 : 10,
-            aspectRatio: (ad.aspectRatio as any) ?? "9:16",
-          });
-          taskIdOrPredictionId = predictionId;
-        }
-
-        await prisma.scene.update({
-          where: { id: sceneId },
-          data: {
-            compositeImageUrl: newCompositeUrl || null,
-            klingTaskId: taskIdOrPredictionId,
-          },
-        });
-      } catch (err) {
-        console.error(`[refine] Generation start failed for scene ${sceneId}:`, err);
-        await prisma.scene.update({
-          where: { id: sceneId },
-          data: {
-            status: "FAILED",
-            editInstructions: `Generation error: ${(err as Error).message}`,
-          },
-        });
-      }
-    };
-
-    // Run in background so it doesn't block response
-    runRefine().catch(console.error);
+      await prisma.scene.update({
+        where: { id: sceneId },
+        data: {
+          compositeImageUrl: newCompositeUrl || null,
+          klingTaskId: taskIdOrPredictionId,
+        },
+      });
+    } catch (err) {
+      console.error(`[refine] Generation start failed for scene ${sceneId}:`, err);
+      await prisma.scene.update({
+        where: { id: sceneId },
+        data: {
+          status: "FAILED",
+          editInstructions: `Generation error: ${(err as Error).message}`,
+        },
+      });
+      // Refund credits since it failed to start
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { credits: { increment: cost } },
+      });
+    }
 
     return NextResponse.json({
       success: true,

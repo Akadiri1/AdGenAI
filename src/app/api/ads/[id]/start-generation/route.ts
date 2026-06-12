@@ -135,8 +135,8 @@ export async function POST(
     const generationResults = await Promise.allSettled(
       pendingScenes.map(async (scene, index) => {
         try {
-          // If Replicate, add a staggered delay to avoid burst limits
-          if (videoProvider === "replicate") {
+          // Add a staggered delay to avoid burst limits (Qwen/Replicate both have rate limits)
+          if (index > 0) {
             await new Promise((r) => setTimeout(r, index * 5000));
           }
 
