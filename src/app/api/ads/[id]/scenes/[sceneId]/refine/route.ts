@@ -93,9 +93,7 @@ export async function POST(
       });
     } catch (err) {
       console.warn("[refine] Composite failed, falling back:", (err as Error).message);
-      if (!isQwenConfigured()) {
-         newCompositeUrl = actorImageUrl;
-      }
+      newCompositeUrl = actorImageUrl;
     }
 
     // Step 3: kick off new render

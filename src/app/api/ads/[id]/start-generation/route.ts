@@ -110,11 +110,7 @@ export async function POST(
         });
       } catch (err) {
         console.warn("[start-gen] composite failed, falling back:", (err as Error).message);
-        if (isQwenConfigured()) {
-           sharedCompositeUrl = undefined;
-        } else {
-           sharedCompositeUrl = actorImageUrl;
-        }
+        sharedCompositeUrl = actorImageUrl;
       }
     }
 

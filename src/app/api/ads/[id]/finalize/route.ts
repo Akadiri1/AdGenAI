@@ -109,51 +109,56 @@ export async function POST(
   const klingVoiceId = gender === "male" ? KLING_VOICES.male : KLING_VOICES.female;
 
   // For each scene: TTS (fast) + kick off Kling Lip Sync (async, non-blocking)
-  for (const scene of ad.scenes) {
-    const spokenText = (scene.spokenLine?.trim() || "").slice(0, 300);
-    if (!spokenText || !scene.videoClipUrl) continue;
+  // Parallelized to prevent Vercel Serverless timeout
+  await Promise.allSettled(
+    ad.scenes.map(async (scene, index) => {
+      const spokenText = (scene.spokenLine?.trim() || "").slice(0, 300);
+      if (!spokenText || !scene.videoClipUrl) return;
 
-    try {
-      // 1. TTS — fast (~2s)
-      let audioUrl: string | null = null;
       try {
-        const tts = await generateVoiceover({
-          text: spokenText,
-          settings: voiceSettings as never,
-          actor: { gender: ad.actor?.gender, age: mappedAge, vibe: ad.actor?.vibe },
-          language: ad.language,
-        });
-        audioUrl = tts.audioUrl;
-        await prisma.scene.update({ where: { id: scene.id }, data: { voiceoverUrl: audioUrl } });
-      } catch (ttsErr) {
-        console.warn("[finalize] TTS failed, will use text lipsync:", (ttsErr as Error).message);
-      }
-
-      // 2. Lip Sync
-      if (!isReplicateConfigured()) {
-        // Skip lip sync, just copy the URL so UI knows it's done
-        await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
-      } else {
-        // Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
-        const { createPrediction } = await import("@/lib/replicate-internal");
-        const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
-        if (audioUrl) {
-          input.audio_file = audioUrl;
-        } else {
-          input.text = spokenText;
-          input.voice_id = klingVoiceId;
+        // Stagger requests to avoid rate limits
+        if (index > 0) {
+          await new Promise((r) => setTimeout(r, index * 2000));
         }
-        const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
-        await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
+
+        // 1. TTS — fast (~2s)
+        let audioUrl: string | null = null;
+        try {
+          const tts = await generateVoiceover({
+            text: spokenText,
+            settings: voiceSettings as never,
+            actor: { gender: ad.actor?.gender, age: mappedAge, vibe: ad.actor?.vibe },
+            language: ad.language,
+          });
+          audioUrl = tts.audioUrl;
+          await prisma.scene.update({ where: { id: scene.id }, data: { voiceoverUrl: audioUrl } });
+        } catch (ttsErr) {
+          console.warn("[finalize] TTS failed, will use text lipsync:", (ttsErr as Error).message);
+        }
+
+        // 2. Lip Sync
+        if (!isReplicateConfigured()) {
+          // Skip lip sync, just copy the URL so UI knows it's done
+          await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
+        } else {
+          // Kick off Kling Lip Sync prediction (returns immediately with a prediction ID)
+          const { createPrediction } = await import("@/lib/replicate-internal");
+          const input: Record<string, unknown> = { video_url: scene.videoClipUrl };
+          if (audioUrl) {
+            input.audio_file = audioUrl;
+          } else {
+            input.text = spokenText;
+            input.voice_id = klingVoiceId;
+          }
+          const prediction = await createPrediction("kwaivgi/kling-lip-sync", undefined, input);
+          await prisma.scene.update({ where: { id: scene.id }, data: { lipSyncTaskId: prediction.id } });
+        }
+
+      } catch (err) {
+        console.error(`[finalize] Scene ${scene.sceneNumber} failed:`, (err as Error).message);
       }
-
-    } catch (err) {
-      console.error(`[finalize] Scene ${scene.sceneNumber} failed:`, (err as Error).message);
-    }
-
-    // Small gap between predictions
-    await new Promise((r) => setTimeout(r, 2000));
-  }
+    })
+  );
 
   return NextResponse.json({
     success: true,
