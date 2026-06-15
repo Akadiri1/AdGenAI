@@ -9,7 +9,7 @@
  *
  * GET: returns finalization status + allScenesReady flag.
  */
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -110,17 +110,12 @@ export async function POST(
 
   // For each scene: TTS (fast) + kick off Kling Lip Sync (async, non-blocking)
   // Parallelized to prevent Vercel Serverless timeout
-  await Promise.allSettled(
+  after(() => Promise.allSettled(
     ad.scenes.map(async (scene, index) => {
       const spokenText = (scene.spokenLine?.trim() || "").slice(0, 300);
       if (!spokenText || !scene.videoClipUrl) return;
 
       try {
-        // Stagger requests to avoid rate limits
-        if (index > 0) {
-          await new Promise((r) => setTimeout(r, index * 2000));
-        }
-
         // 1. TTS — fast (~2s)
         let audioUrl: string | null = null;
         try {
@@ -172,7 +167,7 @@ export async function POST(
         await prisma.scene.update({ where: { id: scene.id }, data: { finalClipUrl: scene.videoClipUrl } });
       }
     })
-  );
+  ));
 
   return NextResponse.json({
     success: true,
