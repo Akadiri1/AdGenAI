@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Download, Film, Loader2, Check } from "lucide-react";
 
 type Props = {
-  clips: { url: string; scene: number }[];
+  clips: { videoUrl: string; audioUrl: string | null; scene: number }[];
   adId: string;
 };
 
@@ -19,10 +19,10 @@ export function VideoStitcher({ clips, adId }: Props) {
   async function stitch() {
     if (clips.length === 0) return;
 
-    // Single clip — just download directly
-    if (clips.length === 1) {
+    // Single clip without audio — just download directly
+    if (clips.length === 1 && !clips[0].audioUrl) {
       const a = document.createElement("a");
-      a.href = clips[0].url;
+      a.href = clips[0].videoUrl;
       a.download = `famousli-ad-scene1.mp4`;
       a.click();
       return;
@@ -52,12 +52,31 @@ export function VideoStitcher({ clips, adId }: Props) {
       setState("downloading");
       setProgress(20);
 
-      // Download all clips into ffmpeg virtual FS
+      // Download all clips and audios into ffmpeg virtual FS, then multiplex
       const sorted = [...clips].sort((a, b) => a.scene - b.scene);
       for (let i = 0; i < sorted.length; i++) {
         setProgress(20 + Math.floor((i / sorted.length) * 40));
-        const data = await fetchFile(sorted[i].url);
-        await ffmpeg.writeFile(`clip${i}.mp4`, data);
+        const videoData = await fetchFile(sorted[i].videoUrl);
+        await ffmpeg.writeFile(`raw_clip${i}.mp4`, videoData);
+
+        if (sorted[i].audioUrl) {
+          const audioData = await fetchFile(sorted[i].audioUrl!);
+          await ffmpeg.writeFile(`audio${i}.wav`, audioData);
+          // Multiplex video and audio, taking the shortest
+          await ffmpeg.exec([
+            "-i", `raw_clip${i}.mp4`,
+            "-i", `audio${i}.wav`,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-shortest",
+            `clip${i}.mp4`
+          ]);
+        } else {
+          // No audio, just copy
+          await ffmpeg.exec(["-i", `raw_clip${i}.mp4`, "-c", "copy", `clip${i}.mp4`]);
+        }
       }
 
       // Build concat list
@@ -67,16 +86,16 @@ export function VideoStitcher({ clips, adId }: Props) {
       setState("stitching");
       setProgress(70);
 
-      // Try stream copy first (fast), fall back to re-encode if needed
+      // Concat the final multiplexed clips
+      // Using re-encode because multiplexed clips might have different audio sample rates
       try {
-        await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "out.mp4"]);
-      } catch {
-        setProgress(80);
         await ffmpeg.exec([
           "-f", "concat", "-safe", "0", "-i", "list.txt",
           "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
           "out.mp4",
         ]);
+      } catch (e) {
+        throw new Error("Failed to concatenate video clips.");
       }
 
       setProgress(95);
@@ -109,7 +128,7 @@ export function VideoStitcher({ clips, adId }: Props) {
   const labels: Record<StitchState, string> = {
     idle: `Download as one MP4 (${clips.length} scenes)`,
     "loading-ffmpeg": "Loading video processor… (~15s first time)",
-    downloading: "Downloading clips…",
+    downloading: "Downloading clips & audio…",
     stitching: "Stitching scenes together…",
     done: "Downloaded!",
     error: "Failed — try again",
@@ -145,14 +164,14 @@ export function VideoStitcher({ clips, adId }: Props) {
           </div>
           <p className="text-[10px] text-text-secondary text-center">
             {state === "loading-ffmpeg" && "First time only — cached after this"}
-            {state === "downloading" && "Fetching your scene clips…"}
-            {state === "stitching" && "Combining into one MP4…"}
+            {state === "downloading" && "Fetching your scenes and voiceovers…"}
+            {state === "stitching" && "Syncing audio and combining MP4s…"}
           </p>
         </div>
       )}
 
       {state === "error" && (
-        <p className="text-[11px] text-danger">{errorMsg}</p>
+        <p className="text-[11px] text-danger text-center">{errorMsg}</p>
       )}
 
       {state === "done" && (
