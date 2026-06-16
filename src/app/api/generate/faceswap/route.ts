@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateVoiceover } from "@/lib/tts";
 
 export const maxDuration = 60;
 
@@ -52,28 +53,17 @@ export async function POST(req: Request) {
     });
 
     // Step 0: Generate TTS Audio if Script is provided
-    let audioDataUri: string | null = null;
+    let audioUrl: string | null = null;
     if (script && voice) {
-      const ttsRes = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "tts-1",
-          input: script,
-          voice: voice
-        })
-      });
-
-      if (!ttsRes.ok) {
-        throw new Error("Failed to generate AI voice audio");
+      try {
+        const ttsRes = await generateVoiceover({
+          text: script,
+          settings: { voiceId: voice }
+        });
+        audioUrl = ttsRes.audioUrl;
+      } catch (err) {
+        throw new Error("Failed to generate AI voice audio: " + (err as Error).message);
       }
-      
-      const arrayBuffer = await ttsRes.arrayBuffer();
-      const base64Audio = Buffer.from(arrayBuffer).toString('base64');
-      audioDataUri = `data:audio/mp3;base64,${base64Audio}`;
     }
 
     // Step 1: Enhance the source image using CodeFormer (Synchronous Wait)
@@ -111,7 +101,7 @@ export async function POST(req: Request) {
     // Step 2 & 3: Lip Sync OR Face Swap
     let replicateData;
     
-    if (audioDataUri) {
+    if (audioUrl) {
       // Launch Lip Sync Model First
       const webhookUrl = `${process.env.NEXTAUTH_URL}/api/webhooks/replicate-faceswap?secret=${process.env.REPLICATE_WEBHOOK_SECRET || "dev-secret"}&step=lipsync`;
       
@@ -125,13 +115,16 @@ export async function POST(req: Request) {
           version: "c200593466185fc4651e065bc3eec4b29bb64a780bbf23db71192e22fc75cbac", // fofr/lipsync (a much faster LipSync model than video-retalking)
           input: {
             video: targetVideoUrl,
-            audio: audioDataUri,
+            audio: audioUrl,
           },
           webhook: webhookUrl,
           webhook_events_filter: ["completed"],
         }),
       });
       replicateData = await res.json();
+      if (res.status === 402 || replicateData.detail?.includes?.("credit")) {
+        throw new Error("Your Replicate API key is out of credits. Please top up your Replicate account.");
+      }
       if (!res.ok) throw new Error(`Replicate failed: ${JSON.stringify(replicateData)}`);
       
     } else {
@@ -155,6 +148,9 @@ export async function POST(req: Request) {
         }),
       });
       replicateData = await res.json();
+      if (res.status === 402 || replicateData.detail?.includes?.("credit")) {
+        throw new Error("Your Replicate API key is out of credits. Please top up your Replicate account.");
+      }
       if (!res.ok) throw new Error(`Replicate failed: ${JSON.stringify(replicateData)}`);
     }
 
@@ -165,8 +161,13 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, jobId: job.id });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[faceswap-error]", err);
-    return NextResponse.json({ error: "Failed to start processing job." }, { status: 500 });
+    // Refund credits on failure
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { credits: { increment: requiredCredits } },
+    });
+    return NextResponse.json({ error: err.message || "Failed to start processing job." }, { status: 500 });
   }
 }
